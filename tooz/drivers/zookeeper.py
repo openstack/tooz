@@ -17,6 +17,7 @@
 from kazoo import client
 from kazoo import exceptions
 from kazoo.protocol import paths
+from zake import fake_client
 
 from tooz import coordination
 from tooz import models
@@ -24,22 +25,7 @@ from tooz import models
 _TOOZ_NAMESPACE = "tooz"
 
 
-class ZooKeeperDriver(coordination.CoordinationDriver):
-
-    def __init__(self, member_id, handler=None, **kwargs):
-        """:param handler: a kazoo async handler to use if provided, if not
-        provided the default that kazoo uses internally will be used instead
-
-        :param kwargs: it must contains the key "hosts" associated
-        to the list of zookeeper servers in the form "ip:port2, ip2:port2".
-        """
-        if not all((kwargs["hosts"], member_id)):
-            raise KeyError("hosts=%r, member_id=%r" % (kwargs["hosts"],
-                           member_id))
-        self._member_id = member_id
-        self._coord = client.KazooClient(hosts=kwargs["hosts"],
-                                         handler=handler)
-        super(ZooKeeperDriver, self).__init__()
+class BaseZooKeeperDriver(coordination.CoordinationDriver):
 
     def start(self, timeout=10):
         try:
@@ -169,3 +155,37 @@ class ZooKeeperDriver(coordination.CoordinationDriver):
             return func(*args, **kwargs)
         except exceptions.ZookeeperError as e:
             raise coordination.ToozError(str(e))
+
+
+class KazooDriver(BaseZooKeeperDriver):
+    """The driver using the Kazoo client against real ZooKeeper servers."""
+
+    def __init__(self, member_id, hosts="127.0.0.1:2181", handler=None,
+                 **kwargs):
+        """:param hosts: the list of zookeeper servers in the
+        form "ip:port2, ip2:port2".
+
+        :param handler: a kazoo async handler to use if provided, if not
+        provided the default that kazoo uses internally will be used instead.
+        """
+
+        if not all((hosts, member_id)):
+            raise KeyError("hosts=%r, member_id=%r" % hosts, member_id)
+        self._member_id = member_id
+        self._coord = client.KazooClient(hosts=hosts, handler=handler)
+        super(KazooDriver, self).__init__()
+
+
+class ZakeDriver(BaseZooKeeperDriver):
+    """The driver using the Zake client which mimic a fake Kazoo client
+    without the need of real ZooKeeper servers.
+    """
+
+    def __init__(self, member_id, storage=None, **kwargs):
+        """:param storage: a fake storage object."""
+
+        if not all((storage, member_id)):
+            raise KeyError("storage=%r, member_id=%r" % storage, member_id)
+        self._member_id = member_id
+        self._coord = fake_client.FakeClient(storage=storage)
+        super(ZakeDriver, self).__init__()

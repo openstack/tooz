@@ -14,20 +14,29 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import threading
+import uuid
 
 import testscenarios
 from testtools import testcase
-import uuid
 
 import tooz.coordination
+from zake import fake_storage
 
-zookeeper_tests = ('zookeeper_tests', {'backend': 'zookeeper',
+# Real ZooKeeper server scenario
+zookeeper_tests = ('zookeeper_tests', {'backend': 'kazoo',
                                        'kwargs': {'hosts': '127.0.0.1:2181'}})
+
+# Fake Kazoo client scenario
+fake_storage = fake_storage.FakeStorage(threading.RLock())
+fake_zookeeper_tests = ('fake_zookeeper_tests', {'backend': 'zake',
+                                                 'kwargs': {'storage':
+                                                            fake_storage}})
 
 
 class TestAPI(testscenarios.TestWithScenarios, testcase.TestCase):
 
-    scenarios = [zookeeper_tests]
+    scenarios = [zookeeper_tests, fake_zookeeper_tests]
 
     def setUp(self):
         super(TestAPI, self).setUp()
