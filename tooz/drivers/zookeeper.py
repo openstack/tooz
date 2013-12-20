@@ -16,7 +16,6 @@
 
 from kazoo import client
 from kazoo import exceptions
-from kazoo.handlers import threading
 from kazoo.protocol import paths
 
 from tooz import coordination
@@ -27,21 +26,25 @@ _TOOZ_NAMESPACE = "tooz"
 
 class ZooKeeperDriver(coordination.CoordinationDriver):
 
-    def __init__(self, member_id, **kwargs):
-        """:param kwargs: it must contains the key "hosts" associated
+    def __init__(self, member_id, handler=None, **kwargs):
+        """:param handler: a kazoo async handler to use if provided, if not
+        provided the default that kazoo uses internally will be used instead
+
+        :param kwargs: it must contains the key "hosts" associated
         to the list of zookeeper servers in the form "ip:port2, ip2:port2".
         """
         if not all((kwargs["hosts"], member_id)):
             raise KeyError("hosts=%r, member_id=%r" % (kwargs["hosts"],
                            member_id))
         self._member_id = member_id
-        self._coord = client.KazooClient(hosts=kwargs["hosts"])
+        self._coord = client.KazooClient(hosts=kwargs["hosts"],
+                                         handler=handler)
         super(ZooKeeperDriver, self).__init__()
 
     def start(self, timeout=10):
         try:
             self._coord.start(timeout=timeout)
-        except threading.TimeoutError as e:
+        except self._coord.handler.timeout_exception as e:
             raise coordination.ToozConnectionError("operation error: %s" % (e))
 
         try:
