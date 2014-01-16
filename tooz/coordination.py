@@ -53,8 +53,8 @@ class CoordinationDriver(object):
         """
 
     @abc.abstractmethod
-    def get_all_groups_ids(self):
-        """Return the list composed by all created groups ids.
+    def get_groups(self):
+        """Return the list composed by all groups ids.
 
         :returns: list of all created group ids
         :rtype: list
@@ -79,8 +79,8 @@ class CoordinationDriver(object):
         """
 
     @abc.abstractmethod
-    def get_members(self):
-        """Return the list of all members of the specified group.
+    def get_members(self, group_id):
+        """Return the list of all members ids of the specified group.
 
         :returns: list of all created group ids
         :rtype: list

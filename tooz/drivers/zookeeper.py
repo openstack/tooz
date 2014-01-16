@@ -20,7 +20,6 @@ from kazoo.protocol import paths
 from zake import fake_client
 
 from tooz import coordination
-from tooz import models
 
 _TOOZ_NAMESPACE = "tooz"
 
@@ -85,32 +84,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
             raise coordination.GroupNotCreated("group '%s' does not exist" %
                                                group_id)
 
-        members = []
-        capabilities = ""
-        for member_id in member_ids:
-            try:
-                member_path = self._path_member(group_id, member_id)
-                capabilities = self._wrap_kazoo_call(self._coord.get,
-                                                     member_path)
-            except exceptions.NoNodeError:
-                #If the current node does not exist then it means that it
-                #leaved the group just after the get_children() call above.
-                pass
-            members.append(models.Member(group_id, member_id, capabilities[0]))
-        return members
-
-    def get_member(self, group_id, member_id):
-        capabilities = ""
-        try:
-            member_path = self._path_member(group_id, member_id)
-            capabilities = self._wrap_kazoo_call(self._coord.get,
-                                                 member_path)[0]
-        except exceptions.NoNodeError:
-            raise coordination.MemberNotJoined("member '%s' has not joined "
-                                               "the group '%s' or the group "
-                                               "has not been created" %
-                                               (member_id, group_id))
-        return models.Member(group_id, member_id, capabilities)
+        return member_ids
 
     def update_capabilities(self, group_id, capabilities):
         try:
@@ -135,7 +109,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
                                                (self._member_id, group_id))
         return capabilities
 
-    def get_all_groups_ids(self):
+    def get_groups(self):
         group_ids = []
         try:
             group_ids = self._wrap_kazoo_call(self._coord.get_children,

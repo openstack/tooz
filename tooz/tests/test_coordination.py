@@ -56,29 +56,27 @@ class TestAPI(testscenarios.TestWithScenarios, testcase.TestCase):
 
     def test_create_group(self):
         self._coord.create_group(self.group_id)
-        all_group_ids = self._coord.get_all_groups_ids()
+        all_group_ids = self._coord.get_groups()
         self.assertTrue(self.group_id in all_group_ids)
 
-    def test_get_all_groups_ids(self):
+    def test_get_groups(self):
         groups_ids = [self._get_random_uuid() for _ in range(0, 5)]
         for group_id in groups_ids:
             self._coord.create_group(group_id)
-        created_groups = self._coord.get_all_groups_ids()
+        created_groups = self._coord.get_groups()
         for group_id in groups_ids:
             self.assertTrue(group_id in created_groups)
 
     def test_join_group(self):
         self._coord.create_group(self.group_id)
         self._coord.join_group(self.group_id)
-        member_objects = self._coord.get_members(self.group_id)
-        member_list = [member.member_id for member in member_objects]
+        member_list = self._coord.get_members(self.group_id)
         self.assertTrue(self.member_id in member_list)
 
     def test_leave_group(self):
         self._coord.create_group(self.group_id)
         self._coord.join_group(self.group_id)
-        member_objects = self._coord.get_members(self.group_id)
-        member_ids = [member.member_id for member in member_objects]
+        member_ids = self._coord.get_members(self.group_id)
         self.assertTrue(self.member_id in member_ids)
         self._coord.leave_group(self.group_id)
         new_member_objects = self._coord.get_members(self.group_id)
@@ -96,8 +94,7 @@ class TestAPI(testscenarios.TestWithScenarios, testcase.TestCase):
         self._coord.create_group(group_id_test2)
         self._coord.join_group(group_id_test2)
         client2.join_group(group_id_test2)
-        members_objects = self._coord.get_members(group_id_test2)
-        members_ids = [member.member_id for member in members_objects]
+        members_ids = self._coord.get_members(group_id_test2)
         self.assertTrue(self.member_id in members_ids)
         self.assertTrue(member_id_test2 in members_ids)
 
