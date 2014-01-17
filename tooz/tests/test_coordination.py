@@ -55,31 +55,35 @@ class TestAPI(testscenarios.TestWithScenarios, testcase.TestCase):
         super(TestAPI, self).tearDown()
 
     def test_create_group(self):
-        self._coord.create_group(self.group_id)
-        all_group_ids = self._coord.get_groups()
+        self._coord.create_group(self.group_id).get()
+        all_group_ids = self._coord.get_groups().get()
         self.assertTrue(self.group_id in all_group_ids)
 
     def test_get_groups(self):
         groups_ids = [self._get_random_uuid() for _ in range(0, 5)]
         for group_id in groups_ids:
-            self._coord.create_group(group_id)
-        created_groups = self._coord.get_groups()
+            self._coord.create_group(group_id).get()
+        created_groups = self._coord.get_groups().get()
         for group_id in groups_ids:
             self.assertTrue(group_id in created_groups)
 
     def test_join_group(self):
-        self._coord.create_group(self.group_id)
-        self._coord.join_group(self.group_id)
-        member_list = self._coord.get_members(self.group_id)
+        self._coord.create_group(self.group_id).get()
+        self._coord.join_group(self.group_id).get()
+        member_list = self._coord.get_members(self.group_id).get()
         self.assertTrue(self.member_id in member_list)
 
     def test_leave_group(self):
-        self._coord.create_group(self.group_id)
-        self._coord.join_group(self.group_id)
-        member_ids = self._coord.get_members(self.group_id)
+        self._coord.create_group(self.group_id).get()
+        all_group_ids = self._coord.get_groups().get()
+        self.assertTrue(self.group_id in all_group_ids)
+        self._coord.join_group(self.group_id).get()
+        member_list = self._coord.get_members(self.group_id).get()
+        self.assertTrue(self.member_id in member_list)
+        member_ids = self._coord.get_members(self.group_id).get()
         self.assertTrue(self.member_id in member_ids)
-        self._coord.leave_group(self.group_id)
-        new_member_objects = self._coord.get_members(self.group_id)
+        self._coord.leave_group(self.group_id).get()
+        new_member_objects = self._coord.get_members(self.group_id).get()
         new_member_list = [member.member_id for member in new_member_objects]
         self.assertTrue(self.member_id not in new_member_list)
 
@@ -91,33 +95,33 @@ class TestAPI(testscenarios.TestWithScenarios, testcase.TestCase):
                                                     **self.kwargs)
         client2.start()
 
-        self._coord.create_group(group_id_test2)
-        self._coord.join_group(group_id_test2)
-        client2.join_group(group_id_test2)
-        members_ids = self._coord.get_members(group_id_test2)
+        self._coord.create_group(group_id_test2).get()
+        self._coord.join_group(group_id_test2).get()
+        client2.join_group(group_id_test2).get()
+        members_ids = self._coord.get_members(group_id_test2).get()
         self.assertTrue(self.member_id in members_ids)
         self.assertTrue(member_id_test2 in members_ids)
 
     def test_get_member_capabilities(self):
-        self._coord.create_group(self.group_id)
+        self._coord.create_group(self.group_id).get()
         self._coord.join_group(self.group_id, b"test_capabilities")
 
         capa = self._coord.get_member_capabilities(self.group_id,
-                                                   self.member_id)
+                                                   self.member_id).get()
         self.assertEqual(capa, b"test_capabilities")
 
     def test_update_capabilities(self):
-        self._coord.create_group(self.group_id)
-        self._coord.join_group(self.group_id, b"test_capabilities1")
+        self._coord.create_group(self.group_id).get()
+        self._coord.join_group(self.group_id, b"test_capabilities1").get()
 
         capa = self._coord.get_member_capabilities(self.group_id,
-                                                   self.member_id)
+                                                   self.member_id).get()
         self.assertEqual(capa, b"test_capabilities1")
         self._coord.update_capabilities(self.group_id,
-                                        b"test_capabilities2")
+                                        b"test_capabilities2").get()
 
         capa2 = self._coord.get_member_capabilities(self.group_id,
-                                                    self.member_id)
+                                                    self.member_id).get()
         self.assertEqual(capa2, b"test_capabilities2")
 
     def _get_random_uuid(self):

@@ -46,67 +46,96 @@ class CoordinationDriver(object):
 
     @abc.abstractmethod
     def create_group(self, group_id):
-        """Request the creation of a group.
+        """Request the creation of a group asynchronously.
 
         :param group_id: the id of the group to create
         :type group_id: str
+        :returns: None
+        :rtype: CoordAsyncResult
         """
 
     @abc.abstractmethod
     def get_groups(self):
-        """Return the list composed by all groups ids.
+        """Return the list composed by all groups ids asynchronously.
 
-        :returns: list of all created group ids
-        :rtype: list
+        :returns: the list of all created group ids
+        :rtype: CoordAsyncResult
         """
 
     @abc.abstractmethod
     def join_group(self, group_id, capabilities):
-        """Join a group and establish group membership.
+        """Join a group and establish group membership asynchronously.
 
         :param group_id: the id of the group to join
         :type group_id: str
         :param capabilities: the capabilities of the joined member
         :type capabilities: str
+        :returns: None
+        :rtype: CoordAsyncResult
         """
 
     @abc.abstractmethod
     def leave_group(self, group_id):
-        """Leave a group.
+        """Leave a group asynchronously.
 
         :param group_id: the id of the group to leave
         :type group_id: str
+        :returns: None
+        :rtype: CoordAsyncResult
         """
 
     @abc.abstractmethod
     def get_members(self, group_id):
-        """Return the list of all members ids of the specified group.
+        """Return the list of all members ids of the specified group
+        asynchronously.
 
         :returns: list of all created group ids
-        :rtype: list
+        :rtype: CoordAsyncResult
         """
 
     @abc.abstractmethod
     def get_member_capabilities(self, group_id, member_id):
-        """Return the capabilities of a member.
+        """Return the capabilities of a member asynchronously.
 
         :param group_id: the id of the group of the member
         :type group_id: str
         :param member_id: the id of the member
         :type member_id: str
         :returns: capabilities of a member
-        :rtype: str
+        :rtype: CoordAsyncResult
         """
 
     @abc.abstractmethod
     def update_capabilities(self, group_id, capabilities):
-        """Update capabilities of the caller in the specified group.
+        """Update capabilities of the caller in the specified group
+        asynchronously.
 
         :param group_id: the id of the group of the current member
         :type group_id: str
         :param capabilities: the capabilities of the updated member
         :type capabilities: str
+        :returns: None
+        :rtype: CoordAsyncResult
         """
+
+
+@six.add_metaclass(abc.ABCMeta)
+class CoordAsyncResult(object):
+    """Representation of an asynchronous task, every call API
+    returns an CoordAsyncResult object on which the result or
+    the status of the task can be requested.
+    """
+
+    @abc.abstractmethod
+    def get(self, timeout=10):
+        """Retrieve the result of the corresponding asynchronous call.
+        :param timeout: block until the timeout expire.
+        :type timeout: float
+        """
+
+    @abc.abstractmethod
+    def done(self):
+        """Returns True if the task is done, False otherwise."""
 
 
     #TODO(yassine)
