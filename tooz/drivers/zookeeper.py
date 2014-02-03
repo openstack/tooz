@@ -48,11 +48,12 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
             raise coordination.GroupAlreadyExist("group_id=%s" % group_id)
         except exceptions.NoNodeError:
             raise coordination.ToozError("tooz namespace has not been created")
+        except exceptions.ZookeeperError as e:
+            raise coordination.ToozError(str(e))
 
     def create_group(self, group_id):
         group_path = "/%s/%s" % (_TOOZ_NAMESPACE, group_id)
-        async_result = self._wrap_kazoo_call(self._coord.create_async,
-                                             group_path)
+        async_result = self._coord.create_async(group_path)
         return ZooAsyncResult(async_result, self._create_group_handler,
                               group_id=group_id)
 
@@ -65,13 +66,14 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         except exceptions.NoNodeError:
             raise coordination.GroupNotCreated("group '%s' has not been "
                                                "created" % group_id)
+        except exceptions.ZookeeperError as e:
+            raise coordination.ToozError(str(e))
 
     def join_group(self, group_id, capabilities=b""):
         member_path = self._path_member(group_id, self._member_id)
-        async_result = self._wrap_kazoo_call(self._coord.create_async,
-                                             member_path,
-                                             value=capabilities,
-                                             ephemeral=True)
+        async_result = self._coord.create_async(member_path,
+                                                value=capabilities,
+                                                ephemeral=True)
         return ZooAsyncResult(async_result, self._join_group_handler,
                               group_id=group_id, member_id=self._member_id)
 
@@ -89,25 +91,25 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
 
     def leave_group(self, group_id):
         member_path = self._path_member(group_id, self._member_id)
-        async_result = self._wrap_kazoo_call(self._coord.delete_async,
-                                             member_path)
+        async_result = self._coord.delete_async(member_path)
         return ZooAsyncResult(async_result, self._leave_group_handler,
                               group_id=group_id, member_id=self._member_id)
 
     @staticmethod
     def _get_members_handler(async_result, timeout, group_id):
-        members_ids = None
         try:
             members_ids = async_result.get(block=True, timeout=timeout)
         except exceptions.NoNodeError:
             raise coordination.GroupNotCreated("group '%s' does not exist" %
                                                group_id)
-        return members_ids
+        except exceptions.ZookeeperError as e:
+            raise coordination.ToozError(str(e))
+        else:
+            return members_ids
 
     def get_members(self, group_id):
         group_path = paths.join("/", _TOOZ_NAMESPACE, group_id)
-        async_result = self._wrap_kazoo_call(self._coord.get_children_async,
-                                             group_path)
+        async_result = self._coord.get_children_async(group_path)
         return ZooAsyncResult(async_result, self._get_members_handler,
                               group_id=group_id)
 
@@ -121,18 +123,18 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
                                                "the group '%s' or the group "
                                                "has not been created" %
                                                (member_id, group_id))
+        except exceptions.ZookeeperError as e:
+            raise coordination.ToozError(str(e))
 
     def update_capabilities(self, group_id, capabilities):
         member_path = self._path_member(group_id, self._member_id)
-        async_result = self._wrap_kazoo_call(self._coord.set_async,
-                                             member_path, capabilities)
+        async_result = self._coord.set_async(member_path, capabilities)
         return ZooAsyncResult(async_result, self._update_capabilities_handler,
                               group_id=group_id, member_id=self._member_id)
 
     @staticmethod
     def _get_member_capabilities_handler(async_result, timeout, group_id,
                                          member_id):
-        capabilities = ""
         try:
             capabilities = async_result.get(block=True, timeout=timeout)[0]
         except exceptions.NoNodeError:
@@ -140,41 +142,37 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
                                                "the group '%s' or the group "
                                                "has not been created" %
                                                (member_id, group_id))
-        return capabilities
+        except exceptions.ZookeeperError as e:
+            raise coordination.ToozError(str(e))
+        else:
+            return capabilities
 
     def get_member_capabilities(self, group_id, member_id):
         member_path = self._path_member(group_id, member_id)
-        async_result = self._wrap_kazoo_call(self._coord.get_async,
-                                             member_path)
+        async_result = self._coord.get_async(member_path)
         return ZooAsyncResult(async_result,
                               self._get_member_capabilities_handler,
                               group_id=group_id, member_id=self._member_id)
 
     @staticmethod
     def _get_groups_handler(async_result, timeout):
-        group_ids = []
         try:
             group_ids = async_result.get(block=True, timeout=timeout)
         except exceptions.NoNodeError:
             raise coordination.ToozError("tooz namespace has not been created")
-        return group_ids
+        except exceptions.ZookeeperError as e:
+            raise coordination.ToozError(str(e))
+        else:
+            return group_ids
 
     def get_groups(self):
         tooz_namespace = paths.join("/", _TOOZ_NAMESPACE)
-        async_result = self._wrap_kazoo_call(self._coord.get_children_async,
-                                             tooz_namespace)
+        async_result = self._coord.get_children_async(tooz_namespace)
         return ZooAsyncResult(async_result, self._get_groups_handler)
 
     @staticmethod
     def _path_member(group_id, member_id):
         return paths.join("/", _TOOZ_NAMESPACE, group_id, member_id)
-
-    def _wrap_kazoo_call(self, func, *args, **kwargs):
-        """Call and catch ZooKeeperError."""
-        try:
-            return func(*args, **kwargs)
-        except exceptions.ZookeeperError as e:
-            raise coordination.ToozError(str(e))
 
 
 class KazooDriver(BaseZooKeeperDriver):
