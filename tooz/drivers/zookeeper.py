@@ -85,7 +85,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
             raise coordination.MemberNotJoined("member '%s' has not joined "
                                                "the group '%s' or the group "
                                                "has not been created" %
-                                               member_id, group_id)
+                                               (member_id, group_id))
         except exceptions.ZookeeperError as e:
             raise coordination.ToozError(str(e))
 
