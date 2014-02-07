@@ -73,6 +73,23 @@ class TestAPI(testscenarios.TestWithScenarios, testcase.TestCase):
         member_list = self._coord.get_members(self.group_id).get()
         self.assertTrue(self.member_id in member_list)
 
+    def test_join_nonexistent_group(self):
+        group_id_test = self._get_random_uuid()
+        join_group = self._coord.join_group(group_id_test)
+        self.assertRaises(tooz.coordination.GroupNotCreated,
+                          join_group.get)
+
+    def test_join_group_with_member_id_already_exists(self):
+        self._coord.create_group(self.group_id).get()
+        self._coord.join_group(self.group_id).get()
+        client = tooz.coordination.get_coordinator(self.backend,
+                                                   self.member_id,
+                                                   **self.kwargs)
+        client.start()
+        join_group = client.join_group(self.group_id)
+        self.assertRaises(tooz.coordination.MemberAlreadyExist,
+                          join_group.get)
+
     def test_leave_group(self):
         self._coord.create_group(self.group_id).get()
         all_group_ids = self._coord.get_groups().get()
@@ -86,6 +103,21 @@ class TestAPI(testscenarios.TestWithScenarios, testcase.TestCase):
         new_member_objects = self._coord.get_members(self.group_id).get()
         new_member_list = [member.member_id for member in new_member_objects]
         self.assertTrue(self.member_id not in new_member_list)
+
+    def test_leave_nonexistent_group(self):
+        all_group_ids = self._coord.get_groups().get()
+        self.assertTrue(self.group_id not in all_group_ids)
+        leave_group = self._coord.leave_group(self.group_id)
+        self.assertRaises(tooz.coordination.MemberNotJoined,
+                          leave_group.get)
+
+    def test_leave_group_not_joined_by_member(self):
+        self._coord.create_group(self.group_id).get()
+        all_group_ids = self._coord.get_groups().get()
+        self.assertTrue(self.group_id in all_group_ids)
+        join_group = self._coord.leave_group(self.group_id)
+        self.assertRaises(tooz.coordination.MemberNotJoined,
+                          join_group.get)
 
     def test_get_members(self):
         group_id_test2 = self._get_random_uuid()
@@ -123,6 +155,12 @@ class TestAPI(testscenarios.TestWithScenarios, testcase.TestCase):
         capa2 = self._coord.get_member_capabilities(self.group_id,
                                                     self.member_id).get()
         self.assertEqual(capa2, b"test_capabilities2")
+
+    def test_update_capabilities_with_group_id_nonexistent(self):
+        update_cap = self._coord.update_capabilities(self.group_id,
+                                                     b'test_capabilities')
+        self.assertRaises(tooz.coordination.MemberNotJoined,
+                          update_cap.get)
 
     def _get_random_uuid(self):
         return str(uuid.uuid4())
