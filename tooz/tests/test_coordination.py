@@ -15,6 +15,7 @@
 #    under the License.
 
 import threading
+import time
 import uuid
 
 import testscenarios
@@ -36,7 +37,12 @@ fake_zookeeper_tests = ('fake_zookeeper_tests', {'backend': 'zake',
 
 class TestAPI(testscenarios.TestWithScenarios, testcase.TestCase):
 
-    scenarios = [zookeeper_tests, fake_zookeeper_tests]
+    scenarios = [
+        zookeeper_tests,
+        fake_zookeeper_tests,
+        ('memcached', {'backend': 'memcached',
+                       'kwargs': {'membership_timeout': 5}}),
+    ]
 
     def setUp(self):
         super(TestAPI, self).setUp()
@@ -45,6 +51,9 @@ class TestAPI(testscenarios.TestWithScenarios, testcase.TestCase):
         self._coord = tooz.coordination.get_coordinator(self.backend,
                                                         self.member_id,
                                                         **self.kwargs)
+        # HACK(jd) Disable memcached on py33 for the time being, activate as
+        # soon as https://github.com/pinterest/pymemcache/pull/16 is merged
+        # and pymemcache is released
         try:
             self._coord.start(timeout=5)
         except tooz.coordination.ToozConnectionError as e:
@@ -114,8 +123,14 @@ class TestAPI(testscenarios.TestWithScenarios, testcase.TestCase):
         all_group_ids = self._coord.get_groups().get()
         self.assertTrue(self.group_id not in all_group_ids)
         leave_group = self._coord.leave_group(self.group_id)
-        self.assertRaises(tooz.coordination.MemberNotJoined,
-                          leave_group.get)
+        try:
+            leave_group.get()
+        # Drivers raise one of those depending on their capability
+        except (tooz.coordination.MemberNotJoined,
+                tooz.coordination.GroupNotCreated):
+            pass
+        else:
+            self.fail("Exception not raised")
 
     def test_leave_group_not_joined_by_member(self):
         self._coord.create_group(self.group_id).get()
@@ -184,8 +199,14 @@ class TestAPI(testscenarios.TestWithScenarios, testcase.TestCase):
     def test_update_capabilities_with_group_id_nonexistent(self):
         update_cap = self._coord.update_capabilities(self.group_id,
                                                      b'test_capabilities')
-        self.assertRaises(tooz.coordination.MemberNotJoined,
-                          update_cap.get)
+        try:
+            update_cap.get()
+        # Drivers raise one of those depending on their capability
+        except (tooz.coordination.MemberNotJoined,
+                tooz.coordination.GroupNotCreated):
+            pass
+        else:
+            self.fail("Exception not raised")
 
     def test_heartbeat(self):
         self._coord.heartbeat()
@@ -205,6 +226,27 @@ class TestAPI(testscenarios.TestWithScenarios, testcase.TestCase):
         self.assertTrue(self.member_id in members_ids)
         self.assertTrue(member_id_test2 in members_ids)
         client2.stop()
+        members_ids = self._coord.get_members(self.group_id).get()
+        self.assertTrue(self.member_id in members_ids)
+        self.assertTrue(member_id_test2 not in members_ids)
+
+    def test_timeout(self):
+        if self.backend != 'memcached':
+            self.skipTest("This test only works with memcached for now")
+        member_id_test2 = self._get_random_uuid()
+        client2 = tooz.coordination.get_coordinator(self.backend,
+                                                    member_id_test2,
+                                                    **self.kwargs)
+        client2.start()
+        self._coord.create_group(self.group_id).get()
+        self._coord.join_group(self.group_id).get()
+        client2.join_group(self.group_id).get()
+        members_ids = self._coord.get_members(self.group_id).get()
+        self.assertTrue(self.member_id in members_ids)
+        self.assertTrue(member_id_test2 in members_ids)
+        time.sleep(3)
+        self._coord.heartbeat()
+        time.sleep(3)
         members_ids = self._coord.get_members(self.group_id).get()
         self.assertTrue(self.member_id in members_ids)
         self.assertTrue(member_id_test2 not in members_ids)

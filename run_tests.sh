@@ -14,8 +14,8 @@ function clean_exit(){
         stop_zookeeper_server
     fi
     rm -rf ${ZOO_TMP_DIR}
+    kill $(jobs -p)
     return $error_code
-
 }
 
 
@@ -48,5 +48,7 @@ trap "clean_exit" EXIT
 if [ -d $ZOO_CONF ]; then
     start_zookeeper_server
 fi
+
+memcached &
 
 python setup.py testr --slowest
