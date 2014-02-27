@@ -187,5 +187,8 @@ class TestAPI(testscenarios.TestWithScenarios, testcase.TestCase):
         self.assertRaises(tooz.coordination.MemberNotJoined,
                           update_cap.get)
 
+    def test_heartbeat(self):
+        self._coord.heartbeat()
+
     def _get_random_uuid(self):
         return str(uuid.uuid4())

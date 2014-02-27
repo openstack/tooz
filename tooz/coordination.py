@@ -118,6 +118,14 @@ class CoordinationDriver(object):
         :rtype: CoordAsyncResult
         """
 
+    @staticmethod
+    def heartbeat():
+        """Method to run once in a while to be sure that the member is not dead
+        and is still an active member of a group.
+
+        """
+        pass
+
 
 @six.add_metaclass(abc.ABCMeta)
 class CoordAsyncResult(object):
