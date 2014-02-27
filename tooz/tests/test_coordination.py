@@ -115,9 +115,9 @@ class TestAPI(testscenarios.TestWithScenarios, testcase.TestCase):
         self._coord.create_group(self.group_id).get()
         all_group_ids = self._coord.get_groups().get()
         self.assertTrue(self.group_id in all_group_ids)
-        join_group = self._coord.leave_group(self.group_id)
+        leave_group = self._coord.leave_group(self.group_id)
         self.assertRaises(tooz.coordination.MemberNotJoined,
-                          join_group.get)
+                          leave_group.get)
 
     def test_get_members(self):
         group_id_test2 = self._get_random_uuid()
