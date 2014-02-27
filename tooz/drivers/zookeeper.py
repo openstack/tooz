@@ -45,7 +45,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         try:
             async_result.get(block=True, timeout=timeout)
         except exceptions.NodeExistsError:
-            raise coordination.GroupAlreadyExist("group_id=%s" % group_id)
+            raise coordination.GroupAlreadyExist(group_id)
         except exceptions.NoNodeError:
             raise coordination.ToozError("tooz namespace has not been created")
         except exceptions.ZookeeperError as e:

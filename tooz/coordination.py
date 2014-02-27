@@ -179,6 +179,10 @@ class GroupAlreadyExist(ToozError):
     """Exception raised when the caller try to create a group which already
     exist.
     """
+    def __init__(self, group_id):
+        self.group_id = group_id
+        super(GroupAlreadyExist, self).__init__(
+            "Group %s already exists" % group_id)
 
 
 class MemberAlreadyExist(ToozError):
