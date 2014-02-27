@@ -63,7 +63,7 @@ class CoordinationDriver(object):
         """
 
     @abc.abstractmethod
-    def join_group(self, group_id, capabilities):
+    def join_group(self, group_id, capabilities=b""):
         """Join a group and establish group membership asynchronously.
 
         :param group_id: the id of the group to join
