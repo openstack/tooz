@@ -193,6 +193,12 @@ class MemberAlreadyExist(ToozError):
     """Exception raised when the caller try to join a group but a member
     with the same identifier belongs to that group.
     """
+    def __init__(self, group_id, member_id):
+        self.group_id = group_id
+        self.member_id = member_id
+        super(MemberAlreadyExist, self).__init__(
+            "Member %s has already joined %s" %
+            (member_id, group_id))
 
 
 class MemberNotJoined(ToozError):

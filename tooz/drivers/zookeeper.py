@@ -62,7 +62,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         try:
             async_result.get(block=True, timeout=timeout)
         except exceptions.NodeExistsError:
-            raise coordination.MemberAlreadyExist(str(member_id))
+            raise coordination.MemberAlreadyExist(group_id, member_id)
         except exceptions.NoNodeError:
             raise coordination.GroupNotCreated(group_id)
         except exceptions.ZookeeperError as e:
