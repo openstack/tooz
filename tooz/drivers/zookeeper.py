@@ -82,10 +82,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         try:
             async_result.get(block=True, timeout=timeout)
         except exceptions.NoNodeError:
-            raise coordination.MemberNotJoined("member '%s' has not joined "
-                                               "the group '%s' or the group "
-                                               "has not been created" %
-                                               (member_id, group_id))
+            raise coordination.MemberNotJoined(group_id, member_id)
         except exceptions.ZookeeperError as e:
             raise coordination.ToozError(str(e))
 
@@ -119,10 +116,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         try:
             async_result.get(block=True, timeout=timeout)
         except exceptions.NoNodeError:
-            raise coordination.MemberNotJoined("member '%s' has not joined "
-                                               "the group '%s' or the group "
-                                               "has not been created" %
-                                               (member_id, group_id))
+            raise coordination.MemberNotJoined(group_id, member_id)
         except exceptions.ZookeeperError as e:
             raise coordination.ToozError(str(e))
 
@@ -138,10 +132,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         try:
             capabilities = async_result.get(block=True, timeout=timeout)[0]
         except exceptions.NoNodeError:
-            raise coordination.MemberNotJoined("member '%s' has not joined "
-                                               "the group '%s' or the group "
-                                               "has not been created" %
-                                               (member_id, group_id))
+            raise coordination.MemberNotJoined(group_id, member_id)
         except exceptions.ZookeeperError as e:
             raise coordination.ToozError(str(e))
         else:

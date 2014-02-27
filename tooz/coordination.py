@@ -195,3 +195,8 @@ class MemberNotJoined(ToozError):
     """Exception raised when the caller try to access a member which does not
     belongs to the specified group.
     """
+    def __init__(self, group_id, member_id):
+        self.group_id = group_id
+        self.member_id = member_id
+        super(MemberNotJoined, self).__init__("Member %s has not joined %s" %
+                                              (member_id, group_id))
