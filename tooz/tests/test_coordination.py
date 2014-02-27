@@ -190,5 +190,24 @@ class TestAPI(testscenarios.TestWithScenarios, testcase.TestCase):
     def test_heartbeat(self):
         self._coord.heartbeat()
 
+    def test_disconnect_leave_group(self):
+        if self.backend == 'zake':
+            self.skipTest("Zake has a bug that prevent this test from working")
+        member_id_test2 = self._get_random_uuid()
+        client2 = tooz.coordination.get_coordinator(self.backend,
+                                                    member_id_test2,
+                                                    **self.kwargs)
+        client2.start()
+        self._coord.create_group(self.group_id).get()
+        self._coord.join_group(self.group_id).get()
+        client2.join_group(self.group_id).get()
+        members_ids = self._coord.get_members(self.group_id).get()
+        self.assertTrue(self.member_id in members_ids)
+        self.assertTrue(member_id_test2 in members_ids)
+        client2.stop()
+        members_ids = self._coord.get_members(self.group_id).get()
+        self.assertTrue(self.member_id in members_ids)
+        self.assertTrue(member_id_test2 not in members_ids)
+
     def _get_random_uuid(self):
         return str(uuid.uuid4())
