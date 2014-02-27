@@ -59,6 +59,12 @@ class TestAPI(testscenarios.TestWithScenarios, testcase.TestCase):
         all_group_ids = self._coord.get_groups().get()
         self.assertTrue(self.group_id in all_group_ids)
 
+    def test_create_group_already_exist(self):
+        self._coord.create_group(self.group_id).get()
+        create_group = self._coord.create_group(self.group_id)
+        self.assertRaises(tooz.coordination.GroupAlreadyExist,
+                          create_group.get)
+
     def test_get_groups(self):
         groups_ids = [self._get_random_uuid() for _ in range(0, 5)]
         for group_id in groups_ids:
