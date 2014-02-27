@@ -148,6 +148,25 @@ class TestAPI(testscenarios.TestWithScenarios, testcase.TestCase):
                                                    self.member_id).get()
         self.assertEqual(capa, b"test_capabilities")
 
+    def test_get_member_capabilities_nonexistent_group(self):
+        capa = self._coord.get_member_capabilities(self.group_id,
+                                                   self.member_id)
+        try:
+            capa.get()
+        # Drivers raise one of those depending on their capability
+        except (tooz.coordination.MemberNotJoined,
+                tooz.coordination.GroupNotCreated):
+            pass
+        else:
+            self.fail("Exception not raised")
+
+    def test_get_member_capabilities_nonjoined_member(self):
+        self._coord.create_group(self.group_id).get()
+        capa = self._coord.get_member_capabilities(self.group_id,
+                                                   self.member_id)
+        self.assertRaises(tooz.coordination.MemberNotJoined,
+                          capa.get)
+
     def test_update_capabilities(self):
         self._coord.create_group(self.group_id).get()
         self._coord.join_group(self.group_id, b"test_capabilities1").get()
