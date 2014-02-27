@@ -173,6 +173,10 @@ class GroupNotCreated(ToozError):
     """Exception raised when the caller request a group which does
     not exist.
     """
+    def __init__(self, group_id):
+        self.group_id = group_id
+        super(GroupNotCreated, self).__init__(
+            "Group %s does not exist" % group_id)
 
 
 class GroupAlreadyExist(ToozError):

@@ -64,8 +64,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         except exceptions.NodeExistsError:
             raise coordination.MemberAlreadyExist(str(member_id))
         except exceptions.NoNodeError:
-            raise coordination.GroupNotCreated("group '%s' has not been "
-                                               "created" % group_id)
+            raise coordination.GroupNotCreated(group_id)
         except exceptions.ZookeeperError as e:
             raise coordination.ToozError(str(e))
 
@@ -97,8 +96,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         try:
             members_ids = async_result.get(block=True, timeout=timeout)
         except exceptions.NoNodeError:
-            raise coordination.GroupNotCreated("group '%s' does not exist" %
-                                               group_id)
+            raise coordination.GroupNotCreated(group_id)
         except exceptions.ZookeeperError as e:
             raise coordination.ToozError(str(e))
         else:
