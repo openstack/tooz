@@ -22,6 +22,11 @@ from stevedore import driver
 TOOZ_BACKENDS_NAMESPACE = "tooz.backends"
 
 
+class Hooks(list):
+    def run(self, *args, **kwargs):
+        return list(map(lambda cb: cb(*args, **kwargs), self))
+
+
 @six.add_metaclass(abc.ABCMeta)
 class CoordinationDriver(object):
 

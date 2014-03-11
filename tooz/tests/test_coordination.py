@@ -254,3 +254,29 @@ class TestAPI(testscenarios.TestWithScenarios, testcase.TestCase):
     @staticmethod
     def _get_random_uuid():
         return str(uuid.uuid4()).encode('ascii')
+
+
+class TestHook(testcase.TestCase):
+    def setUp(self):
+        super(TestHook, self).setUp()
+        self.hooks = tooz.coordination.Hooks()
+        self.triggered = False
+
+    def _trigger(self):
+        self.triggered = True
+
+    def test_register_hook(self):
+        self.assertEqual(self.hooks.run(), [])
+        self.assertFalse(self.triggered)
+        self.hooks.append(self._trigger)
+        self.assertEqual(self.hooks.run(), [None])
+        self.assertTrue(self.triggered)
+
+    def test_unregister_hook(self):
+        self.hooks.append(self._trigger)
+        self.assertEqual(self.hooks.run(), [None])
+        self.assertTrue(self.triggered)
+        self.triggered = False
+        self.hooks.remove(self._trigger)
+        self.assertEqual(self.hooks.run(), [])
+        self.assertFalse(self.triggered)
