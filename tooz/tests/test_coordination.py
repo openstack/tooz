@@ -22,6 +22,7 @@ import testscenarios
 from testtools import testcase
 
 import tooz.coordination
+from tooz import tests
 from zake import fake_storage
 
 # Real ZooKeeper server scenario
@@ -35,7 +36,8 @@ fake_zookeeper_tests = ('fake_zookeeper_tests', {'backend': 'zake',
                                                             fake_storage}})
 
 
-class TestAPI(testscenarios.TestWithScenarios, testcase.TestCase):
+class TestAPI(testscenarios.TestWithScenarios,
+              tests.TestCaseSkipNotImplemented):
 
     scenarios = [
         zookeeper_tests,
