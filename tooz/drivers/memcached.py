@@ -209,6 +209,18 @@ class MemcachedDriver(coordination.CoordinationDriver):
                         "It's alive!",
                         expire=self.membership_timeout)
 
+    @staticmethod
+    def watch_join_group(group_id, callback):
+        raise NotImplementedError
+
+    @staticmethod
+    def unwatch_join_group(group_id, callback):
+        raise NotImplementedError
+
+    @staticmethod
+    def run_watchers():
+        raise NotImplementedError
+
 
 class MemcachedAsyncResult(coordination.CoordAsyncResult):
     """Memcached asynchronous result.

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-#    Copyright (C) 2013 eNovance Inc. All Rights Reserved.
+#    Copyright (C) 2013-2014 eNovance Inc. All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -13,6 +13,9 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
+import collections
+import copy
 
 from kazoo import client
 from kazoo import exceptions
@@ -37,6 +40,9 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
             self._coord.ensure_path(self.paths_join("/", self._TOOZ_NAMESPACE))
         except exceptions.KazooException as e:
             raise coordination.ToozError("operation error: %s" % (e))
+
+        self._group_members = collections.defaultdict(set)
+        self._children_changes = six.moves.queue.Queue()
 
     def stop(self):
         self._coord.stop()
@@ -101,7 +107,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         except exceptions.ZookeeperError as e:
             raise coordination.ToozError(str(e))
         else:
-            return list(m.encode('ascii') for m in members_ids)
+            return set(m.encode('ascii') for m in members_ids)
 
     def get_members(self, group_id):
         group_path = self.paths_join("/", self._TOOZ_NAMESPACE, group_id)
@@ -153,7 +159,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         except exceptions.ZookeeperError as e:
             raise coordination.ToozError(str(e))
         else:
-            return list(g.encode('ascii') for g in group_ids)
+            return set(g.encode('ascii') for g in group_ids)
 
     def get_groups(self):
         tooz_namespace = self.paths_join("/", self._TOOZ_NAMESPACE)
@@ -196,6 +202,59 @@ class KazooDriver(BaseZooKeeperDriver):
         self._coord = client.KazooClient(hosts=hosts, handler=handler)
         super(KazooDriver, self).__init__()
 
+    def watch_join_group(self, group_id, callback):
+        # Check if we already have hooks for this group_id, if not, start
+        # watching it.
+        already_being_watched = len(self._hooks_join_group[group_id])
+
+        # Add the hook before starting watching to avoid race conditions
+        # as the watching executor can be in a thread
+        super(BaseZooKeeperDriver, self).watch_join_group(
+            group_id, callback)
+
+        if not already_being_watched:
+            get_members_req = self.get_members(group_id)
+
+            def on_children_change(children):
+                # If we don't have any hook, stop watching
+                if not self._hooks_join_group[group_id]:
+                    return False
+                children = set(children)
+                last_children = self._group_members[group_id]
+
+                for member_id in (children - last_children):
+                    # Copy function in case it's removed later from the
+                    # hook list
+                    hooks = copy.copy(self._hooks_join_group[group_id])
+                    self._children_changes.put(
+                        lambda: hooks.run(
+                            coordination.MemberJoinedGroup(
+                                group_id,
+                                member_id.encode('ascii'))))
+                self._group_members[group_id] = children
+
+            # Initialize the current member list
+            self._group_members[group_id] = get_members_req.get()
+
+            self._coord.ChildrenWatch(self._path_group(group_id),
+                                      on_children_change)
+
+    def unwatch_join_group(self, group_id, callback):
+        super(BaseZooKeeperDriver, self).unwatch_join_group(
+            group_id, callback)
+        if len(self._hooks_join_group[group_id]) == 0:
+            del self._group_members[group_id]
+
+    def run_watchers(self):
+        ret = []
+        while True:
+            try:
+                cb = self._children_changes.get(block=False)
+            except six.moves.queue.Empty:
+                break
+            ret.extend(cb())
+        return ret
+
 
 class ZakeDriver(BaseZooKeeperDriver):
     """The driver using the Zake client which mimic a fake Kazoo client
@@ -210,6 +269,18 @@ class ZakeDriver(BaseZooKeeperDriver):
         self._member_id = member_id
         self._coord = fake_client.FakeClient(storage=storage)
         super(ZakeDriver, self).__init__()
+
+    @staticmethod
+    def watch_join_group(group_id, callback):
+        raise NotImplementedError
+
+    @staticmethod
+    def unwatch_join_group(group_id, callback):
+        raise NotImplementedError
+
+    @staticmethod
+    def run_watchers():
+        raise NotImplementedError
 
 
 class ZooAsyncResult(coordination.CoordAsyncResult):

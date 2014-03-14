@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-#    Copyright (C) 2013 eNovance Inc. All Rights Reserved.
+#    Copyright (C) 2013-2014 eNovance Inc. All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -15,6 +15,7 @@
 #    under the License.
 
 import abc
+import collections
 import six
 
 from stevedore import driver
@@ -27,10 +28,51 @@ class Hooks(list):
         return list(map(lambda cb: cb(*args, **kwargs), self))
 
 
+class Event(object):
+    """Base class for events."""
+
+
+class MemberJoinedGroup(Event):
+    """A member joined a group event."""
+
+    def __init__(self, group_id, member_id):
+        self.group_id = group_id
+        self.member_id = member_id
+
+
 @six.add_metaclass(abc.ABCMeta)
 class CoordinationDriver(object):
 
+    def __init__(self):
+        self._hooks_join_group = collections.defaultdict(Hooks)
+
     @abc.abstractmethod
+    def run_watchers(self):
+        """Run the watchers callback."""
+
+    @abc.abstractmethod
+    def watch_join_group(self, group_id, callback):
+        """Call a function when group_id sees a new member joined.
+
+        The callback functions will be executed when `run_watchers` is
+        called.
+
+        :param group_id: The group id to watch
+        :param callback: The function to execute when a member joins this group
+
+        """
+        self._hooks_join_group[group_id].append(callback)
+
+    @abc.abstractmethod
+    def unwatch_join_group(self, group_id, callback):
+        """Stop executing a function when a group_id sees a new member joined.
+
+        :param group_id: The group id to unwatch
+        :param callback: The function that was executed when a member joined
+                         this group
+        """
+        self._hooks_join_group[group_id].remove(callback)
+
     def start(self, timeout):
         """Start the service engine.
 

@@ -253,6 +253,44 @@ class TestAPI(testscenarios.TestWithScenarios,
         self.assertTrue(self.member_id in members_ids)
         self.assertTrue(member_id_test2 not in members_ids)
 
+    def _set_event(self, event):
+        self.event = event
+
+    def test_watch_group_join(self):
+        member_id_test2 = self._get_random_uuid()
+        client2 = tooz.coordination.get_coordinator(self.backend,
+                                                    member_id_test2,
+                                                    **self.kwargs)
+        client2.start()
+        self._coord.create_group(self.group_id).get()
+
+        # Watch the group
+        self._coord.watch_join_group(self.group_id, self._set_event)
+
+        # Join the group
+        client2.join_group(self.group_id).get()
+        members_ids = self._coord.get_members(self.group_id).get()
+        self.assertTrue(member_id_test2 in members_ids)
+        while True:
+            if self._coord.run_watchers():
+                break
+        self.assertIsInstance(self.event,
+                              tooz.coordination.MemberJoinedGroup)
+        self.assertEqual(member_id_test2,
+                         self.event.member_id)
+        self.assertEqual(self.group_id,
+                         self.event.group_id)
+
+        # Stop watching
+        self._coord.unwatch_join_group(self.group_id, self._set_event)
+        self.event = None
+
+        # Leave and rejoin group
+        client2.leave_group(self.group_id).get()
+        client2.join_group(self.group_id).get()
+        self._coord.run_watchers()
+        self.assertIsNone(self.event)
+
     @staticmethod
     def _get_random_uuid():
         return str(uuid.uuid4()).encode('ascii')
