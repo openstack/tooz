@@ -209,5 +209,6 @@ class TestAPI(testscenarios.TestWithScenarios, testcase.TestCase):
         self.assertTrue(self.member_id in members_ids)
         self.assertTrue(member_id_test2 not in members_ids)
 
-    def _get_random_uuid(self):
-        return str(uuid.uuid4())
+    @staticmethod
+    def _get_random_uuid():
+        return str(uuid.uuid4()).encode('ascii')

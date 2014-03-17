@@ -17,14 +17,15 @@
 from kazoo import client
 from kazoo import exceptions
 from kazoo.protocol import paths
+import six
 from zake import fake_client
 
 from tooz import coordination
 
-_TOOZ_NAMESPACE = "tooz"
-
 
 class BaseZooKeeperDriver(coordination.CoordinationDriver):
+
+    _TOOZ_NAMESPACE = b"tooz"
 
     def start(self, timeout=10):
         try:
@@ -33,7 +34,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
             raise coordination.ToozConnectionError("operation error: %s" % (e))
 
         try:
-            self._coord.ensure_path(paths.join("/", _TOOZ_NAMESPACE))
+            self._coord.ensure_path(self.paths_join("/", self._TOOZ_NAMESPACE))
         except exceptions.KazooException as e:
             raise coordination.ToozError("operation error: %s" % (e))
 
@@ -52,7 +53,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
             raise coordination.ToozError(str(e))
 
     def create_group(self, group_id):
-        group_path = "/%s/%s" % (_TOOZ_NAMESPACE, group_id)
+        group_path = self._path_group(group_id)
         async_result = self._coord.create_async(group_path)
         return ZooAsyncResult(async_result, self._create_group_handler,
                               group_id=group_id)
@@ -100,10 +101,10 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         except exceptions.ZookeeperError as e:
             raise coordination.ToozError(str(e))
         else:
-            return members_ids
+            return list(m.encode('ascii') for m in members_ids)
 
     def get_members(self, group_id):
-        group_path = paths.join("/", _TOOZ_NAMESPACE, group_id)
+        group_path = self.paths_join("/", self._TOOZ_NAMESPACE, group_id)
         async_result = self._coord.get_children_async(group_path)
         return ZooAsyncResult(async_result, self._get_members_handler,
                               group_id=group_id)
@@ -152,16 +153,29 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         except exceptions.ZookeeperError as e:
             raise coordination.ToozError(str(e))
         else:
-            return group_ids
+            return list(g.encode('ascii') for g in group_ids)
 
     def get_groups(self):
-        tooz_namespace = paths.join("/", _TOOZ_NAMESPACE)
+        tooz_namespace = self.paths_join("/", self._TOOZ_NAMESPACE)
         async_result = self._coord.get_children_async(tooz_namespace)
         return ZooAsyncResult(async_result, self._get_groups_handler)
 
+    def _path_group(self, group_id):
+        return self.paths_join("/", self._TOOZ_NAMESPACE, group_id)
+
+    def _path_member(self, group_id, member_id):
+        return self.paths_join("/", self._TOOZ_NAMESPACE,
+                               group_id, member_id)
+
     @staticmethod
-    def _path_member(group_id, member_id):
-        return paths.join("/", _TOOZ_NAMESPACE, group_id, member_id)
+    def paths_join(*args):
+        lpaths = []
+        for arg in args:
+            if isinstance(arg, six.binary_type):
+                lpaths.append(arg.decode('ascii'))
+            else:
+                lpaths.append(arg)
+        return paths.join(*lpaths)
 
 
 class KazooDriver(BaseZooKeeperDriver):
