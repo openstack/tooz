@@ -255,6 +255,7 @@ class TestAPI(testscenarios.TestWithScenarios,
 
     def _set_event(self, event):
         self.event = event
+        return 42
 
     def test_watch_group_join(self):
         member_id_test2 = self._get_random_uuid()
@@ -288,6 +289,50 @@ class TestAPI(testscenarios.TestWithScenarios,
         # Leave and rejoin group
         client2.leave_group(self.group_id).get()
         client2.join_group(self.group_id).get()
+        self._coord.run_watchers()
+        self.assertIsNone(self.event)
+
+    def test_watch_leave_group(self):
+        member_id_test2 = self._get_random_uuid()
+        client2 = tooz.coordination.get_coordinator(self.backend,
+                                                    member_id_test2,
+                                                    **self.kwargs)
+        client2.start()
+        self._coord.create_group(self.group_id).get()
+
+        # Watch the group: this can leads to race conditions in certain
+        # driver that are not able to see all events, so we join, wait for
+        # the join to be seen, and then we leave, and wait for the leave to
+        # be seen.
+        self._coord.watch_join_group(self.group_id, lambda children: True)
+        self._coord.watch_leave_group(self.group_id, self._set_event)
+
+        # Join and leave the group
+        client2.join_group(self.group_id).get()
+        # Consumes join event
+        while True:
+            if self._coord.run_watchers():
+                break
+        client2.leave_group(self.group_id).get()
+        # Consumes leave event
+        while True:
+            if self._coord.run_watchers():
+                break
+
+        self.assertIsInstance(self.event,
+                              tooz.coordination.MemberLeftGroup)
+        self.assertEqual(member_id_test2,
+                         self.event.member_id)
+        self.assertEqual(self.group_id,
+                         self.event.group_id)
+
+        # Stop watching
+        self._coord.unwatch_leave_group(self.group_id, self._set_event)
+        self.event = None
+
+        # Rejoin and releave group
+        client2.join_group(self.group_id).get()
+        client2.leave_group(self.group_id).get()
         self._coord.run_watchers()
         self.assertIsNone(self.event)
 

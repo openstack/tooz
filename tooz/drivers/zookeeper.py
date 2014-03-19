@@ -202,10 +202,52 @@ class KazooDriver(BaseZooKeeperDriver):
         self._coord = client.KazooClient(hosts=hosts, handler=handler)
         super(KazooDriver, self).__init__()
 
+    def _has_hooks_for_group(self, group_id):
+        return (len(self._hooks_join_group[group_id])
+                + len(self._hooks_leave_group[group_id]))
+
+    def _watch_group(self, group_id):
+        get_members_req = self.get_members(group_id)
+
+        def on_children_change(children):
+            # If we don't have any hook, stop watching
+            if not self._has_hooks_for_group(group_id):
+                return False
+            children = set(children)
+            last_children = self._group_members[group_id]
+
+            for member_id in (children - last_children):
+                # Copy function in case it's removed later from the
+                # hook list
+                hooks = copy.copy(self._hooks_join_group[group_id])
+                self._children_changes.put(
+                    lambda: hooks.run(
+                        coordination.MemberJoinedGroup(
+                            group_id,
+                            member_id.encode('ascii'))))
+
+            for member_id in (last_children - children):
+                # Copy function in case it's removed later from the
+                # hook list
+                hooks = copy.copy(self._hooks_leave_group[group_id])
+                self._children_changes.put(
+                    lambda: hooks.run(
+                        coordination.MemberLeftGroup(
+                            group_id,
+                            member_id.encode('ascii'))))
+
+            self._group_members[group_id] = children
+
+        # Initialize the current member list
+        self._group_members[group_id] = get_members_req.get()
+
+        self._coord.ChildrenWatch(self._path_group(group_id),
+                                  on_children_change)
+
     def watch_join_group(self, group_id, callback):
         # Check if we already have hooks for this group_id, if not, start
         # watching it.
-        already_being_watched = len(self._hooks_join_group[group_id])
+        already_being_watched = self._has_hooks_for_group(group_id)
 
         # Add the hook before starting watching to avoid race conditions
         # as the watching executor can be in a thread
@@ -213,36 +255,31 @@ class KazooDriver(BaseZooKeeperDriver):
             group_id, callback)
 
         if not already_being_watched:
-            get_members_req = self.get_members(group_id)
-
-            def on_children_change(children):
-                # If we don't have any hook, stop watching
-                if not self._hooks_join_group[group_id]:
-                    return False
-                children = set(children)
-                last_children = self._group_members[group_id]
-
-                for member_id in (children - last_children):
-                    # Copy function in case it's removed later from the
-                    # hook list
-                    hooks = copy.copy(self._hooks_join_group[group_id])
-                    self._children_changes.put(
-                        lambda: hooks.run(
-                            coordination.MemberJoinedGroup(
-                                group_id,
-                                member_id.encode('ascii'))))
-                self._group_members[group_id] = children
-
-            # Initialize the current member list
-            self._group_members[group_id] = get_members_req.get()
-
-            self._coord.ChildrenWatch(self._path_group(group_id),
-                                      on_children_change)
+            self._watch_group(group_id)
 
     def unwatch_join_group(self, group_id, callback):
         super(BaseZooKeeperDriver, self).unwatch_join_group(
             group_id, callback)
-        if len(self._hooks_join_group[group_id]) == 0:
+        if not self._has_hooks_for_group(group_id):
+            del self._group_members[group_id]
+
+    def watch_leave_group(self, group_id, callback):
+        # Check if we already have hooks for this group_id, if not, start
+        # watching it.
+        already_being_watched = self._has_hooks_for_group(group_id)
+
+        # Add the hook before starting watching to avoid race conditions
+        # as the watching executor can be in a thread
+        super(BaseZooKeeperDriver, self).watch_leave_group(
+            group_id, callback)
+
+        if not already_being_watched:
+            self._watch_group(group_id)
+
+    def unwatch_leave_group(self, group_id, callback):
+        super(BaseZooKeeperDriver, self).unwatch_leave_group(
+            group_id, callback)
+        if not self._has_hooks_for_group(group_id):
             del self._group_members[group_id]
 
     def run_watchers(self):
@@ -276,6 +313,14 @@ class ZakeDriver(BaseZooKeeperDriver):
 
     @staticmethod
     def unwatch_join_group(group_id, callback):
+        raise NotImplementedError
+
+    @staticmethod
+    def watch_leave_group(group_id, callback):
+        raise NotImplementedError
+
+    @staticmethod
+    def unwatch_leave_group(group_id, callback):
         raise NotImplementedError
 
     @staticmethod

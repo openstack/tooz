@@ -218,6 +218,14 @@ class MemcachedDriver(coordination.CoordinationDriver):
         raise NotImplementedError
 
     @staticmethod
+    def watch_leave_group(group_id, callback):
+        raise NotImplementedError
+
+    @staticmethod
+    def unwatch_leave_group(group_id, callback):
+        raise NotImplementedError
+
+    @staticmethod
     def run_watchers():
         raise NotImplementedError
 

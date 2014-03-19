@@ -40,11 +40,20 @@ class MemberJoinedGroup(Event):
         self.member_id = member_id
 
 
+class MemberLeftGroup(Event):
+    """A member left a group event."""
+
+    def __init__(self, group_id, member_id):
+        self.group_id = group_id
+        self.member_id = member_id
+
+
 @six.add_metaclass(abc.ABCMeta)
 class CoordinationDriver(object):
 
     def __init__(self):
         self._hooks_join_group = collections.defaultdict(Hooks)
+        self._hooks_leave_group = collections.defaultdict(Hooks)
 
     @abc.abstractmethod
     def run_watchers(self):
@@ -72,6 +81,30 @@ class CoordinationDriver(object):
                          this group
         """
         self._hooks_join_group[group_id].remove(callback)
+
+    @abc.abstractmethod
+    def watch_leave_group(self, group_id, callback):
+        """Call a function when group_id sees a new member leaving.
+
+        The callback functions will be executed when `run_watchers` is
+        called.
+
+        :param group_id: The group id to watch
+        :param callback: The function to execute when a member leaves this
+                         group
+
+        """
+        self._hooks_leave_group[group_id].append(callback)
+
+    @abc.abstractmethod
+    def unwatch_leave_group(self, group_id, callback):
+        """Stop executing a function when a group_id sees a new member leaving.
+
+        :param group_id: The group id to unwatch
+        :param callback: The function that was executed when a member left
+                         this group
+        """
+        self._hooks_leave_group[group_id].remove(callback)
 
     def start(self, timeout):
         """Start the service engine.
