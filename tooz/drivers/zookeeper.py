@@ -241,8 +241,11 @@ class KazooDriver(BaseZooKeeperDriver):
         # Initialize the current member list
         self._group_members[group_id] = get_members_req.get()
 
-        self._coord.ChildrenWatch(self._path_group(group_id),
-                                  on_children_change)
+        try:
+            self._coord.ChildrenWatch(self._path_group(group_id),
+                                      on_children_change)
+        except exceptions.NoNodeError:
+            raise coordination.GroupNotCreated(group_id)
 
     def watch_join_group(self, group_id, callback):
         # Check if we already have hooks for this group_id, if not, start
@@ -255,12 +258,18 @@ class KazooDriver(BaseZooKeeperDriver):
             group_id, callback)
 
         if not already_being_watched:
-            self._watch_group(group_id)
+            try:
+                self._watch_group(group_id)
+            except Exception:
+                # Rollback and unregister the hook
+                self.unwatch_join_group(group_id, callback)
+                raise
 
     def unwatch_join_group(self, group_id, callback):
         super(BaseZooKeeperDriver, self).unwatch_join_group(
             group_id, callback)
-        if not self._has_hooks_for_group(group_id):
+        if (not self._has_hooks_for_group(group_id)
+           and group_id in self._group_members):
             del self._group_members[group_id]
 
     def watch_leave_group(self, group_id, callback):
@@ -274,12 +283,18 @@ class KazooDriver(BaseZooKeeperDriver):
             group_id, callback)
 
         if not already_being_watched:
-            self._watch_group(group_id)
+            try:
+                self._watch_group(group_id)
+            except Exception:
+                # Rollback and unregister the hook
+                self.unwatch_leave_group(group_id, callback)
+                raise
 
     def unwatch_leave_group(self, group_id, callback):
         super(BaseZooKeeperDriver, self).unwatch_leave_group(
             group_id, callback)
-        if not self._has_hooks_for_group(group_id):
+        if (not self._has_hooks_for_group(group_id)
+           and group_id in self._group_members):
             del self._group_members[group_id]
 
     def run_watchers(self):

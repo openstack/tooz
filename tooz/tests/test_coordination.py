@@ -336,6 +336,20 @@ class TestAPI(testscenarios.TestWithScenarios,
         self._coord.run_watchers()
         self.assertIsNone(self.event)
 
+    def test_watch_join_group_non_existent(self):
+        self.assertRaises(tooz.coordination.GroupNotCreated,
+                          self._coord.watch_join_group,
+                          self.group_id,
+                          lambda: None)
+        self.assertEqual(0, len(self._coord._hooks_join_group[self.group_id]))
+
+    def test_watch_leave_group_non_existent(self):
+        self.assertRaises(tooz.coordination.GroupNotCreated,
+                          self._coord.watch_leave_group,
+                          self.group_id,
+                          lambda: None)
+        self.assertEqual(0, len(self._coord._hooks_leave_group[self.group_id]))
+
     @staticmethod
     def _get_random_uuid():
         return str(uuid.uuid4()).encode('ascii')
