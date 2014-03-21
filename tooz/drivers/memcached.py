@@ -16,6 +16,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import collections
 import decorator
 import random
 import time
@@ -80,6 +81,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
         except Exception as e:
             raise coordination.ToozConnectionError(e)
         self.heartbeat()
+        self._group_members = collections.defaultdict(set)
 
     def stop(self):
         self.client.delete(self._encode_member_id(self._member_id))
@@ -209,13 +211,21 @@ class MemcachedDriver(coordination.CoordinationDriver):
                         "It's alive!",
                         expire=self.membership_timeout)
 
-    @staticmethod
-    def watch_join_group(group_id, callback):
-        raise NotImplementedError
+    def watch_join_group(self, group_id, callback):
+        members = self.client.get(self._encode_group_id(group_id))
+        if members is None:
+            raise coordination.GroupNotCreated(group_id)
+        # Initialize with the current group member list
+        if group_id not in self._group_members:
+            self._group_members[group_id] = set(members.keys())
+        return super(MemcachedDriver, self).watch_join_group(
+            group_id, callback)
 
-    @staticmethod
-    def unwatch_join_group(group_id, callback):
-        raise NotImplementedError
+    def unwatch_join_group(self, group_id, callback):
+        super(MemcachedDriver, self).unwatch_join_group(
+            group_id, callback)
+        if len(self._hooks_join_group) == 0:
+            del self._group_members[group_id]
 
     @staticmethod
     def watch_leave_group(group_id, callback):
@@ -225,9 +235,22 @@ class MemcachedDriver(coordination.CoordinationDriver):
     def unwatch_leave_group(group_id, callback):
         raise NotImplementedError
 
-    @staticmethod
-    def run_watchers():
-        raise NotImplementedError
+    def run_watchers(self):
+        result = []
+        for group_id in self.client.get(self._GROUP_LIST_KEY):
+            encoded_group = self._encode_group_id(group_id)
+            group_members = set(self.client.get(encoded_group))
+            old_group_members = self._group_members[group_id]
+
+            for member_id in (group_members - old_group_members):
+                result.extend(
+                    self._hooks_join_group[group_id].run(
+                        coordination.MemberJoinedGroup(group_id,
+                                                       member_id)))
+
+            self._group_members[group_id] = group_members
+
+        return result
 
 
 class MemcachedAsyncResult(coordination.CoordAsyncResult):
