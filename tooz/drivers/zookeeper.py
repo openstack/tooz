@@ -202,10 +202,6 @@ class KazooDriver(BaseZooKeeperDriver):
         self._coord = client.KazooClient(hosts=hosts, handler=handler)
         super(KazooDriver, self).__init__()
 
-    def _has_hooks_for_group(self, group_id):
-        return (len(self._hooks_join_group[group_id])
-                + len(self._hooks_leave_group[group_id]))
-
     def _watch_group(self, group_id):
         get_members_req = self.get_members(group_id)
 
@@ -266,11 +262,8 @@ class KazooDriver(BaseZooKeeperDriver):
                 raise
 
     def unwatch_join_group(self, group_id, callback):
-        super(BaseZooKeeperDriver, self).unwatch_join_group(
+        return super(BaseZooKeeperDriver, self).unwatch_join_group(
             group_id, callback)
-        if (not self._has_hooks_for_group(group_id)
-           and group_id in self._group_members):
-            del self._group_members[group_id]
 
     def watch_leave_group(self, group_id, callback):
         # Check if we already have hooks for this group_id, if not, start
@@ -291,11 +284,8 @@ class KazooDriver(BaseZooKeeperDriver):
                 raise
 
     def unwatch_leave_group(self, group_id, callback):
-        super(BaseZooKeeperDriver, self).unwatch_leave_group(
+        return super(BaseZooKeeperDriver, self).unwatch_leave_group(
             group_id, callback)
-        if (not self._has_hooks_for_group(group_id)
-           and group_id in self._group_members):
-            del self._group_members[group_id]
 
     def run_watchers(self):
         ret = []

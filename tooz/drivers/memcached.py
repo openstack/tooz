@@ -211,29 +211,31 @@ class MemcachedDriver(coordination.CoordinationDriver):
                         "It's alive!",
                         expire=self.membership_timeout)
 
-    def watch_join_group(self, group_id, callback):
+    def _init_watch_group(self, group_id):
         members = self.client.get(self._encode_group_id(group_id))
         if members is None:
             raise coordination.GroupNotCreated(group_id)
         # Initialize with the current group member list
         if group_id not in self._group_members:
             self._group_members[group_id] = set(members.keys())
+
+    def watch_join_group(self, group_id, callback):
+        self._init_watch_group(group_id)
         return super(MemcachedDriver, self).watch_join_group(
             group_id, callback)
 
     def unwatch_join_group(self, group_id, callback):
-        super(MemcachedDriver, self).unwatch_join_group(
+        return super(MemcachedDriver, self).unwatch_join_group(
             group_id, callback)
-        if len(self._hooks_join_group) == 0:
-            del self._group_members[group_id]
 
-    @staticmethod
-    def watch_leave_group(group_id, callback):
-        raise NotImplementedError
+    def watch_leave_group(self, group_id, callback):
+        self._init_watch_group(group_id)
+        return super(MemcachedDriver, self).watch_leave_group(
+            group_id, callback)
 
-    @staticmethod
-    def unwatch_leave_group(group_id, callback):
-        raise NotImplementedError
+    def unwatch_leave_group(self, group_id, callback):
+        return super(MemcachedDriver, self).unwatch_leave_group(
+            group_id, callback)
 
     def run_watchers(self):
         result = []
@@ -247,6 +249,12 @@ class MemcachedDriver(coordination.CoordinationDriver):
                     self._hooks_join_group[group_id].run(
                         coordination.MemberJoinedGroup(group_id,
                                                        member_id)))
+
+            for member_id in (old_group_members - group_members):
+                result.extend(
+                    self._hooks_leave_group[group_id].run(
+                        coordination.MemberLeftGroup(group_id,
+                                                     member_id)))
 
             self._group_members[group_id] = group_members
 

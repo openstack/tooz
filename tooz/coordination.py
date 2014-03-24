@@ -54,6 +54,12 @@ class CoordinationDriver(object):
     def __init__(self):
         self._hooks_join_group = collections.defaultdict(Hooks)
         self._hooks_leave_group = collections.defaultdict(Hooks)
+        # A cache for group members
+        self._group_members = collections.defaultdict(set)
+
+    def _has_hooks_for_group(self, group_id):
+        return (len(self._hooks_join_group[group_id])
+                + len(self._hooks_leave_group[group_id]))
 
     @abc.abstractmethod
     def run_watchers(self):
@@ -81,6 +87,9 @@ class CoordinationDriver(object):
                          this group
         """
         self._hooks_join_group[group_id].remove(callback)
+        if (not self._has_hooks_for_group(group_id)
+           and group_id in self._group_members):
+            del self._group_members[group_id]
 
     @abc.abstractmethod
     def watch_leave_group(self, group_id, callback):
@@ -105,6 +114,9 @@ class CoordinationDriver(object):
                          this group
         """
         self._hooks_leave_group[group_id].remove(callback)
+        if (not self._has_hooks_for_group(group_id)
+           and group_id in self._group_members):
+            del self._group_members[group_id]
 
     def start(self, timeout):
         """Start the service engine.
