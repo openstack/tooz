@@ -302,6 +302,21 @@ class KazooDriver(BaseZooKeeperDriver):
             return True
         return False
 
+    def _get_group_leader_lock(self, group_id):
+        if group_id not in self._leader_locks:
+            self._leader_locks[group_id] = self._coord.Lock(
+                self._path_group(group_id) + "/leader",
+                self._member_id.decode('ascii'))
+        return self._leader_locks[group_id]
+
+    def get_leader(self, group_id):
+        contenders = self._get_group_leader_lock(group_id).contenders()
+        if contenders and contenders[0]:
+            leader = contenders[0].encode('ascii')
+        else:
+            leader = None
+        return ZooAsyncResult(None, lambda *args: leader)
+
     def run_watchers(self):
         ret = []
         while True:
@@ -312,11 +327,7 @@ class KazooDriver(BaseZooKeeperDriver):
             ret.extend(cb())
 
         for group_id in six.iterkeys(self._hooks_elected_leader):
-            if group_id not in self._leader_locks:
-                self._leader_locks[group_id] = self._coord.Lock(
-                    self._path_group(group_id))
-
-            if self._leader_locks[group_id].acquire(blocking=False):
+            if self._get_group_leader_lock(group_id).acquire(blocking=False):
                 # We are now leader for this group
                 self._hooks_elected_leader[group_id].run(
                     coordination.LeaderElected(

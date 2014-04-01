@@ -378,6 +378,8 @@ class TestAPI(testscenarios.TestWithScenarios,
                          self.event.member_id)
         self.assertEqual(self.group_id,
                          self.event.group_id)
+        self.assertEqual(self._coord.get_leader(self.group_id).get(),
+                         self.member_id)
 
         self.event = None
 
@@ -390,6 +392,26 @@ class TestAPI(testscenarios.TestWithScenarios,
                          self.event.member_id)
         self.assertEqual(self.group_id,
                          self.event.group_id)
+        self.assertEqual(client2.get_leader(self.group_id).get(),
+                         member_id_test2)
+
+    def test_get_leader(self):
+        self._coord.create_group(self.group_id).get()
+
+        leader = self._coord.get_leader(self.group_id).get()
+        self.assertEqual(leader, None)
+
+        self._coord.join_group(self.group_id).get()
+
+        leader = self._coord.get_leader(self.group_id).get()
+        self.assertEqual(leader, None)
+
+        # Let's get elected
+        self._coord.watch_elected_as_leader(self.group_id, self._set_event)
+        self._coord.run_watchers()
+
+        leader = self._coord.get_leader(self.group_id).get()
+        self.assertEqual(leader, self.member_id)
 
     def test_run_for_election_multiple_clients_stand_down(self):
         self._coord.create_group(self.group_id).get()

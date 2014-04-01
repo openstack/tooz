@@ -258,6 +258,16 @@ class CoordinationDriver(object):
         """
 
     @staticmethod
+    def get_leader(group_id):
+        """Return the leader for a group.
+
+        :param group_id: the id of the group:
+        :returns: the leader
+        :rtype: CoordAsyncResult
+        """
+        raise NotImplementedError
+
+    @staticmethod
     def heartbeat():
         """Method to run once in a while to be sure that the member is not dead
         and is still an active member of a group.
