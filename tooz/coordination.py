@@ -48,12 +48,21 @@ class MemberLeftGroup(Event):
         self.member_id = member_id
 
 
+class LeaderElected(Event):
+    """A leader as been elected."""
+
+    def __init__(self, group_id, member_id):
+        self.group_id = group_id
+        self.member_id = member_id
+
+
 @six.add_metaclass(abc.ABCMeta)
 class CoordinationDriver(object):
 
     def __init__(self):
         self._hooks_join_group = collections.defaultdict(Hooks)
         self._hooks_leave_group = collections.defaultdict(Hooks)
+        self._hooks_elected_leader = collections.defaultdict(Hooks)
         # A cache for group members
         self._group_members = collections.defaultdict(set)
 
@@ -117,6 +126,44 @@ class CoordinationDriver(object):
         if (not self._has_hooks_for_group(group_id)
            and group_id in self._group_members):
             del self._group_members[group_id]
+
+    @abc.abstractmethod
+    def watch_elected_as_leader(self, group_id, callback):
+        """Call a function when member gets elected as leader.
+
+        The callback functions will be executed when `run_watchers` is
+        called.
+
+        :param group_id: The group id to watch
+        :param callback: The function to execute when a member leaves this
+                         group
+
+        """
+        self._hooks_elected_leader[group_id].append(callback)
+
+    @abc.abstractmethod
+    def unwatch_elected_as_leader(self, group_id, callback):
+        """Call a function when member gets elected as leader.
+
+        The callback functions will be executed when `run_watchers` is
+        called.
+
+        :param group_id: The group id to watch
+        :param callback: The function to execute when a member leaves this
+                         group
+
+        """
+        self._hooks_elected_leader[group_id].remove(callback)
+        if not self._hooks.elected_leader[group_id]:
+            del self._hooks.elected_leader[group_id]
+
+    @staticmethod
+    def stand_down_group_leader(group_id):
+        """Stand down as the group leader if we are.
+
+        :param group_id: The group where we don't want to be a leader anymore
+        """
+        raise NotImplementedError
 
     def start(self, timeout):
         """Start the service engine.

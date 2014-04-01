@@ -237,6 +237,14 @@ class MemcachedDriver(coordination.CoordinationDriver):
         return super(MemcachedDriver, self).unwatch_leave_group(
             group_id, callback)
 
+    @staticmethod
+    def watch_elected_as_leader(group_id, callback):
+        raise NotImplementedError
+
+    @staticmethod
+    def unwatch_elected_as_leader(group_id, callback):
+        raise NotImplementedError
+
     def run_watchers(self):
         result = []
         for group_id in self.client.get(self._GROUP_LIST_KEY):

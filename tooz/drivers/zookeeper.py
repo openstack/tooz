@@ -42,7 +42,8 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
             raise coordination.ToozError("operation error: %s" % (e))
 
         self._group_members = collections.defaultdict(set)
-        self._children_changes = six.moves.queue.Queue()
+        self._watchers = six.moves.queue.Queue()
+        self._leader_locks = {}
 
     def stop(self):
         self._coord.stop()
@@ -216,7 +217,7 @@ class KazooDriver(BaseZooKeeperDriver):
                 # Copy function in case it's removed later from the
                 # hook list
                 hooks = copy.copy(self._hooks_join_group[group_id])
-                self._children_changes.put(
+                self._watchers.put(
                     lambda: hooks.run(
                         coordination.MemberJoinedGroup(
                             group_id,
@@ -226,7 +227,7 @@ class KazooDriver(BaseZooKeeperDriver):
                 # Copy function in case it's removed later from the
                 # hook list
                 hooks = copy.copy(self._hooks_leave_group[group_id])
-                self._children_changes.put(
+                self._watchers.put(
                     lambda: hooks.run(
                         coordination.MemberLeftGroup(
                             group_id,
@@ -287,14 +288,41 @@ class KazooDriver(BaseZooKeeperDriver):
         return super(BaseZooKeeperDriver, self).unwatch_leave_group(
             group_id, callback)
 
+    def watch_elected_as_leader(self, group_id, callback):
+        return super(BaseZooKeeperDriver, self).watch_elected_as_leader(
+            group_id, callback)
+
+    def unwatch_elected_as_leader(self, group_id, callback):
+        return super(BaseZooKeeperDriver, self).unwatch_elected_as_leader(
+            group_id, callback)
+
+    def stand_down_group_leader(self, group_id):
+        if group_id in self._leader_locks:
+            self._leader_locks[group_id].release()
+            return True
+        return False
+
     def run_watchers(self):
         ret = []
         while True:
             try:
-                cb = self._children_changes.get(block=False)
+                cb = self._watchers.get(block=False)
             except six.moves.queue.Empty:
                 break
             ret.extend(cb())
+
+        for group_id in six.iterkeys(self._hooks_elected_leader):
+            if group_id not in self._leader_locks:
+                self._leader_locks[group_id] = self._coord.Lock(
+                    self._path_group(group_id))
+
+            if self._leader_locks[group_id].acquire(blocking=False):
+                # We are now leader for this group
+                self._hooks_elected_leader[group_id].run(
+                    coordination.LeaderElected(
+                        group_id,
+                        self._member_id))
+
         return ret
 
 
@@ -326,6 +354,14 @@ class ZakeDriver(BaseZooKeeperDriver):
 
     @staticmethod
     def unwatch_leave_group(group_id, callback):
+        raise NotImplementedError
+
+    @staticmethod
+    def watch_elected_as_leader(group_id, callback):
+        raise NotImplementedError
+
+    @staticmethod
+    def unwatch_elected_as_leader(group_id, callback):
         raise NotImplementedError
 
     @staticmethod

@@ -347,6 +347,94 @@ class TestAPI(testscenarios.TestWithScenarios,
                           lambda: None)
         self.assertEqual(0, len(self._coord._hooks_leave_group[self.group_id]))
 
+    def test_run_for_election(self):
+        self._coord.create_group(self.group_id).get()
+        self._coord.watch_elected_as_leader(self.group_id, self._set_event)
+        self._coord.run_watchers()
+
+        self.assertIsInstance(self.event,
+                              tooz.coordination.LeaderElected)
+        self.assertEqual(self.member_id,
+                         self.event.member_id)
+        self.assertEqual(self.group_id,
+                         self.event.group_id)
+
+    def test_run_for_election_multiple_clients(self):
+        self._coord.create_group(self.group_id).get()
+        self._coord.watch_elected_as_leader(self.group_id, self._set_event)
+        self._coord.run_watchers()
+
+        member_id_test2 = self._get_random_uuid()
+        client2 = tooz.coordination.get_coordinator(self.backend,
+                                                    member_id_test2,
+                                                    **self.kwargs)
+        client2.start()
+        client2.watch_elected_as_leader(self.group_id, self._set_event)
+        client2.run_watchers()
+
+        self.assertIsInstance(self.event,
+                              tooz.coordination.LeaderElected)
+        self.assertEqual(self.member_id,
+                         self.event.member_id)
+        self.assertEqual(self.group_id,
+                         self.event.group_id)
+
+        self.event = None
+
+        self._coord.stop()
+        client2.run_watchers()
+
+        self.assertIsInstance(self.event,
+                              tooz.coordination.LeaderElected)
+        self.assertEqual(member_id_test2,
+                         self.event.member_id)
+        self.assertEqual(self.group_id,
+                         self.event.group_id)
+
+    def test_run_for_election_multiple_clients_stand_down(self):
+        self._coord.create_group(self.group_id).get()
+        self._coord.watch_elected_as_leader(self.group_id, self._set_event)
+        self._coord.run_watchers()
+
+        member_id_test2 = self._get_random_uuid()
+        client2 = tooz.coordination.get_coordinator(self.backend,
+                                                    member_id_test2,
+                                                    **self.kwargs)
+        client2.start()
+        client2.watch_elected_as_leader(self.group_id, self._set_event)
+        client2.run_watchers()
+
+        self.assertIsInstance(self.event,
+                              tooz.coordination.LeaderElected)
+        self.assertEqual(self.member_id,
+                         self.event.member_id)
+        self.assertEqual(self.group_id,
+                         self.event.group_id)
+
+        self.event = None
+
+        self._coord.stand_down_group_leader(self.group_id)
+        client2.run_watchers()
+
+        self.assertIsInstance(self.event,
+                              tooz.coordination.LeaderElected)
+        self.assertEqual(member_id_test2,
+                         self.event.member_id)
+        self.assertEqual(self.group_id,
+                         self.event.group_id)
+
+        self.event = None
+
+        client2.stand_down_group_leader(self.group_id)
+        self._coord.run_watchers()
+
+        self.assertIsInstance(self.event,
+                              tooz.coordination.LeaderElected)
+        self.assertEqual(self.member_id,
+                         self.event.member_id)
+        self.assertEqual(self.group_id,
+                         self.event.group_id)
+
     @staticmethod
     def _get_random_uuid():
         return str(uuid.uuid4()).encode('ascii')
