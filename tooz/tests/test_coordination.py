@@ -53,9 +53,6 @@ class TestAPI(testscenarios.TestWithScenarios,
         self._coord = tooz.coordination.get_coordinator(self.backend,
                                                         self.member_id,
                                                         **self.kwargs)
-        # HACK(jd) Disable memcached on py33 for the time being, activate as
-        # soon as https://github.com/pinterest/pymemcache/pull/16 is merged
-        # and pymemcache is released
         try:
             self._coord.start(timeout=5)
         except tooz.coordination.ToozConnectionError as e:
