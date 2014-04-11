@@ -24,6 +24,19 @@ import six
 from zake import fake_client
 
 from tooz import coordination
+from tooz import locking
+
+
+class ZooKeeperLock(locking.Lock):
+    def __init__(self, lock):
+        self._lock = lock
+
+    def acquire(self, blocking=True, timeout=None):
+        return self._lock.acquire(blocking=blocking,
+                                  timeout=timeout)
+
+    def release(self):
+        return self._lock.release()
 
 
 class BaseZooKeeperDriver(coordination.CoordinationDriver):
@@ -316,6 +329,12 @@ class KazooDriver(BaseZooKeeperDriver):
         else:
             leader = None
         return ZooAsyncResult(None, lambda *args: leader)
+
+    def get_lock(self, name):
+        return ZooKeeperLock(
+            self._coord.Lock(
+                self.paths_join(b"/", self._TOOZ_NAMESPACE, b"locks", name),
+                self._member_id.decode('ascii')))
 
     def run_watchers(self):
         ret = []

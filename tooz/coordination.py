@@ -268,6 +268,16 @@ class CoordinationDriver(object):
         raise NotImplementedError
 
     @staticmethod
+    def get_lock(name):
+        """Return a distributed lock.
+
+        :param name: The lock name that is used to identify it across all
+                     nodes.
+
+        """
+        raise NotImplementedError
+
+    @staticmethod
     def heartbeat():
         """Method to run once in a while to be sure that the member is not dead
         and is still an active member of a group.

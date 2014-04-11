@@ -457,6 +457,29 @@ class TestAPI(testscenarios.TestWithScenarios,
         self.assertEqual(self.group_id,
                          self.event.group_id)
 
+    def test_get_lock(self):
+        lock = self._coord.get_lock(self._get_random_uuid())
+        self.assertEqual(True, lock.acquire())
+        lock.release()
+        with lock:
+            pass
+
+    def test_get_lock_multiple_coords(self):
+        member_id2 = self._get_random_uuid()
+        client2 = tooz.coordination.get_coordinator(self.backend,
+                                                    member_id2,
+                                                    **self.kwargs)
+        client2.start()
+
+        lock_name = self._get_random_uuid()
+        lock = self._coord.get_lock(lock_name)
+        self.assertEqual(True, lock.acquire())
+
+        lock2 = client2.get_lock(lock_name)
+        self.assertEqual(False, lock2.acquire(blocking=False))
+        lock.release()
+        self.assertEqual(True, lock2.acquire(blocking=False))
+
     @staticmethod
     def _get_random_uuid():
         return str(uuid.uuid4()).encode('ascii')
