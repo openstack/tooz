@@ -478,7 +478,7 @@ class TestAPI(testscenarios.TestWithScenarios,
         lock2 = client2.get_lock(lock_name)
         self.assertEqual(False, lock2.acquire(blocking=False))
         lock.release()
-        self.assertEqual(True, lock2.acquire(blocking=False))
+        self.assertEqual(True, lock2.acquire(blocking=True))
 
     @staticmethod
     def _get_random_uuid():
