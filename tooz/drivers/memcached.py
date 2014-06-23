@@ -17,13 +17,11 @@
 # under the License.
 
 import collections
-import decorator
-import random
 import time
 
-import itertools
 import msgpack
 import pymemcache.client
+import retrying
 import six
 
 from tooz import coordination
@@ -34,15 +32,14 @@ class Retry(Exception):
     """Exception raised if we need to retry."""
 
 
-@decorator.decorator
-def retry(f, *args, **kwargs):
-    for try_number in itertools.chain(six.moves.range(10),
-                                      itertools.repeat(10)):
-        try:
-            return f(*args, **kwargs)
-        except Retry:
-            pass
-        time.sleep(random.randint(0, (2 ** try_number)) / 1000.0)
+def retry_if_retry_raised(exception):
+    return isinstance(exception, Retry)
+
+
+def retry(f):
+    return retrying.retry(
+        retry_on_exception=retry_if_retry_raised,
+        wait='exponential_sleep', wait_exponential_max=1)(f)
 
 
 class MemcachedLock(locking.Lock):
