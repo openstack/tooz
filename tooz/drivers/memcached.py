@@ -17,7 +17,6 @@
 # under the License.
 
 import collections
-import time
 
 import msgpack
 import pymemcache.client
@@ -50,19 +49,18 @@ class MemcachedLock(locking.Lock):
         self.name = self._LOCK_PREFIX + name
         self.timeout = timeout
 
+    @retry
     def acquire(self, blocking=True):
-        while True:
-            if self.coord.client.add(
-                    self.name,
-                    self.coord._member_id,
-                    expire=self.timeout,
-                    noreply=False):
-                self.coord._acquired_locks.append(self)
-                return True
-            if not blocking:
-                return False
-            # NOTE(jd) Configurable? :/
-            time.sleep(0.11)
+        if self.coord.client.add(
+                self.name,
+                self.coord._member_id,
+                expire=self.timeout,
+                noreply=False):
+            self.coord._acquired_locks.append(self)
+            return True
+        if not blocking:
+            return False
+        raise Retry
 
     def release(self):
         self.coord._acquired_locks.remove(self)
