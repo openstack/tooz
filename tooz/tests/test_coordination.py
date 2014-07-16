@@ -20,10 +20,10 @@ import uuid
 
 import testscenarios
 from testtools import testcase
+from zake import fake_storage
 
 import tooz.coordination
 from tooz import tests
-from zake import fake_storage
 
 # Real ZooKeeper server scenario
 zookeeper_tests = ('zookeeper_tests', {'backend': 'kazoo',

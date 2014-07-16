@@ -16,8 +16,8 @@
 
 import abc
 import collections
-import six
 
+import six
 from stevedore import driver
 
 TOOZ_BACKENDS_NAMESPACE = "tooz.backends"
@@ -282,6 +282,7 @@ class CoordinationDriver(object):
         """Method to run once in a while to be sure that the member is not dead
         and is still an active member of a group.
 
+
         """
         pass
 
@@ -305,8 +306,8 @@ class CoordAsyncResult(object):
         """Returns True if the task is done, False otherwise."""
 
 
-    #TODO(yassine)
-    #Replace kwargs by something more simple.
+# TODO(yassine)
+# Replace kwargs by something more simple.
 def get_coordinator(backend, member_id, **kwargs):
     """Initialize and load the backend.
 
