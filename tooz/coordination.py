@@ -70,9 +70,10 @@ class CoordinationDriver(object):
         return (len(self._hooks_join_group[group_id])
                 + len(self._hooks_leave_group[group_id]))
 
-    @abc.abstractmethod
-    def run_watchers(self):
+    @staticmethod
+    def run_watchers():
         """Run the watchers callback."""
+        raise NotImplementedError
 
     @abc.abstractmethod
     def watch_join_group(self, group_id, callback):
@@ -165,7 +166,7 @@ class CoordinationDriver(object):
         """
         raise NotImplementedError
 
-    def start(self, timeout):
+    def start(self, timeout=10):
         """Start the service engine.
 
         If needed, the establishment of a connection to the servers
@@ -175,16 +176,16 @@ class CoordinationDriver(object):
         :type timeout: int
         """
 
-    @abc.abstractmethod
-    def stop(self):
+    @staticmethod
+    def stop():
         """Stop the service engine.
 
         If needed, the connection to servers is closed and the client will
         disappear from all joined groups.
         """
 
-    @abc.abstractmethod
-    def create_group(self, group_id):
+    @staticmethod
+    def create_group(group_id):
         """Request the creation of a group asynchronously.
 
         :param group_id: the id of the group to create
@@ -192,17 +193,19 @@ class CoordinationDriver(object):
         :returns: None
         :rtype: CoordAsyncResult
         """
+        raise NotImplementedError
 
-    @abc.abstractmethod
-    def get_groups(self):
+    @staticmethod
+    def get_groups():
         """Return the list composed by all groups ids asynchronously.
 
         :returns: the list of all created group ids
         :rtype: CoordAsyncResult
         """
+        raise NotImplementedError
 
-    @abc.abstractmethod
-    def join_group(self, group_id, capabilities=b""):
+    @staticmethod
+    def join_group(group_id, capabilities=b""):
         """Join a group and establish group membership asynchronously.
 
         :param group_id: the id of the group to join
@@ -212,9 +215,10 @@ class CoordinationDriver(object):
         :returns: None
         :rtype: CoordAsyncResult
         """
+        raise NotImplementedError
 
-    @abc.abstractmethod
-    def leave_group(self, group_id):
+    @staticmethod
+    def leave_group(group_id):
         """Leave a group asynchronously.
 
         :param group_id: the id of the group to leave
@@ -222,18 +226,20 @@ class CoordinationDriver(object):
         :returns: None
         :rtype: CoordAsyncResult
         """
+        raise NotImplementedError
 
-    @abc.abstractmethod
-    def get_members(self, group_id):
+    @staticmethod
+    def get_members(group_id):
         """Return the list of all members ids of the specified group
         asynchronously.
 
         :returns: list of all created group ids
         :rtype: CoordAsyncResult
         """
+        raise NotImplementedError
 
-    @abc.abstractmethod
-    def get_member_capabilities(self, group_id, member_id):
+    @staticmethod
+    def get_member_capabilities(group_id, member_id):
         """Return the capabilities of a member asynchronously.
 
         :param group_id: the id of the group of the member
@@ -243,9 +249,10 @@ class CoordinationDriver(object):
         :returns: capabilities of a member
         :rtype: CoordAsyncResult
         """
+        raise NotImplementedError
 
-    @abc.abstractmethod
-    def update_capabilities(self, group_id, capabilities):
+    @staticmethod
+    def update_capabilities(group_id, capabilities):
         """Update capabilities of the caller in the specified group
         asynchronously.
 
@@ -256,6 +263,7 @@ class CoordinationDriver(object):
         :returns: None
         :rtype: CoordAsyncResult
         """
+        raise NotImplementedError
 
     @staticmethod
     def get_leader(group_id):
