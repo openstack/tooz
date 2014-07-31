@@ -44,6 +44,8 @@ class TestAPI(testscenarios.TestWithScenarios,
         fake_zookeeper_tests,
         ('memcached', {'backend': 'memcached',
                        'kwargs': {'membership_timeout': 5}}),
+        ('ipc', {'backend': 'ipc',
+                 'kwargs': {'lock_timeout': 2}}),
     ]
 
     def setUp(self):
