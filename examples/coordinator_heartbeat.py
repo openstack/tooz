@@ -2,7 +2,7 @@ import time
 
 from tooz import coordination
 
-coordinator = coordination.get_coordinator('memcached', b'host-1')
+coordinator = coordination.get_coordinator('memcached://localhost', b'host-1')
 coordinator.start()
 
 while True:

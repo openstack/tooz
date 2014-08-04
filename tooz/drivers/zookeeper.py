@@ -16,12 +16,14 @@
 
 import collections
 import copy
+import threading
 
 from kazoo import client
 from kazoo import exceptions
 from kazoo.protocol import paths
 import six
-from zake import fake_client
+import zake.fake_client
+import zake.fake_storage
 
 from tooz import coordination
 from tooz import locking
@@ -43,9 +45,14 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
 
     _TOOZ_NAMESPACE = b"tooz"
 
-    def start(self, timeout=10):
+    def __init__(self, member_id, parsed_url, options):
+        super(BaseZooKeeperDriver, self).__init__()
+        self._member_id = member_id
+        self.timeout = int(options.get('timeout', ['10'])[-1])
+
+    def start(self):
         try:
-            self._coord.start(timeout=timeout)
+            self._coord.start(timeout=self.timeout)
         except self._coord.handler.timeout_exception as e:
             raise coordination.ToozConnectionError("operation error: %s" % (e))
 
@@ -201,20 +208,10 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
 class KazooDriver(BaseZooKeeperDriver):
     """The driver using the Kazoo client against real ZooKeeper servers."""
 
-    def __init__(self, member_id, hosts="127.0.0.1:2181", handler=None,
-                 **kwargs):
-        """:param hosts: the list of zookeeper servers in the
-        form "ip:port2, ip2:port2".
-
-        :param handler: a kazoo async handler to use if provided, if not
-        provided the default that kazoo uses internally will be used instead.
-        """
-
-        if not all((hosts, member_id)):
-            raise KeyError("hosts=%r, member_id=%r" % hosts, member_id)
+    def __init__(self, member_id, parsed_url, options):
+        super(KazooDriver, self).__init__(member_id, parsed_url, options)
+        self._coord = client.KazooClient(hosts=parsed_url.netloc)
         self._member_id = member_id
-        self._coord = client.KazooClient(hosts=hosts, handler=handler)
-        super(KazooDriver, self).__init__()
 
     def _watch_group(self, group_id):
         get_members_req = self.get_members(group_id)
@@ -361,14 +358,11 @@ class ZakeDriver(BaseZooKeeperDriver):
     without the need of real ZooKeeper servers.
     """
 
-    def __init__(self, member_id, storage=None, **kwargs):
-        """:param storage: a fake storage object."""
+    fake_storage = zake.fake_storage.FakeStorage(threading.RLock())
 
-        if not all((storage, member_id)):
-            raise KeyError("storage=%r, member_id=%r" % storage, member_id)
-        self._member_id = member_id
-        self._coord = fake_client.FakeClient(storage=storage)
-        super(ZakeDriver, self).__init__()
+    def __init__(self, member_id, parsed_url, options):
+        super(ZakeDriver, self).__init__(member_id, parsed_url, options)
+        self._coord = zake.fake_client.FakeClient(storage=self.fake_storage)
 
     @staticmethod
     def watch_join_group(group_id, callback):

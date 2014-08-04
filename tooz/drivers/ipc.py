@@ -44,7 +44,7 @@ class IPCLock(locking.Lock):
 
 class IPCDriver(coordination.CoordinationDriver):
 
-    def __init__(self, member_id, lock_timeout=30):
+    def __init__(self, member_id, parsed_url, options):
         """Initialize the IPC driver.
 
         :param lock_timeout: how many seconds to wait when trying to acquire
@@ -55,7 +55,7 @@ class IPCDriver(coordination.CoordinationDriver):
                              lock_timeout
         """
         super(IPCDriver, self).__init__()
-        self.lock_timeout = lock_timeout
+        self.lock_timeout = int(options.get('lock_timeout', ['30'])[-1])
 
     def get_lock(self, name):
         return IPCLock(name, self.lock_timeout)

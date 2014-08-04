@@ -79,14 +79,20 @@ class MemcachedDriver(coordination.CoordinationDriver):
     _MEMBER_PREFIX = b'_TOOZ_MEMBER_'
     _GROUP_LIST_KEY = b'_TOOZ_GROUP_LIST'
 
-    def __init__(self, member_id, membership_timeout=30, lock_timeout=30,
-                 leader_timeout=30):
+    def __init__(self, member_id, parsed_url, options):
         super(MemcachedDriver, self).__init__()
         self._member_id = member_id
         self._groups = set()
-        self.membership_timeout = membership_timeout
-        self.lock_timeout = lock_timeout
-        self.leader_timeout = leader_timeout
+        self.host = (parsed_url.hostname or "localhost",
+                     parsed_url.port or 11211)
+        default_timeout = options.get('timeout', ['30'])
+        self.timeout = int(default_timeout[-1])
+        self.membership_timeout = int(options.get(
+            'membership_timeout', default_timeout)[-1])
+        self.lock_timeout = int(options.get(
+            'lock_timeout', default_timeout)[-1])
+        self.leader_timeout = int(options.get(
+            'leader_timeout', default_timeout)[-1])
 
     @staticmethod
     def _msgpack_serializer(key, value):
@@ -102,14 +108,14 @@ class MemcachedDriver(coordination.CoordinationDriver):
             return msgpack.loads(value)
         raise Exception("Unknown serialization format")
 
-    def start(self, host=("127.0.0.1", 11211), timeout=5):
+    def start(self):
         try:
             self.client = pymemcache.client.Client(
-                host,
+                self.host,
                 serializer=self._msgpack_serializer,
                 deserializer=self._msgpack_deserializer,
-                timeout=timeout,
-                connect_timeout=timeout)
+                timeout=self.timeout,
+                connect_timeout=self.timeout)
         except Exception as e:
             raise coordination.ToozConnectionError(e)
         self._group_members = collections.defaultdict(set)

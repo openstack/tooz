@@ -20,6 +20,8 @@ import collections
 import six
 from stevedore import driver
 
+from tooz.openstack.common import network_utils
+
 TOOZ_BACKENDS_NAMESPACE = "tooz.backends"
 
 
@@ -166,14 +168,11 @@ class CoordinationDriver(object):
         """
         raise NotImplementedError
 
-    def start(self, timeout=10):
+    def start(self):
         """Start the service engine.
 
         If needed, the establishment of a connection to the servers
         is initiated.
-
-        :param timeout: Time in seconds to wait for connection to succeed.
-        :type timeout: int
         """
 
     @staticmethod
@@ -314,23 +313,21 @@ class CoordAsyncResult(object):
         """Returns True if the task is done, False otherwise."""
 
 
-# TODO(yassine)
-# Replace kwargs by something more simple.
-def get_coordinator(backend, member_id, **kwargs):
+def get_coordinator(backend_url, member_id):
     """Initialize and load the backend.
 
-    :param backend: the current tooz provided backends are 'zookeeper'
+    :param backend_url: the backend URL to use
     :type backend: str
     :param member_id: the id of the member
     :type member_id: str
-    :param kwargs: additional backend specific options
-    :type kwargs: dict
     """
-    return driver.DriverManager(namespace=TOOZ_BACKENDS_NAMESPACE,
-                                name=backend,
-                                invoke_on_load=True,
-                                invoke_args=(member_id,),
-                                invoke_kwds=kwargs).driver
+    parsed_url = network_utils.urlsplit(backend_url)
+    parsed_qs = six.moves.urllib.parse.parse_qs(parsed_url.query)
+    return driver.DriverManager(
+        namespace=TOOZ_BACKENDS_NAMESPACE,
+        name=parsed_url.scheme,
+        invoke_on_load=True,
+        invoke_args=(member_id, parsed_url, parsed_qs)).driver
 
 
 class ToozError(Exception):

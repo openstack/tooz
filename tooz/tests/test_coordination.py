@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-#    Copyright (C) 2013 eNovance Inc. All Rights Reserved.
+#    Copyright © 2013-2014 eNovance Inc. All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -13,50 +13,34 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
-import threading
 import time
 import uuid
 
 import testscenarios
 from testtools import testcase
-from zake import fake_storage
 
 import tooz.coordination
 from tooz import tests
-
-# Real ZooKeeper server scenario
-zookeeper_tests = ('zookeeper_tests', {'backend': 'kazoo',
-                                       'kwargs': {'hosts': '127.0.0.1:2181'}})
-
-# Fake Kazoo client scenario
-fake_storage = fake_storage.FakeStorage(threading.RLock())
-fake_zookeeper_tests = ('fake_zookeeper_tests', {'backend': 'zake',
-                                                 'kwargs': {'storage':
-                                                            fake_storage}})
 
 
 class TestAPI(testscenarios.TestWithScenarios,
               tests.TestCaseSkipNotImplemented):
 
     scenarios = [
-        zookeeper_tests,
-        fake_zookeeper_tests,
-        ('memcached', {'backend': 'memcached',
-                       'kwargs': {'membership_timeout': 5}}),
-        ('ipc', {'backend': 'ipc',
-                 'kwargs': {'lock_timeout': 2}}),
+        ('zookeeper', {'url': 'kazoo://127.0.0.1:2181?timeout=5'}),
+        ('zake', {'url': 'zake://?timeout=5'}),
+        ('memcached', {'url': 'memcached://?timeout=5'}),
+        ('ipc', {'url': 'ipc://'}),
     ]
 
     def setUp(self):
         super(TestAPI, self).setUp()
         self.group_id = self._get_random_uuid()
         self.member_id = self._get_random_uuid()
-        self._coord = tooz.coordination.get_coordinator(self.backend,
-                                                        self.member_id,
-                                                        **self.kwargs)
+        self._coord = tooz.coordination.get_coordinator(self.url,
+                                                        self.member_id)
         try:
-            self._coord.start(timeout=5)
+            self._coord.start()
         except tooz.coordination.ToozConnectionError as e:
             raise testcase.TestSkipped(str(e))
 
@@ -98,9 +82,8 @@ class TestAPI(testscenarios.TestWithScenarios,
     def test_join_group_with_member_id_already_exists(self):
         self._coord.create_group(self.group_id).get()
         self._coord.join_group(self.group_id).get()
-        client = tooz.coordination.get_coordinator(self.backend,
-                                                   self.member_id,
-                                                   **self.kwargs)
+        client = tooz.coordination.get_coordinator(self.url,
+                                                   self.member_id)
         client.start()
         join_group = client.join_group(self.group_id)
         self.assertRaises(tooz.coordination.MemberAlreadyExist,
@@ -144,9 +127,8 @@ class TestAPI(testscenarios.TestWithScenarios,
     def test_get_members(self):
         group_id_test2 = self._get_random_uuid()
         member_id_test2 = self._get_random_uuid()
-        client2 = tooz.coordination.get_coordinator(self.backend,
-                                                    member_id_test2,
-                                                    **self.kwargs)
+        client2 = tooz.coordination.get_coordinator(self.url,
+                                                    member_id_test2)
         client2.start()
 
         self._coord.create_group(group_id_test2).get()
@@ -213,12 +195,11 @@ class TestAPI(testscenarios.TestWithScenarios,
         self._coord.heartbeat()
 
     def test_disconnect_leave_group(self):
-        if self.backend == 'zake':
+        if self.url.startswith('zake://'):
             self.skipTest("Zake has a bug that prevent this test from working")
         member_id_test2 = self._get_random_uuid()
-        client2 = tooz.coordination.get_coordinator(self.backend,
-                                                    member_id_test2,
-                                                    **self.kwargs)
+        client2 = tooz.coordination.get_coordinator(self.url,
+                                                    member_id_test2)
         client2.start()
         self._coord.create_group(self.group_id).get()
         self._coord.join_group(self.group_id).get()
@@ -232,12 +213,11 @@ class TestAPI(testscenarios.TestWithScenarios,
         self.assertTrue(member_id_test2 not in members_ids)
 
     def test_timeout(self):
-        if self.backend != 'memcached':
+        if not self.url.startswith('memcached://'):
             self.skipTest("This test only works with memcached for now")
         member_id_test2 = self._get_random_uuid()
-        client2 = tooz.coordination.get_coordinator(self.backend,
-                                                    member_id_test2,
-                                                    **self.kwargs)
+        client2 = tooz.coordination.get_coordinator(self.url,
+                                                    member_id_test2)
         client2.start()
         self._coord.create_group(self.group_id).get()
         self._coord.join_group(self.group_id).get()
@@ -258,9 +238,8 @@ class TestAPI(testscenarios.TestWithScenarios,
 
     def test_watch_group_join(self):
         member_id_test2 = self._get_random_uuid()
-        client2 = tooz.coordination.get_coordinator(self.backend,
-                                                    member_id_test2,
-                                                    **self.kwargs)
+        client2 = tooz.coordination.get_coordinator(self.url,
+                                                    member_id_test2)
         client2.start()
         self._coord.create_group(self.group_id).get()
 
@@ -293,9 +272,8 @@ class TestAPI(testscenarios.TestWithScenarios,
 
     def test_watch_leave_group(self):
         member_id_test2 = self._get_random_uuid()
-        client2 = tooz.coordination.get_coordinator(self.backend,
-                                                    member_id_test2,
-                                                    **self.kwargs)
+        client2 = tooz.coordination.get_coordinator(self.url,
+                                                    member_id_test2)
         client2.start()
         self._coord.create_group(self.group_id).get()
 
@@ -367,9 +345,8 @@ class TestAPI(testscenarios.TestWithScenarios,
         self._coord.run_watchers()
 
         member_id_test2 = self._get_random_uuid()
-        client2 = tooz.coordination.get_coordinator(self.backend,
-                                                    member_id_test2,
-                                                    **self.kwargs)
+        client2 = tooz.coordination.get_coordinator(self.url,
+                                                    member_id_test2)
         client2.start()
         client2.watch_elected_as_leader(self.group_id, self._set_event)
         client2.run_watchers()
@@ -421,9 +398,8 @@ class TestAPI(testscenarios.TestWithScenarios,
         self._coord.run_watchers()
 
         member_id_test2 = self._get_random_uuid()
-        client2 = tooz.coordination.get_coordinator(self.backend,
-                                                    member_id_test2,
-                                                    **self.kwargs)
+        client2 = tooz.coordination.get_coordinator(self.url,
+                                                    member_id_test2)
         client2.start()
         client2.watch_elected_as_leader(self.group_id, self._set_event)
         client2.run_watchers()
@@ -468,9 +444,8 @@ class TestAPI(testscenarios.TestWithScenarios,
 
     def test_get_lock_multiple_coords(self):
         member_id2 = self._get_random_uuid()
-        client2 = tooz.coordination.get_coordinator(self.backend,
-                                                    member_id2,
-                                                    **self.kwargs)
+        client2 = tooz.coordination.get_coordinator(self.url,
+                                                    member_id2)
         client2.start()
 
         lock_name = self._get_random_uuid()
