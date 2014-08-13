@@ -20,6 +20,11 @@ import six
 
 @six.add_metaclass(abc.ABCMeta)
 class Lock(object):
+    def __init__(self, name):
+        if not name:
+            raise ValueError("Locks must be provided a name")
+        self.name = name
+
     def __enter__(self):
         self.acquire()
 
@@ -28,8 +33,23 @@ class Lock(object):
 
     @abc.abstractmethod
     def release(self):
-        pass
+        """Attempts to release the lock, returns true if released.
+
+        The behavior of releasing a lock which was not acquired in the first
+        place is undefined (it can range from harmless to releasing some other
+        users lock)..
+
+        :returns: returns true if released (false if not)
+        :rtype: bool
+        """
 
     @abc.abstractmethod
     def acquire(self):
-        pass
+        """Attempts to acquire the lock.
+
+        :returns: returns true if acquired (false if not)
+        :rtype: bool
+        """
+
+    def destroy(self):
+        """Removes the lock + any resources associated with the lock."""

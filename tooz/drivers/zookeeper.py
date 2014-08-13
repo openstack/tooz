@@ -27,7 +27,8 @@ from tooz import locking
 
 
 class ZooKeeperLock(locking.Lock):
-    def __init__(self, lock):
+    def __init__(self, name, lock):
+        super(ZooKeeperLock, self).__init__(name)
         self._lock = lock
 
     def acquire(self, blocking=True, timeout=None):
@@ -330,6 +331,7 @@ class KazooDriver(BaseZooKeeperDriver):
 
     def get_lock(self, name):
         return ZooKeeperLock(
+            name,
             self._coord.Lock(
                 self.paths_join(b"/", self._TOOZ_NAMESPACE, b"locks", name),
                 self._member_id.decode('ascii')))

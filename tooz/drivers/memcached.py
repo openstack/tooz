@@ -45,8 +45,8 @@ class MemcachedLock(locking.Lock):
     _LOCK_PREFIX = b'__TOOZ_LOCK_'
 
     def __init__(self, coord, name, timeout):
+        super(MemcachedLock, self).__init__(self._LOCK_PREFIX + name)
         self.coord = coord
-        self.name = self._LOCK_PREFIX + name
         self.timeout = timeout
 
     @retry
@@ -64,7 +64,7 @@ class MemcachedLock(locking.Lock):
 
     def release(self):
         self.coord._acquired_locks.remove(self)
-        self.coord.client.delete(self.name)
+        return bool(self.coord.client.delete(self.name))
 
     def heartbeat(self):
         """Keep the lock alive."""

@@ -15,32 +15,93 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-import posix_ipc
+
+import hashlib
+
+import six
+import sysv_ipc
 
 import tooz
 from tooz import coordination
 from tooz import locking
-from tooz.openstack.common import lockutils
+
+if sysv_ipc.KEY_MIN <= 0:
+    _KEY_RANGE = abs(sysv_ipc.KEY_MIN) + sysv_ipc.KEY_MAX
+else:
+    _KEY_RANGE = sysv_ipc.KEY_MAX - sysv_ipc.KEY_MIN
 
 
 class IPCLock(locking.Lock):
-    _LOCK_PREFIX = b'_tooz_'
+    """A sysv IPC based lock.
+
+    Please ensure you have read over (and understand) the limitations of sysv
+    IPC locks, and especially have tried and used $ ipcs -l (note the maximum
+    number of semaphores system wide field that command outputs). To ensure
+    that you do not reach that limit it is recommended to use destroy() at
+    the correct program exit/entry points.
+    """
+    _LOCK_PROJECT = b'__TOOZ_LOCK_'
 
     def __init__(self, name, timeout):
-        self.lock = lockutils.external_lock(
-            (self._LOCK_PREFIX + name).decode('ascii'))
+        super(IPCLock, self).__init__(name)
+        self.key = self.ftok(name, self._LOCK_PROJECT)
+        try:
+            self.lock = sysv_ipc.Semaphore(self.key,
+                                           flags=sysv_ipc.IPC_CREX,
+                                           initial_value=1)
+        except sysv_ipc.ExistentialError:
+            self.lock = sysv_ipc.Semaphore(self.key)
+        self.lock.undo = True
         self.timeout = timeout
+
+    @staticmethod
+    def ftok(name, project):
+        # Similar to ftok & http://semanchuk.com/philip/sysv_ipc/#ftok_weakness
+        # but hopefully without as many weaknesses...
+        h = hashlib.md5()
+        if not isinstance(project, six.binary_type):
+            project = project.encode('ascii')
+        h.update(project)
+        if not isinstance(name, six.binary_type):
+            name = name.encode('ascii')
+        h.update(name)
+        return (int(h.hexdigest(), 16) % _KEY_RANGE) + sysv_ipc.KEY_MIN
 
     def acquire(self, blocking=True):
         timeout = self.timeout if blocking else 0
         try:
-            return bool(self.lock.acquire(timeout=timeout))
-        # TODO(jd) This should be encapsulated in lockutils!
-        except posix_ipc.BusyError:
+            self.lock.acquire(timeout=timeout)
+        except (sysv_ipc.BusyError, sysv_ipc.ExistentialError):
             return False
+        else:
+            return True
 
     def release(self):
-        return self.lock.release()
+        try:
+            self.lock.release()
+        except sysv_ipc.ExistentialError:
+            return False
+        else:
+            return True
+
+    def destroy(self):
+        """This will destroy the lock.
+
+        NOTE(harlowja): this will destroy the lock, and if it is being shared
+        across processes this can have unintended consquences, so it *must*
+        only be used when it is *safe* to remove it (ie at a known program
+        exit point, where it can be ensured that no other process will be
+        using it, or that if other processes are using it they can tolerate
+        it being destroyed).
+
+        Read your man pages for `semctl(IPC_RMID)` before using this to
+        understand its side-effects on other programs that *may* be
+        concurrently using the same lock while it is being destroyed...
+        """
+        try:
+            self.lock.remove()
+        except sysv_ipc.ExistentialError:
+            pass
 
 
 class IPCDriver(coordination.CoordinationDriver):

@@ -437,6 +437,7 @@ class TestAPI(testscenarios.TestWithScenarios,
 
     def test_get_lock(self):
         lock = self._coord.get_lock(self._get_random_uuid())
+        self.addCleanup(lock.destroy)
         self.assertEqual(True, lock.acquire())
         lock.release()
         with lock:
@@ -450,9 +451,11 @@ class TestAPI(testscenarios.TestWithScenarios,
 
         lock_name = self._get_random_uuid()
         lock = self._coord.get_lock(lock_name)
+        self.addCleanup(lock.destroy)
         self.assertEqual(True, lock.acquire())
 
         lock2 = client2.get_lock(lock_name)
+        self.addCleanup(lock2.destroy)
         self.assertEqual(False, lock2.acquire(blocking=False))
         lock.release()
         self.assertEqual(True, lock2.acquire(blocking=True))
