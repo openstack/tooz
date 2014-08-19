@@ -51,4 +51,5 @@ fi
 
 memcached &
 
-python setup.py testr --slowest
+# Yield execution to venv command
+$*
