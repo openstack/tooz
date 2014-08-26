@@ -16,7 +16,6 @@
 
 import collections
 import copy
-import threading
 
 from kazoo import client
 from kazoo import exceptions
@@ -358,7 +357,8 @@ class ZakeDriver(BaseZooKeeperDriver):
     without the need of real ZooKeeper servers.
     """
 
-    fake_storage = zake.fake_storage.FakeStorage(threading.RLock())
+    fake_storage = zake.fake_storage.FakeStorage(
+        zake.fake_client.k_threading.SequentialThreadingHandler())
 
     def __init__(self, member_id, parsed_url, options):
         super(ZakeDriver, self).__init__(member_id, parsed_url, options)
