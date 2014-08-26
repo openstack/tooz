@@ -21,8 +21,6 @@ from kazoo import client
 from kazoo import exceptions
 from kazoo.protocol import paths
 import six
-import zake.fake_client
-import zake.fake_storage
 
 from tooz import coordination
 from tooz import locking
@@ -350,47 +348,6 @@ class KazooDriver(BaseZooKeeperDriver):
                         self._member_id))
 
         return ret
-
-
-class ZakeDriver(BaseZooKeeperDriver):
-    """The driver using the Zake client which mimic a fake Kazoo client
-    without the need of real ZooKeeper servers.
-    """
-
-    fake_storage = zake.fake_storage.FakeStorage(
-        zake.fake_client.k_threading.SequentialThreadingHandler())
-
-    def __init__(self, member_id, parsed_url, options):
-        super(ZakeDriver, self).__init__(member_id, parsed_url, options)
-        self._coord = zake.fake_client.FakeClient(storage=self.fake_storage)
-
-    @staticmethod
-    def watch_join_group(group_id, callback):
-        raise NotImplementedError
-
-    @staticmethod
-    def unwatch_join_group(group_id, callback):
-        raise NotImplementedError
-
-    @staticmethod
-    def watch_leave_group(group_id, callback):
-        raise NotImplementedError
-
-    @staticmethod
-    def unwatch_leave_group(group_id, callback):
-        raise NotImplementedError
-
-    @staticmethod
-    def watch_elected_as_leader(group_id, callback):
-        raise NotImplementedError
-
-    @staticmethod
-    def unwatch_elected_as_leader(group_id, callback):
-        raise NotImplementedError
-
-    @staticmethod
-    def run_watchers():
-        raise NotImplementedError
 
 
 class ZooAsyncResult(coordination.CoordAsyncResult):
