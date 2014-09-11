@@ -126,7 +126,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
         self.heartbeat()
 
     def stop(self):
-        for lock in self._acquired_locks:
+        for lock in list(self._acquired_locks):
             lock.release()
 
         self.client.delete(self._encode_member_id(self._member_id))
