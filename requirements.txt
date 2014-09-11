@@ -11,3 +11,4 @@ msgpack-python
 retrying!=1.3.0
 futures>=2.1.6
 oslo.utils>=1.0.0
+redis

@@ -60,8 +60,22 @@ if ! check_port 2181 && [ -d $ZOO_CONF ]; then
     fi
 fi
 
+if ! check_port 6379; then
+    redis_bin=$(which redis-server || true)
+    if [ -n "$redis_bin" ]; then
+        $redis_bin --port 6379 &
+    else
+        echo "Redis server not available, testing being skipped..."
+    fi
+fi
+
 if ! check_port 11211; then
-    memcached &
+    memcached_bin=$(which memcached || true)
+    if [ -n "$memcached_bin" ]; then
+        $memcached_bin &
+    else
+        echo "Memcached server not available, testing being skipped..."
+    fi
 fi
 
 # Yield execution to venv command
