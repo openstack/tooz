@@ -20,6 +20,7 @@ import collections
 import six
 from stevedore import driver
 
+import tooz
 from tooz.openstack.common import network_utils
 
 TOOZ_BACKENDS_NAMESPACE = "tooz.backends"
@@ -75,7 +76,7 @@ class CoordinationDriver(object):
     @staticmethod
     def run_watchers():
         """Run the watchers callback."""
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     @abc.abstractmethod
     def watch_join_group(self, group_id, callback):
@@ -166,7 +167,7 @@ class CoordinationDriver(object):
 
         :param group_id: The group where we don't want to be a leader anymore
         """
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     def start(self):
         """Start the service engine.
@@ -192,7 +193,7 @@ class CoordinationDriver(object):
         :returns: None
         :rtype: CoordAsyncResult
         """
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     @staticmethod
     def get_groups():
@@ -201,7 +202,7 @@ class CoordinationDriver(object):
         :returns: the list of all created group ids
         :rtype: CoordAsyncResult
         """
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     @staticmethod
     def join_group(group_id, capabilities=b""):
@@ -214,7 +215,7 @@ class CoordinationDriver(object):
         :returns: None
         :rtype: CoordAsyncResult
         """
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     @staticmethod
     def leave_group(group_id):
@@ -225,7 +226,7 @@ class CoordinationDriver(object):
         :returns: None
         :rtype: CoordAsyncResult
         """
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     @staticmethod
     def get_members(group_id):
@@ -235,7 +236,7 @@ class CoordinationDriver(object):
         :returns: list of all created group ids
         :rtype: CoordAsyncResult
         """
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     @staticmethod
     def get_member_capabilities(group_id, member_id):
@@ -248,7 +249,7 @@ class CoordinationDriver(object):
         :returns: capabilities of a member
         :rtype: CoordAsyncResult
         """
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     @staticmethod
     def update_capabilities(group_id, capabilities):
@@ -262,7 +263,7 @@ class CoordinationDriver(object):
         :returns: None
         :rtype: CoordAsyncResult
         """
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     @staticmethod
     def get_leader(group_id):
@@ -272,7 +273,7 @@ class CoordinationDriver(object):
         :returns: the leader
         :rtype: CoordAsyncResult
         """
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     @staticmethod
     def get_lock(name):
@@ -282,7 +283,7 @@ class CoordinationDriver(object):
                      nodes.
 
         """
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     @staticmethod
     def heartbeat():

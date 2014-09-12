@@ -17,6 +17,7 @@ from __future__ import absolute_import
 from zake import fake_client
 from zake import fake_storage
 
+import tooz
 from tooz.drivers import zookeeper
 
 
@@ -35,28 +36,28 @@ class ZakeDriver(zookeeper.BaseZooKeeperDriver):
 
     @staticmethod
     def watch_join_group(group_id, callback):
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     @staticmethod
     def unwatch_join_group(group_id, callback):
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     @staticmethod
     def watch_leave_group(group_id, callback):
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     @staticmethod
     def unwatch_leave_group(group_id, callback):
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     @staticmethod
     def watch_elected_as_leader(group_id, callback):
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     @staticmethod
     def unwatch_elected_as_leader(group_id, callback):
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     @staticmethod
     def run_watchers():
-        raise NotImplementedError
+        raise tooz.NotImplemented

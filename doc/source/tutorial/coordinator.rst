@@ -12,7 +12,7 @@ driver you want it to use. Different drivers may provide different set of
 capabilities.
 
 If a driver does not support a feature, it will raise a
-:class:`~NotImplementedError` exception.
+:class:`~tooz.NotImplemented` exception.
 
 This example program loads a basic coordinataor using the ZooKeeper based
 driver.

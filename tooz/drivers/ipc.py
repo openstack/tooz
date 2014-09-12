@@ -17,6 +17,7 @@
 # under the License.
 import posix_ipc
 
+import tooz
 from tooz import coordination
 from tooz import locking
 from tooz.openstack.common import lockutils
@@ -62,24 +63,24 @@ class IPCDriver(coordination.CoordinationDriver):
 
     @staticmethod
     def watch_join_group(group_id, callback):
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     @staticmethod
     def unwatch_join_group(group_id, callback):
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     @staticmethod
     def watch_leave_group(group_id, callback):
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     @staticmethod
     def unwatch_leave_group(group_id, callback):
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     @staticmethod
     def watch_elected_as_leader(group_id, callback):
-        raise NotImplementedError
+        raise tooz.NotImplemented
 
     @staticmethod
     def unwatch_elected_as_leader(group_id, callback):
-        raise NotImplementedError
+        raise tooz.NotImplemented

@@ -19,13 +19,15 @@ import functools
 import six
 from testtools import testcase
 
+import tooz
+
 
 def _skip_decorator(func):
     @functools.wraps(func)
     def skip_if_not_implemented(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except NotImplementedError as e:
+        except tooz.NotImplemented as e:
             raise testcase.TestSkipped(str(e))
     return skip_if_not_implemented
 
