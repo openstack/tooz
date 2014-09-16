@@ -17,11 +17,10 @@ from __future__ import absolute_import
 from zake import fake_client
 from zake import fake_storage
 
-import tooz
 from tooz.drivers import zookeeper
 
 
-class ZakeDriver(zookeeper.BaseZooKeeperDriver):
+class ZakeDriver(zookeeper.KazooDriver):
     """The driver using the Zake client which mimic a fake Kazoo client
     without the need of real ZooKeeper servers.
     """
@@ -30,34 +29,6 @@ class ZakeDriver(zookeeper.BaseZooKeeperDriver):
     fake_storage = fake_storage.FakeStorage(
         fake_client.k_threading.SequentialThreadingHandler())
 
-    def __init__(self, member_id, parsed_url, options):
-        super(ZakeDriver, self).__init__(member_id, parsed_url, options)
-        self._coord = fake_client.FakeClient(storage=self.fake_storage)
-
-    @staticmethod
-    def watch_join_group(group_id, callback):
-        raise tooz.NotImplemented
-
-    @staticmethod
-    def unwatch_join_group(group_id, callback):
-        raise tooz.NotImplemented
-
-    @staticmethod
-    def watch_leave_group(group_id, callback):
-        raise tooz.NotImplemented
-
-    @staticmethod
-    def unwatch_leave_group(group_id, callback):
-        raise tooz.NotImplemented
-
-    @staticmethod
-    def watch_elected_as_leader(group_id, callback):
-        raise tooz.NotImplemented
-
-    @staticmethod
-    def unwatch_elected_as_leader(group_id, callback):
-        raise tooz.NotImplemented
-
-    @staticmethod
-    def run_watchers():
-        raise tooz.NotImplemented
+    @classmethod
+    def _make_client(cls, parsed_url, options):
+        return fake_client.FakeClient(storage=cls.fake_storage)

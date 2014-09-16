@@ -207,8 +207,12 @@ class KazooDriver(BaseZooKeeperDriver):
 
     def __init__(self, member_id, parsed_url, options):
         super(KazooDriver, self).__init__(member_id, parsed_url, options)
-        self._coord = client.KazooClient(hosts=parsed_url.netloc)
+        self._coord = self._make_client(parsed_url, options)
         self._member_id = member_id
+
+    @classmethod
+    def _make_client(cls, parsed_url, options):
+        return client.KazooClient(hosts=parsed_url.netloc)
 
     def _watch_group(self, group_id):
         get_members_req = self.get_members(group_id)

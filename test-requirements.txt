@@ -7,5 +7,4 @@ python-subunit
 testrepository>=0.0.17
 testtools>=0.9.32
 testscenarios>=0.4
-zake>=0.1
 coverage>=3.6
