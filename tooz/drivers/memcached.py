@@ -67,8 +67,11 @@ class MemcachedLock(locking.Lock):
         raise Retry
 
     def release(self):
-        self.coord._acquired_locks.remove(self)
-        return bool(self.coord.client.delete(self.name))
+        if self.coord.client.delete(self.name, noreply=False):
+            self.coord._acquired_locks.remove(self)
+            return True
+        else:
+            return False
 
     def heartbeat(self):
         """Keep the lock alive."""
