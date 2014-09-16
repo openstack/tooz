@@ -5,16 +5,20 @@ ZOO_CONF=/etc/zookeeper
 ZOO_DIR=/usr/share/zookeeper
 ZOO_BIN=$ZOO_DIR/bin
 ZOO_TMP_DIR=$(mktemp -d /tmp/ZOO-TMP-XXXXX)
+ZOOKEEPER_STARTED=0
 
 mkdir $ZOO_TMP_DIR/bin
 
 function clean_exit(){
     local error_code="$?"
-    if [ -d $ZOO_CONF ]; then
+    if [ -d $ZOO_CONF ] && [ $ZOOKEEPER_STARTED -eq 1 ]; then
         stop_zookeeper_server
     fi
     rm -rf ${ZOO_TMP_DIR}
-    kill $(jobs -p)
+    local spawned=$(jobs -p)
+    if [ -n "$spawned" ]; then
+        kill $(jobs -p)
+    fi
     return $error_code
 }
 
@@ -38,18 +42,27 @@ function start_zookeeper_server(){
 }
 
 
-function stop_zookeeper_server(){
+function check_port(){
+    netstat -an 2>/dev/null | grep -q "$1"
+    return $?
+}
 
+function stop_zookeeper_server(){
     $ZOO_TMP_DIR/bin/zkServer.sh stop
 }
 
 trap "clean_exit" EXIT
 
-if [ -d $ZOO_CONF ]; then
+if ! check_port 2181 && [ -d $ZOO_CONF ]; then
     start_zookeeper_server
+    if [ $? -eq 0 ]; then
+        ZOOKEEPER_STARTED=1
+    fi
 fi
 
-memcached &
+if ! check_port 11211; then
+    memcached &
+fi
 
 # Yield execution to venv command
 $*
