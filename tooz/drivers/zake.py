@@ -25,7 +25,11 @@ class ZakeDriver(zookeeper.KazooDriver):
     without the need of real ZooKeeper servers.
     """
 
-    # here we need to pass *threading handler* as an argument
+    # NOTE(harlowja): this creates a shared backend 'storage' layer that
+    # would typically exist inside a zookeeper server, but since zake has
+    # no concept of a 'real' zookeeper server we create a fake one and share
+    # it among active clients to simulate zookeeper's consistent storage in
+    # a thread-safe manner.
     fake_storage = fake_storage.FakeStorage(
         fake_client.k_threading.SequentialThreadingHandler())
 
