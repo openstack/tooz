@@ -26,6 +26,7 @@ import six
 
 from tooz import coordination
 from tooz import locking
+from tooz import utils
 
 
 LOG = logging.getLogger(__name__)
@@ -131,7 +132,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
                 timeout=self.timeout,
                 connect_timeout=self.timeout)
         except Exception as e:
-            raise coordination.ToozConnectionError(e)
+            raise coordination.ToozConnectionError(utils.exception_message(e))
         self._group_members = collections.defaultdict(set)
         self._acquired_locks = []
         self.heartbeat()

@@ -24,6 +24,7 @@ import six
 
 from tooz import coordination
 from tooz import locking
+from tooz import utils
 
 
 class ZooKeeperLock(locking.Lock):
@@ -87,7 +88,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         except exceptions.NoNodeError:
             raise coordination.ToozError("tooz namespace has not been created")
         except exceptions.ZookeeperError as e:
-            raise coordination.ToozError(str(e))
+            raise coordination.ToozError(utils.exception_message(e))
 
     def create_group(self, group_id):
         group_path = self._path_group(group_id)
@@ -104,7 +105,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         except exceptions.NoNodeError:
             raise coordination.GroupNotCreated(group_id)
         except exceptions.ZookeeperError as e:
-            raise coordination.ToozError(str(e))
+            raise coordination.ToozError(utils.exception_message(e))
 
     def join_group(self, group_id, capabilities=b""):
         member_path = self._path_member(group_id, self._member_id)
@@ -121,7 +122,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         except exceptions.NoNodeError:
             raise coordination.MemberNotJoined(group_id, member_id)
         except exceptions.ZookeeperError as e:
-            raise coordination.ToozError(str(e))
+            raise coordination.ToozError(utils.exception_message(e))
 
     def leave_group(self, group_id):
         member_path = self._path_member(group_id, self._member_id)
@@ -136,7 +137,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         except exceptions.NoNodeError:
             raise coordination.GroupNotCreated(group_id)
         except exceptions.ZookeeperError as e:
-            raise coordination.ToozError(str(e))
+            raise coordination.ToozError(utils.exception_message(e))
         else:
             return set(m.encode('ascii') for m in members_ids)
 
@@ -154,7 +155,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         except exceptions.NoNodeError:
             raise coordination.MemberNotJoined(group_id, member_id)
         except exceptions.ZookeeperError as e:
-            raise coordination.ToozError(str(e))
+            raise coordination.ToozError(utils.exception_message(e))
 
     def update_capabilities(self, group_id, capabilities):
         member_path = self._path_member(group_id, self._member_id)
@@ -170,7 +171,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         except exceptions.NoNodeError:
             raise coordination.MemberNotJoined(group_id, member_id)
         except exceptions.ZookeeperError as e:
-            raise coordination.ToozError(str(e))
+            raise coordination.ToozError(utils.exception_message(e))
         else:
             return capabilities
 
@@ -188,7 +189,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         except exceptions.NoNodeError:
             raise coordination.ToozError("tooz namespace has not been created")
         except exceptions.ZookeeperError as e:
-            raise coordination.ToozError(str(e))
+            raise coordination.ToozError(utils.exception_message(e))
         else:
             return set(g.encode('ascii') for g in group_ids)
 
