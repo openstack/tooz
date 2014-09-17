@@ -60,7 +60,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
             raise coordination.ToozError("operation error: %s" % (e))
 
         self._group_members = collections.defaultdict(set)
-        self._watchers = six.moves.queue.Queue()
+        self._watchers = collections.deque()
         self._leader_locks = {}
 
     def stop(self):
@@ -229,7 +229,7 @@ class KazooDriver(BaseZooKeeperDriver):
                 # Copy function in case it's removed later from the
                 # hook list
                 hooks = copy.copy(self._hooks_join_group[group_id])
-                self._watchers.put(
+                self._watchers.append(
                     lambda: hooks.run(
                         coordination.MemberJoinedGroup(
                             group_id,
@@ -239,7 +239,7 @@ class KazooDriver(BaseZooKeeperDriver):
                 # Copy function in case it's removed later from the
                 # hook list
                 hooks = copy.copy(self._hooks_leave_group[group_id])
-                self._watchers.put(
+                self._watchers.append(
                     lambda: hooks.run(
                         coordination.MemberLeftGroup(
                             group_id,
@@ -338,11 +338,8 @@ class KazooDriver(BaseZooKeeperDriver):
 
     def run_watchers(self):
         ret = []
-        while True:
-            try:
-                cb = self._watchers.get(block=False)
-            except six.moves.queue.Empty:
-                break
+        while self._watchers:
+            cb = self._watchers.popleft()
             ret.extend(cb())
 
         for group_id in six.iterkeys(self._hooks_elected_leader):
