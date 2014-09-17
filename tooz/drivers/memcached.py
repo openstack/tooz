@@ -17,6 +17,7 @@
 # under the License.
 
 import collections
+import logging
 
 import msgpack
 import pymemcache.client
@@ -25,6 +26,9 @@ import six
 
 from tooz import coordination
 from tooz import locking
+
+
+LOG = logging.getLogger(__name__)
 
 
 class Retry(Exception):
@@ -68,8 +72,12 @@ class MemcachedLock(locking.Lock):
 
     def heartbeat(self):
         """Keep the lock alive."""
-        self.coord.client.touch(self.name,
-                                expire=self.timeout)
+        poked = self.coord.client.touch(self.name,
+                                        expire=self.timeout,
+                                        noreply=False)
+        if not poked:
+            LOG.warn("Unable to heartbeat by updating key '%s' with extended"
+                     " expiry of %s seconds", self.name, self.timeout)
 
     def get_owner(self):
         return self.coord.client.get(self.name)
