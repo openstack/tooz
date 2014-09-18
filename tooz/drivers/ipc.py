@@ -46,12 +46,12 @@ class IPCLock(locking.Lock):
         super(IPCLock, self).__init__(name)
         self.key = self.ftok(name, self._LOCK_PROJECT)
         try:
-            self.lock = sysv_ipc.Semaphore(self.key,
-                                           flags=sysv_ipc.IPC_CREX,
-                                           initial_value=1)
+            self._lock = sysv_ipc.Semaphore(self.key,
+                                            flags=sysv_ipc.IPC_CREX,
+                                            initial_value=1)
         except sysv_ipc.ExistentialError:
-            self.lock = sysv_ipc.Semaphore(self.key)
-        self.lock.undo = True
+            self._lock = sysv_ipc.Semaphore(self.key)
+        self._lock.undo = True
         self.timeout = timeout
 
     @staticmethod
@@ -70,7 +70,7 @@ class IPCLock(locking.Lock):
     def acquire(self, blocking=True):
         timeout = self.timeout if blocking else 0
         try:
-            self.lock.acquire(timeout=timeout)
+            self._lock.acquire(timeout=timeout)
         except (sysv_ipc.BusyError, sysv_ipc.ExistentialError):
             return False
         else:
@@ -78,7 +78,7 @@ class IPCLock(locking.Lock):
 
     def release(self):
         try:
-            self.lock.release()
+            self._lock.release()
         except sysv_ipc.ExistentialError:
             return False
         else:
@@ -99,7 +99,7 @@ class IPCLock(locking.Lock):
         concurrently using the same lock while it is being destroyed...
         """
         try:
-            self.lock.remove()
+            self._lock.remove()
         except sysv_ipc.ExistentialError:
             pass
 
