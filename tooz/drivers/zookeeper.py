@@ -42,7 +42,7 @@ class ZooKeeperLock(locking.Lock):
 
 
 class BaseZooKeeperDriver(coordination.CoordinationDriver):
-    """Initialize the IPC driver.
+    """Initialize the zookeeper driver.
 
     :param timeout: connection timeout to wait when first connecting to the
                     zookeeper server
