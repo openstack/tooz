@@ -368,14 +368,13 @@ class KazooDriver(BaseZooKeeperDriver):
 
 
 class ZooAsyncResult(coordination.CoordAsyncResult):
+    def __init__(self, kazoo_async_result, handler, **kwargs):
+        self._kazoo_async_result = kazoo_async_result
+        self._handler = handler
+        self._kwargs = kwargs
 
-    def __init__(self, kazooAsyncResult, handler, **kwargs):
-        self.kazooAsyncResult = kazooAsyncResult
-        self.handler = handler
-        self.kwargs = kwargs
-
-    def get(self, timeout=15):
-        return self.handler(self.kazooAsyncResult, timeout, **self.kwargs)
+    def get(self, timeout=10):
+        return self._handler(self._kazoo_async_result, timeout, **self._kwargs)
 
     def done(self):
-        return self.kazooAsyncResult.ready()
+        return self._kazoo_async_result.ready()

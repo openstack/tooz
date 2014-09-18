@@ -361,10 +361,10 @@ class MemcachedAsyncResult(coordination.CoordAsyncResult):
 
     """
     def __init__(self, result):
-        self.result = result
+        self._result = result
 
     def get(self, timeout=0):
-        return self.result
+        return self._result
 
     @staticmethod
     def done():
@@ -379,10 +379,10 @@ class MemcachedAsyncError(coordination.CoordAsyncResult):
 
     """
     def __init__(self, error):
-        self.error = error
+        self._error = error
 
-    def get(self, timeout=0):
-        raise self.error
+    def get(self, timeout=10):
+        raise self._error
 
     @staticmethod
     def done():
