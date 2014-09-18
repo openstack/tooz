@@ -112,9 +112,7 @@ class IPCDriver(coordination.CoordinationDriver):
         :param lock_timeout: how many seconds to wait when trying to acquire
                              a lock in blocking mode. None means forever, 0
                              means don't wait, any other value means wait
-                             this amount of seconds. super(IPCDriver,
-                             self).__init__() self.lock_timeout =
-                             lock_timeout
+                             this amount of seconds.
         """
         super(IPCDriver, self).__init__()
         self.lock_timeout = int(options.get('lock_timeout', ['30'])[-1])

@@ -44,7 +44,7 @@ class Lock(object):
         """
 
     @abc.abstractmethod
-    def acquire(self):
+    def acquire(self, blocking=True):
         """Attempts to acquire the lock.
 
         :returns: returns true if acquired (false if not)
