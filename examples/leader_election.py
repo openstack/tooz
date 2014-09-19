@@ -1,14 +1,21 @@
+import time
+import uuid
+
+import six
+
 from tooz import coordination
 
-coordinator = coordination.get_coordinator('zookeeper://localhost', b'host-1')
+ALIVE_TIME = 1
+coordinator = coordination.get_coordinator('kazoo://localhost', b'host-1')
 coordinator.start()
 
 # Create a group
-request = coordinator.create_group(b"my group")
+group = six.binary_type(six.text_type(uuid.uuid4()).encode('ascii'))
+request = coordinator.create_group(group)
 request.get()
 
 # Join a group
-request = coordinator.join_group(b"my group")
+request = coordinator.join_group(group)
 request.get()
 
 
@@ -18,11 +25,12 @@ def when_i_am_elected_leader(event):
 
 
 # Propose to be a leader for the group
-coordinator.watch_elected_as_leader(b"my_group",
-                                    when_i_am_elected_leader)
+coordinator.watch_elected_as_leader(group, when_i_am_elected_leader)
 
-while True:
+start = time.time()
+while time.time() - start < ALIVE_TIME:
     coordinator.heartbeat()
     coordinator.run_watchers()
+    time.sleep(0.1)
 
 coordinator.stop()
