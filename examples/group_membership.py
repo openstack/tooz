@@ -1,14 +1,19 @@
+import uuid
+
+import six
+
 from tooz import coordination
 
-coordinator = coordination.get_coordinator('zookeeper://localhost', b'host-1')
+coordinator = coordination.get_coordinator('kazoo://localhost', b'host-1')
 coordinator.start()
 
 # Create a group
-request = coordinator.create_group(b"my group")
+group = six.binary_type(six.text_type(uuid.uuid4()).encode('ascii'))
+request = coordinator.create_group(group)
 request.get()
 
 # Join a group
-request = coordinator.join_group(b"my group")
+request = coordinator.join_group(group)
 request.get()
 
 coordinator.stop()
