@@ -9,3 +9,4 @@ zake>=0.1.6
 sysv_ipc>=0.6.8
 msgpack-python
 retrying
+futures>=2.1.6
