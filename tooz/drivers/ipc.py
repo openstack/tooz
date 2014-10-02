@@ -45,12 +45,22 @@ class IPCLock(locking.Lock):
     def __init__(self, name, timeout):
         super(IPCLock, self).__init__(name)
         self.key = self.ftok(name, self._LOCK_PROJECT)
-        try:
-            self._lock = sysv_ipc.Semaphore(self.key,
-                                            flags=sysv_ipc.IPC_CREX,
-                                            initial_value=1)
-        except sysv_ipc.ExistentialError:
-            self._lock = sysv_ipc.Semaphore(self.key)
+        while True:
+            try:
+                # Try to create the lock
+                self._lock = sysv_ipc.Semaphore(self.key,
+                                                flags=sysv_ipc.IPC_CREX,
+                                                initial_value=1)
+            except sysv_ipc.ExistentialError:
+                # We failed to create it because it already exists, then try to
+                # grab the existing one.
+                try:
+                    self._lock = sysv_ipc.Semaphore(self.key)
+                except sysv_ipc.ExistentialError:
+                    # Semaphore has been deleted in the mean time, retry from
+                    # the beginning!
+                    pass
+                break
         self._lock.undo = True
         self.timeout = timeout
 
