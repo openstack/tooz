@@ -50,6 +50,3 @@ class Lock(object):
         :returns: returns true if acquired (false if not)
         :rtype: bool
         """
-
-    def destroy(self):
-        """Removes the lock + any resources associated with the lock."""
