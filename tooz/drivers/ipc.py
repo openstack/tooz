@@ -69,6 +69,10 @@ class IPCLock(locking.Lock):
 
     def acquire(self, blocking=True):
         timeout = self.timeout if blocking else 0
+        if ((blocking is False or timeout is not None)
+           and sysv_ipc.SEMAPHORE_TIMEOUT_SUPPORTED is False):
+            raise tooz.NotImplemented(
+                "This system does not support semaphore timeout")
         try:
             self._lock.acquire(timeout=timeout)
         except (sysv_ipc.BusyError, sysv_ipc.ExistentialError):
