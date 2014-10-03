@@ -17,11 +17,11 @@
 import abc
 import collections
 
+from oslo.utils import netutils
 import six
 from stevedore import driver
 
 import tooz
-from tooz.openstack.common import network_utils
 
 TOOZ_BACKENDS_NAMESPACE = "tooz.backends"
 
@@ -322,7 +322,7 @@ def get_coordinator(backend_url, member_id):
     :param member_id: the id of the member
     :type member_id: str
     """
-    parsed_url = network_utils.urlsplit(backend_url)
+    parsed_url = netutils.urlsplit(backend_url)
     parsed_qs = six.moves.urllib.parse.parse_qs(parsed_url.query)
     return driver.DriverManager(
         namespace=TOOZ_BACKENDS_NAMESPACE,
