@@ -45,24 +45,8 @@ class IPCLock(locking.Lock):
     def __init__(self, name, timeout):
         super(IPCLock, self).__init__(name)
         self.key = self.ftok(name, self._LOCK_PROJECT)
-        while True:
-            try:
-                # Try to create the lock
-                self._lock = sysv_ipc.Semaphore(self.key,
-                                                flags=sysv_ipc.IPC_CREX,
-                                                initial_value=1)
-            except sysv_ipc.ExistentialError:
-                # We failed to create it because it already exists, then try to
-                # grab the existing one.
-                try:
-                    self._lock = sysv_ipc.Semaphore(self.key)
-                except sysv_ipc.ExistentialError:
-                    # Semaphore has been deleted in the mean time, retry from
-                    # the beginning!
-                    pass
-                break
-        self._lock.undo = True
         self.timeout = timeout
+        self._lock = None
 
     @staticmethod
     def ftok(name, project):
@@ -83,39 +67,38 @@ class IPCLock(locking.Lock):
            and sysv_ipc.SEMAPHORE_TIMEOUT_SUPPORTED is False):
             raise tooz.NotImplemented(
                 "This system does not support semaphore timeout")
-        try:
-            self._lock.acquire(timeout=timeout)
-        except (sysv_ipc.BusyError, sysv_ipc.ExistentialError):
-            return False
-        else:
-            return True
+        while True:
+            try:
+                self._lock = sysv_ipc.Semaphore(self.key,
+                                                flags=sysv_ipc.IPC_CREX,
+                                                initial_value=1)
+                self._lock.undo = True
+            except sysv_ipc.ExistentialError:
+                # We failed to create it because it already exists, then try to
+                # grab the existing one.
+                try:
+                    self._lock = sysv_ipc.Semaphore(self.key)
+                    self._lock.undo = True
+                except sysv_ipc.ExistentialError:
+                    # Semaphore has been deleted in the mean time, retry from
+                    # the beginning!
+                    pass
+            try:
+                self._lock.acquire(timeout=timeout)
+            except sysv_ipc.BusyError:
+                return False
+            except sysv_ipc.ExistentialError:
+                # Likely the lock has been deleted in the meantime, retry
+                pass
+            else:
+                return True
 
     def release(self):
-        try:
-            self._lock.release()
-        except sysv_ipc.ExistentialError:
-            return False
-        else:
-            return True
-
-    def destroy(self):
-        """This will destroy the lock.
-
-        NOTE(harlowja): this will destroy the lock, and if it is being shared
-        across processes this can have unintended consquences, so it *must*
-        only be used when it is *safe* to remove it (ie at a known program
-        exit point, where it can be ensured that no other process will be
-        using it, or that if other processes are using it they can tolerate
-        it being destroyed).
-
-        Read your man pages for `semctl(IPC_RMID)` before using this to
-        understand its side-effects on other programs that *may* be
-        concurrently using the same lock while it is being destroyed...
-        """
-        try:
+        if self._lock is not None:
             self._lock.remove()
-        except sysv_ipc.ExistentialError:
-            pass
+            self._lock = None
+            return True
+        return False
 
 
 class IPCDriver(coordination.CoordinationDriver):
