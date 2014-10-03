@@ -47,6 +47,11 @@ class Lock(object):
     def acquire(self, blocking=True):
         """Attempts to acquire the lock.
 
+        :param blocking: If True, blocks until the lock is acquired. If False,
+                         returns right away. Otherwise, the value is used as a
+                         timeout value and the call returns maximum after this
+                         number of seonds.
         :returns: returns true if acquired (false if not)
         :rtype: bool
+
         """

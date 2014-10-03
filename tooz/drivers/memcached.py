@@ -41,10 +41,15 @@ def retry_if_retry_raised(exception):
     return isinstance(exception, Retry)
 
 
+_RETRYING_KWARGS = dict(
+    retry_on_exception=retry_if_retry_raised,
+    wait='exponential_sleep',
+    wait_exponential_max=1,
+)
+
+
 def retry(f):
-    return retrying.retry(
-        retry_on_exception=retry_if_retry_raised,
-        wait='exponential_sleep', wait_exponential_max=1)(f)
+    return retrying.retry(**_RETRYING_KWARGS)(f)
 
 
 class MemcachedLock(locking.Lock):
@@ -57,16 +62,20 @@ class MemcachedLock(locking.Lock):
 
     @retry
     def acquire(self, blocking=True):
-        if self.coord.client.add(
-                self.name,
-                self.coord._member_id,
-                expire=self.timeout,
-                noreply=False):
-            self.coord._acquired_locks.append(self)
-            return True
-        if not blocking:
-            return False
-        raise Retry
+        def _acquire():
+            if self.coord.client.add(
+                    self.name,
+                    self.coord._member_id,
+                    expire=self.timeout,
+                    noreply=False):
+                self.coord._acquired_locks.append(self)
+                return True
+            if blocking is False:
+                return False
+            raise Retry
+        kwargs = _RETRYING_KWARGS.copy()
+        kwargs['stop_max_delay'] = blocking
+        return retrying.Retrying(**kwargs).call(_acquire)
 
     def release(self):
         if self.coord.client.delete(self.name, noreply=False):

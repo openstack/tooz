@@ -42,10 +42,9 @@ class IPCLock(locking.Lock):
     """
     _LOCK_PROJECT = b'__TOOZ_LOCK_'
 
-    def __init__(self, name, timeout):
+    def __init__(self, name):
         super(IPCLock, self).__init__(name)
         self.key = self.ftok(name, self._LOCK_PROJECT)
-        self.timeout = timeout
         self._lock = None
 
     @staticmethod
@@ -62,11 +61,17 @@ class IPCLock(locking.Lock):
         return (int(h.hexdigest(), 16) % _KEY_RANGE) + sysv_ipc.KEY_MIN
 
     def acquire(self, blocking=True):
-        timeout = self.timeout if blocking else 0
-        if ((blocking is False or timeout is not None)
+        if (blocking is not True
            and sysv_ipc.SEMAPHORE_TIMEOUT_SUPPORTED is False):
             raise tooz.NotImplemented(
                 "This system does not support semaphore timeout")
+        # Convert blocking argument to a valid timeout value
+        if blocking is True:
+            timeout = None
+        elif blocking is False:
+            timeout = 0
+        else:
+            timeout = blocking
         while True:
             try:
                 self._lock = sysv_ipc.Semaphore(self.key,
@@ -104,18 +109,12 @@ class IPCLock(locking.Lock):
 class IPCDriver(coordination.CoordinationDriver):
 
     def __init__(self, member_id, parsed_url, options):
-        """Initialize the IPC driver.
-
-        :param lock_timeout: how many seconds to wait when trying to acquire
-                             a lock in blocking mode. None means forever, 0
-                             means don't wait, any other value means wait
-                             this amount of seconds.
-        """
+        """Initialize the IPC driver."""
         super(IPCDriver, self).__init__()
-        self.lock_timeout = int(options.get('lock_timeout', ['30'])[-1])
 
-    def get_lock(self, name):
-        return IPCLock(name, self.lock_timeout)
+    @staticmethod
+    def get_lock(name):
+        return IPCLock(name)
 
     @staticmethod
     def watch_join_group(group_id, callback):

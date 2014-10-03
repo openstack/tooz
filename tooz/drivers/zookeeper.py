@@ -28,15 +28,13 @@ from tooz import utils
 
 
 class ZooKeeperLock(locking.Lock):
-    def __init__(self, name, lock, timeout):
+    def __init__(self, name, lock):
         super(ZooKeeperLock, self).__init__(name)
         self._lock = lock
-        self.timeout = timeout
 
     def acquire(self, blocking=True):
-        timeout = self.timeout if blocking else None
-        return self._lock.acquire(blocking=blocking,
-                                  timeout=timeout)
+        return self._lock.acquire(blocking=bool(blocking),
+                                  timeout=blocking)
 
     def release(self):
         return self._lock.release()
@@ -47,10 +45,6 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
 
     :param timeout: connection timeout to wait when first connecting to the
                     zookeeper server
-    :param lock_timeout: how many seconds to wait when trying to acquire
-                         a lock in blocking mode. None means forever, 0
-                         means don't wait, any other value means wait
-                         this amount of seconds.
     """
 
     _TOOZ_NAMESPACE = b"tooz"
@@ -59,7 +53,6 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         super(BaseZooKeeperDriver, self).__init__()
         self._member_id = member_id
         self.timeout = int(options.get('timeout', ['10'])[-1])
-        self.lock_timeout = int(options.get('lock_timeout', ['30'])[-1])
 
     def start(self):
         try:
@@ -347,8 +340,7 @@ class KazooDriver(BaseZooKeeperDriver):
             name,
             self._coord.Lock(
                 self.paths_join(b"/", self._TOOZ_NAMESPACE, b"locks", name),
-                self._member_id.decode('ascii')),
-            self.lock_timeout)
+                self._member_id.decode('ascii')))
 
     def run_watchers(self):
         ret = []
