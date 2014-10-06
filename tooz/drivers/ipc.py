@@ -87,14 +87,14 @@ class IPCLock(locking.Lock):
                 except sysv_ipc.ExistentialError:
                     # Semaphore has been deleted in the mean time, retry from
                     # the beginning!
-                    pass
+                    continue
             try:
                 self._lock.acquire(timeout=timeout)
             except sysv_ipc.BusyError:
                 return False
             except sysv_ipc.ExistentialError:
                 # Likely the lock has been deleted in the meantime, retry
-                pass
+                continue
             else:
                 return True
 
