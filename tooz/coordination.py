@@ -343,6 +343,10 @@ class ToozConnectionError(ToozError):
     """
 
 
+class OperationTimedOut(ToozError):
+    """Exception raised when an operation times out."""
+
+
 class GroupNotCreated(ToozError):
     """Exception raised when the caller request a group which does
     not exist.
