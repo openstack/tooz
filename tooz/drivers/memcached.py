@@ -377,7 +377,10 @@ class MemcachedFutureResult(coordination.CoordAsyncResult):
         self._fut = fut
 
     def get(self, timeout=10):
-        return self._fut.result(timeout=timeout)
+        try:
+            return self._fut.result(timeout=timeout)
+        except futures.TimeoutError as e:
+            raise coordination.OperationTimedOut(utils.exception_message(e))
 
     def done(self):
         return self._fut.done()
