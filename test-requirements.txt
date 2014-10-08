@@ -9,3 +9,4 @@ testtools>=0.9.32
 testscenarios>=0.4
 coverage>=3.6
 sysv_ipc>=0.6.8
+psycopg2
