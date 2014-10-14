@@ -150,16 +150,17 @@ class MemcachedDriver(coordination.CoordinationDriver):
         self.heartbeat()
 
     def stop(self):
+        for lock in list(self._acquired_locks):
+            lock.release()
+        self.client.delete(self._encode_member_id(self._member_id))
+        for g in list(self._groups):
+            try:
+                self.leave_group(g).get()
+            except coordination.ToozError:
+                LOG.warning("Unable to leave group '%s'", g, exc_info=True)
         if self._executor is not None:
             self._executor.shutdown(wait=True)
             self._executor = None
-
-        for lock in list(self._acquired_locks):
-            lock.release()
-
-        self.client.delete(self._encode_member_id(self._member_id))
-        map(self.leave_group, list(self._groups))
-
         self.client.close()
 
     def _encode_group_id(self, group_id):
@@ -244,7 +245,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
                                cas):
             # It changed, let's try again
             raise Retry
-        self._groups.remove(group_id)
+        self._groups.discard(group_id)
         return MemcachedAsyncResult(None)
 
     def _get_members(self, group_id):
