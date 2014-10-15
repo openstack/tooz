@@ -119,6 +119,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
             'lock_timeout', default_timeout)[-1])
         self.leader_timeout = int(options.get(
             'leader_timeout', default_timeout)[-1])
+        self._acquired_locks = []
 
     @staticmethod
     def _msgpack_serializer(key, value):
@@ -134,7 +135,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
             return msgpack.loads(value)
         raise Exception("Unknown serialization format")
 
-    def start(self):
+    def _start(self):
         try:
             self.client = pymemcache.client.Client(
                 self.host,
@@ -145,11 +146,10 @@ class MemcachedDriver(coordination.CoordinationDriver):
         except Exception as e:
             raise coordination.ToozConnectionError(utils.exception_message(e))
         self._group_members = collections.defaultdict(set)
-        self._acquired_locks = []
         self._executor = futures.ThreadPoolExecutor(max_workers=1)
         self.heartbeat()
 
-    def stop(self):
+    def _stop(self):
         for lock in list(self._acquired_locks):
             lock.release()
         self.client.delete(self._encode_member_id(self._member_id))

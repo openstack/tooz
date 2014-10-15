@@ -219,10 +219,7 @@ class RedisDriver(coordination.CoordinationDriver):
             kwargs['socket_timeout'] = default_socket_timeout
         return redis.StrictRedis(**kwargs)
 
-    def start(self):
-        if self._started:
-            raise coordination.ToozError("Can not start a driver which has"
-                                         " not been stopped")
+    def _start(self):
         self._executor = futures.ThreadPoolExecutor(max_workers=1)
         try:
             self._client = self._make_client(self._parsed_url, self._options,
@@ -264,10 +261,7 @@ class RedisDriver(coordination.CoordinationDriver):
                 LOG.warning("Unable to heartbeat lock '%s'", lock,
                             exc_info=True)
 
-    def stop(self):
-        if not self._started:
-            raise coordination.ToozError("Can not stop a driver which has"
-                                         " not been started")
+    def _stop(self):
         while self._acquired_locks:
             lock = self._acquired_locks.pop()
             try:

@@ -57,6 +57,12 @@ class TestAPI(testscenarios.TestWithScenarios,
         self._coord.stop()
         super(TestAPI, self).tearDown()
 
+    def test_stop_first(self):
+        c = tooz.coordination.get_coordinator(self.url,
+                                              self.member_id)
+        self.assertRaises(tooz.coordination.ToozError,
+                          c.stop)
+
     def test_create_group(self):
         self._coord.create_group(self.group_id).get()
         all_group_ids = self._coord.get_groups().get()
@@ -368,6 +374,9 @@ class TestAPI(testscenarios.TestWithScenarios,
                          self.event.group_id)
         self.assertEqual(client2.get_leader(self.group_id).get(),
                          member_id_test2)
+
+        # Restart the coord because tearDown stops it
+        self._coord.start()
 
     def test_get_leader(self):
         self._coord.create_group(self.group_id).get()

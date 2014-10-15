@@ -63,6 +63,7 @@ class LeaderElected(Event):
 class CoordinationDriver(object):
 
     def __init__(self):
+        self._started = False
         self._hooks_join_group = collections.defaultdict(Hooks)
         self._hooks_leave_group = collections.defaultdict(Hooks)
         self._hooks_elected_leader = collections.defaultdict(Hooks)
@@ -175,14 +176,28 @@ class CoordinationDriver(object):
         If needed, the establishment of a connection to the servers
         is initiated.
         """
+        if self._started:
+            raise ToozError(
+                "Can not start a driver which has not been stopped")
+        self._start()
+        self._started = True
 
-    @staticmethod
-    def stop():
+    def _start(self):
+        pass
+
+    def stop(self):
         """Stop the service engine.
 
         If needed, the connection to servers is closed and the client will
         disappear from all joined groups.
         """
+        if not self._started:
+            raise ToozError("Can not stop a driver which has not been started")
+        self._stop()
+        self._started = False
+
+    def _stop(self):
+        pass
 
     @staticmethod
     def create_group(group_id):

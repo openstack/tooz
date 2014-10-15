@@ -54,7 +54,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         self._member_id = member_id
         self.timeout = int(options.get('timeout', ['10'])[-1])
 
-    def start(self):
+    def _start(self):
         try:
             self._coord.start(timeout=self.timeout)
         except self._coord.handler.timeout_exception as e:
@@ -69,7 +69,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         self._watchers = collections.deque()
         self._leader_locks = {}
 
-    def stop(self):
+    def _stop(self):
         self._coord.stop()
 
     @staticmethod
