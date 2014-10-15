@@ -195,8 +195,6 @@ class TestAPI(testscenarios.TestWithScenarios,
         self._coord.heartbeat()
 
     def test_disconnect_leave_group(self):
-        if self.url.startswith('zake://'):
-            self.skipTest("Zake has a bug that prevent this test from working")
         member_id_test2 = self._get_random_uuid()
         client2 = tooz.coordination.get_coordinator(self.url,
                                                     member_id_test2)
