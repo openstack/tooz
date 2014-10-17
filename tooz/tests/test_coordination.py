@@ -17,6 +17,7 @@ import time
 import uuid
 
 import testscenarios
+from testtools import matchers
 from testtools import testcase
 
 import tooz.coordination
@@ -32,6 +33,13 @@ class TestAPI(testscenarios.TestWithScenarios,
         ('memcached', {'url': 'memcached://?timeout=5'}),
         ('ipc', {'url': 'ipc://'}),
     ]
+
+    def assertRaisesAny(self, exc_classes, callable_obj, *args, **kwargs):
+        checkers = [matchers.MatchesException(exc_class)
+                    for exc_class in exc_classes]
+        matcher = matchers.Raises(matchers.MatchesAny(*checkers))
+        callable_obj = testcase.Nullary(callable_obj, *args, **kwargs)
+        self.assertThat(callable_obj, matcher)
 
     def setUp(self):
         super(TestAPI, self).setUp()
@@ -107,14 +115,10 @@ class TestAPI(testscenarios.TestWithScenarios,
         all_group_ids = self._coord.get_groups().get()
         self.assertTrue(self.group_id not in all_group_ids)
         leave_group = self._coord.leave_group(self.group_id)
-        try:
-            leave_group.get()
         # Drivers raise one of those depending on their capability
-        except (tooz.coordination.MemberNotJoined,
-                tooz.coordination.GroupNotCreated):
-            pass
-        else:
-            self.fail("Exception not raised")
+        self.assertRaisesAny([tooz.coordination.MemberNotJoined,
+                              tooz.coordination.GroupNotCreated],
+                             leave_group.get)
 
     def test_leave_group_not_joined_by_member(self):
         self._coord.create_group(self.group_id).get()
@@ -149,14 +153,10 @@ class TestAPI(testscenarios.TestWithScenarios,
     def test_get_member_capabilities_nonexistent_group(self):
         capa = self._coord.get_member_capabilities(self.group_id,
                                                    self.member_id)
-        try:
-            capa.get()
         # Drivers raise one of those depending on their capability
-        except (tooz.coordination.MemberNotJoined,
-                tooz.coordination.GroupNotCreated):
-            pass
-        else:
-            self.fail("Exception not raised")
+        self.assertRaisesAny([tooz.coordination.MemberNotJoined,
+                              tooz.coordination.GroupNotCreated],
+                             capa.get)
 
     def test_get_member_capabilities_nonjoined_member(self):
         self._coord.create_group(self.group_id).get()
@@ -182,14 +182,10 @@ class TestAPI(testscenarios.TestWithScenarios,
     def test_update_capabilities_with_group_id_nonexistent(self):
         update_cap = self._coord.update_capabilities(self.group_id,
                                                      b'test_capabilities')
-        try:
-            update_cap.get()
         # Drivers raise one of those depending on their capability
-        except (tooz.coordination.MemberNotJoined,
-                tooz.coordination.GroupNotCreated):
-            pass
-        else:
-            self.fail("Exception not raised")
+        self.assertRaisesAny([tooz.coordination.MemberNotJoined,
+                              tooz.coordination.GroupNotCreated],
+                             update_cap.get)
 
     def test_heartbeat(self):
         self._coord.heartbeat()
