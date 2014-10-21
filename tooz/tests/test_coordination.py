@@ -32,6 +32,7 @@ class TestAPI(testscenarios.TestWithScenarios,
         ('zake', {'url': 'zake://?timeout=5'}),
         ('memcached', {'url': 'memcached://?timeout=5'}),
         ('ipc', {'url': 'ipc://'}),
+        ('redis', {'url': 'redis://localhost:6379?timeout=5'}),
     ]
 
     def assertRaisesAny(self, exc_classes, callable_obj, *args, **kwargs):
