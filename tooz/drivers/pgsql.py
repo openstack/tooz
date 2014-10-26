@@ -22,6 +22,7 @@ import six
 
 import tooz
 from tooz import coordination
+from tooz.drivers import _retry
 from tooz import locking
 
 
@@ -39,12 +40,25 @@ class PostgresLock(locking.Lock):
             self.key = h.digest()[0:2]
 
     def acquire(self, blocking=True):
-        if blocking is not True:
-            raise tooz.NotImplemented(
-                "This driver does not support non blocking locks")
-        with self._conn.cursor() as cur:
-            cur.execute("SELECT pg_advisory_lock(%s, %s);", self.key)
-        return True
+        if blocking is True:
+            with self._conn.cursor() as cur:
+                cur.execute("SELECT pg_advisory_lock(%s, %s);", self.key)
+            return True
+        elif blocking is False:
+            with self._conn.cursor() as cur:
+                cur.execute("SELECT pg_try_advisory_lock(%s, %s);", self.key)
+                return cur.fetchone()[0]
+        else:
+            def _acquire():
+                with self._conn.cursor() as cur:
+                    cur.execute("SELECT pg_try_advisory_lock(%s, %s);",
+                                self.key)
+                    if cur.fetchone()[0] is True:
+                        return True
+                    raise _retry.Retry
+            kwargs = _retry.RETRYING_KWARGS.copy()
+            kwargs['stop_max_delay'] = blocking
+            return _retry.Retrying(**kwargs).call(_acquire)
 
     def release(self):
         with self._conn.cursor() as cur:
