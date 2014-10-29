@@ -35,12 +35,29 @@ class TestAPI(testscenarios.TestWithScenarios,
         ('redis', {'url': 'redis://localhost:6379?timeout=5'}),
     ]
 
+    # Only certain drivers have the tested support for timeouts that we test
+    # here, these are the lists of driver types that do support our test type.
+    timeout_capable = [
+        'memcached://',
+        'redis://',
+    ]
+
     def assertRaisesAny(self, exc_classes, callable_obj, *args, **kwargs):
         checkers = [matchers.MatchesException(exc_class)
                     for exc_class in exc_classes]
         matcher = matchers.Raises(matchers.MatchesAny(*checkers))
         callable_obj = testcase.Nullary(callable_obj, *args, **kwargs)
         self.assertThat(callable_obj, matcher)
+
+    def skipIfNotSupported(self, supported):
+        applicable = False
+        for prefix in supported:
+            if self.url.startswith(prefix):
+                applicable = True
+                break
+        if not applicable:
+            self.skipTest("This test only works with %s types for now"
+                          % list(supported))
 
     def setUp(self):
         super(TestAPI, self).setUp()
@@ -214,8 +231,7 @@ class TestAPI(testscenarios.TestWithScenarios,
         self.assertTrue(member_id_test2 not in members_ids)
 
     def test_timeout(self):
-        if not self.url.startswith('memcached://'):
-            self.skipTest("This test only works with memcached for now")
+        self.skipIfNotSupported(self.timeout_capable)
         member_id_test2 = self._get_random_uuid()
         client2 = tooz.coordination.get_coordinator(self.url,
                                                     member_id_test2)
