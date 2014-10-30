@@ -197,7 +197,7 @@ class RedisDriver(coordination.CoordinationDriver):
         self._encoding = encoding[-1]
         timeout = options.get('timeout', [self._CLIENT_DEFAULT_SOCKET_TO])
         self.timeout = int(timeout[-1])
-        self.membership_timeout = int(options.get(
+        self.membership_timeout = float(options.get(
             'membership_timeout', timeout)[-1])
         lock_timeout = options.get('lock_timeout', [self.timeout])
         self.lock_timeout = int(lock_timeout[-1])
@@ -341,9 +341,20 @@ class RedisDriver(coordination.CoordinationDriver):
 
     def heartbeat(self):
         with _translate_failures():
-            self._client.setex(self._encode_beat_id(self._member_id),
-                               time=self.membership_timeout,
-                               value=b"Not dead!")
+            beat_id = self._encode_beat_id(self._member_id)
+            # Use milliseconds if we can (which are more accurate than
+            # just seconds); but this PSETEX support was added in 2.6.0 or
+            # newer so we can only use it then...
+            supports_psetex, _version = self._check_fetch_redis_version(
+                '2.6.0', not_existent=False)
+            if not supports_psetex:
+                expiry_secs = max(0, int(self.membership_timeout))
+                self._client.setex(beat_id, time=expiry_secs,
+                                   value=b"Not dead!")
+            else:
+                expiry_ms = max(0, int(self.membership_timeout * 1000.0))
+                self._client.psetex(beat_id, time_ms=expiry_ms,
+                                    value=b"Not dead!")
         for lock in self._acquired_locks:
             try:
                 lock.heartbeat()
