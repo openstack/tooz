@@ -27,6 +27,8 @@ import redis
 from redis import exceptions
 from redis import lock as redis_locks
 import six
+from six.moves import map as compat_map
+from six.moves import zip as compat_zip
 
 import tooz
 from tooz import coordination
@@ -199,12 +201,15 @@ class RedisDriver(coordination.CoordinationDriver):
         self._encoding = encoding[-1]
         timeout = options.get('timeout', [self._CLIENT_DEFAULT_SOCKET_TO])
         self.timeout = int(timeout[-1])
+        self.membership_timeout = int(options.get(
+            'membership_timeout', timeout)[-1])
         lock_timeout = options.get('lock_timeout', [self.timeout])
         self.lock_timeout = int(lock_timeout[-1])
         namespace = options.get('namespace', ['_tooz'])[-1]
         self._namespace = self._to_binary(namespace)
         self._group_prefix = self._namespace + b"_group"
         self._leader_prefix = self._namespace + b"_leader"
+        self._beat_prefix = self._namespace + b"_beats"
         self._groups = self._namespace + b"_groups"
         self._client = None
         self._member_id = self._to_binary(member_id)
@@ -298,6 +303,10 @@ class RedisDriver(coordination.CoordinationDriver):
             self.heartbeat()
             self._started = True
 
+    def _encode_beat_id(self, member_id):
+        return self._NAMESPACE_SEP.join([self._beat_prefix,
+                                         self._to_binary(member_id)])
+
     def _encode_member_id(self, member_id):
         member_id = self._to_binary(member_id)
         if member_id == self._GROUP_EXISTS:
@@ -318,7 +327,9 @@ class RedisDriver(coordination.CoordinationDriver):
 
     def heartbeat(self):
         with _translate_failures():
-            self._client.ping()
+            self._client.setex(self._encode_beat_id(self._member_id),
+                               time=self.membership_timeout,
+                               value=b"Not dead!")
         for lock in self._acquired_locks:
             try:
                 lock.heartbeat()
@@ -344,6 +355,16 @@ class RedisDriver(coordination.CoordinationDriver):
             self._executor.shutdown(wait=True)
             self._executor = None
         if self._client is not None:
+            # Make sure we no longer exist...
+            beat_id = self._encode_beat_id(self._member_id)
+            try:
+                # NOTE(harlowja): this will delete nothing if the key doesn't
+                # exist in the first place, which is fine/expected/desired...
+                with _translate_failures():
+                    self._client.delete(beat_id)
+            except coordination.ToozError:
+                LOG.warning("Unable to delete heartbeat key '%s'", beat_id,
+                            exc_info=True)
             self._client = None
         self._server_info = {}
         self._started = False
@@ -415,12 +436,30 @@ class RedisDriver(coordination.CoordinationDriver):
         def _get_members(p):
             if not p.exists(encoded_group):
                 raise coordination.GroupNotCreated(group_id)
-            members = []
+            potential_members = []
             for m in p.hkeys(encoded_group):
                 m = self._decode_member_id(m)
                 if m != self._GROUP_EXISTS:
-                    members.append(m)
-            return members
+                    potential_members.append(m)
+            if not potential_members:
+                return []
+            # Ok now we need to see which members have passed away...
+            gone_members = set()
+            member_values = p.mget(compat_map(self._encode_beat_id,
+                                              potential_members))
+            for (potential_member, value) in compat_zip(potential_members,
+                                                        member_values):
+                # Always preserve self (just incase we haven't heartbeated
+                # while this call/s was being made...), this does *not* prevent
+                # another client from removing this though...
+                if potential_member == self._member_id:
+                    continue
+                if not value:
+                    gone_members.add(potential_member)
+            # Trash all the members that no longer are with us... RIP...
+            for m in gone_members:
+                p.hdel(encoded_group, self._encode_member_id(m))
+            return [m for m in potential_members if m not in gone_members]
 
         return RedisFutureResult(self._submit(self._client.transaction,
                                               _get_members, encoded_group,
