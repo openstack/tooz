@@ -43,28 +43,24 @@ def _version_checker(version_required):
 
     if isinstance(version_required, six.string_types):
         desired_version = version.LooseVersion(version_required)
+    elif isinstance(version_required, version.LooseVersion):
+        desired_version = version_required
     else:
-        raise TypeError("Version decorator expects a string type")
+        raise TypeError("Version decorator expects a string/version type")
 
     def wrapper(meth):
 
         @six.wraps(meth)
         def decorator(self, *args, **kwargs):
-            try:
-                redis_version = version.LooseVersion(
-                    self._server_info['redis_version'])
-            except KeyError:
-                # Assume it works if the server doesn't have this info (or
-                # doesn't have it yet).
-                pass
-            else:
-                if redis_version < desired_version:
-                    raise tooz.NotImplemented("Redis version greater than or"
-                                              " equal to '%s' is required"
-                                              " to use this feature; '%s' is"
-                                              " being used which is not new"
-                                              " enough" % (desired_version,
-                                                           redis_version))
+            useable, redis_version = self._check_fetch_redis_version(
+                desired_version)
+            if not useable:
+                raise tooz.NotImplemented("Redis version greater than or"
+                                          " equal to '%s' is required"
+                                          " to use this feature; '%s' is"
+                                          " being used which is not new"
+                                          " enough" % (desired_version,
+                                                       redis_version))
             return meth(self, *args, **kwargs)
 
         return decorator
@@ -218,6 +214,24 @@ class RedisDriver(coordination.CoordinationDriver):
         self._executor = None
         self._started = False
         self._server_info = {}
+
+    def _check_fetch_redis_version(self, geq_version, not_existent=True):
+        if isinstance(geq_version, six.string_types):
+            desired_version = version.LooseVersion(geq_version)
+        elif isinstance(geq_version, version.LooseVersion):
+            desired_version = geq_version
+        else:
+            raise TypeError("Version check expects a string/version type")
+        try:
+            redis_version = version.LooseVersion(
+                    self._server_info['redis_version'])
+        except KeyError:
+            return (not_existent, None)
+        else:
+            if redis_version < desired_version:
+                return (False, redis_version)
+            else:
+                return (True, redis_version)
 
     def _to_binary(self, text):
         if not isinstance(text, six.binary_type):
@@ -457,9 +471,19 @@ class RedisDriver(coordination.CoordinationDriver):
                 if not value:
                     gone_members.add(potential_member)
             # Trash all the members that no longer are with us... RIP...
-            for m in gone_members:
-                p.hdel(encoded_group, self._encode_member_id(m))
-            return [m for m in potential_members if m not in gone_members]
+            if gone_members:
+                many_at_once, _version = self._check_fetch_redis_version(
+                    "2.4.0", not_existent=False)
+                if not many_at_once:
+                    for m in gone_members:
+                        p.hdel(encoded_group, self._encode_member_id(m))
+                else:
+                    encoded_gone_members = [self._encode_member_id(m)
+                                            for m in gone_members]
+                    p.hdel(encoded_group, *encoded_gone_members)
+                return [m for m in potential_members if m not in gone_members]
+            else:
+                return potential_members
 
         return RedisFutureResult(self._submit(self._client.transaction,
                                               _get_members, encoded_group,
