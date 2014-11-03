@@ -362,6 +362,9 @@ class RedisDriver(coordination.CoordinationDriver):
             group_id = self._joined_groups.pop()
             try:
                 self.leave_group(group_id).get()
+            except (coordination.MemberNotJoined,
+                    coordination.GroupNotCreated):
+                pass
             except coordination.ToozError:
                 LOG.warning("Unable to leave group '%s'", group_id,
                             exc_info=True)
