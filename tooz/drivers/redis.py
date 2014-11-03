@@ -150,6 +150,15 @@ class RedisDriver(coordination.CoordinationDriver):
     - http://redis.io/topics/cluster-spec
     """
 
+    # The min redis version that this driver requires to operate with...
+    #
+    # NOTE(harlowja): 2.2.0 was selected since its the current version that
+    # exists on ubuntu precise, that version will work to a degree (except
+    # locks will not work with that version), in the future we can raise this
+    # as we move off of precise (and/or need newer features that the older
+    # versions of redis just don't have).
+    _MIN_VERSION = version.LooseVersion("2.2.0")
+
     # Redis deletes dictionaries that have no keys in them, which means the
     # key will disappear which means we can't tell the difference between
     # a group not existing and a group being empty without this key being
@@ -314,6 +323,18 @@ class RedisDriver(coordination.CoordinationDriver):
             # at least is alive once...
             with _translate_failures():
                 self._server_info = self._client.info()
+            # Validate we have a good enough redis version we are connected
+            # to so that the basic set of features we support will actually
+            # work (instead of blowing up).
+            new_enough, redis_version = self._check_fetch_redis_version(
+                self._MIN_VERSION)
+            if not new_enough:
+                raise tooz.NotImplemented("Redis version greater than or"
+                                          " equal to '%s' is required"
+                                          " to use this driver; '%s' is"
+                                          " being used which is not new"
+                                          " enough" % (self._MIN_VERSION,
+                                                       redis_version))
             self.heartbeat()
             self._started = True
 
