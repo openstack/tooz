@@ -143,11 +143,13 @@ class MemcachedDriver(coordination.CoordinationDriver):
                 deserializer=self._msgpack_deserializer,
                 timeout=self.timeout,
                 connect_timeout=self.timeout)
+            # Run heartbeat here because pymemcache use a lazy connection
+            # method and only connect once you do an operation.
+            self.heartbeat()
         except Exception as e:
             raise coordination.ToozConnectionError(utils.exception_message(e))
         self._group_members = collections.defaultdict(set)
         self._executor = futures.ThreadPoolExecutor(max_workers=1)
-        self.heartbeat()
 
     def _stop(self):
         for lock in list(self._acquired_locks):
