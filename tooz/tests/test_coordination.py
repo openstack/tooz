@@ -330,6 +330,38 @@ class TestAPI(testscenarios.TestWithScenarios,
         self._coord.run_watchers()
         self.assertIsNone(self.event)
 
+    def test_watch_join_group_disappear(self):
+        if not hasattr(self._coord, '_destroy_group'):
+            self.skipTest("This test only works with coordinators"
+                          " that have the ability to destroy groups.")
+
+        self._coord.create_group(self.group_id).get()
+        self._coord.watch_join_group(self.group_id, self._set_event)
+        self._coord.watch_leave_group(self.group_id, self._set_event)
+
+        member_id_test2 = self._get_random_uuid()
+        client2 = tooz.coordination.get_coordinator(self.url,
+                                                    member_id_test2)
+        client2.start()
+        client2.join_group(self.group_id).get()
+
+        while True:
+            if self._coord.run_watchers():
+                break
+        self.assertIsInstance(self.event,
+                              tooz.coordination.MemberJoinedGroup)
+        self.event = None
+
+        # Force the group to disappear...
+        self._coord._destroy_group(self.group_id)
+
+        while True:
+            if self._coord.run_watchers():
+                break
+
+        self.assertIsInstance(self.event,
+                              tooz.coordination.MemberLeftGroup)
+
     def test_watch_join_group_non_existent(self):
         self.assertRaises(tooz.coordination.GroupNotCreated,
                           self._coord.watch_join_group,

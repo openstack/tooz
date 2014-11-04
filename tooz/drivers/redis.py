@@ -562,6 +562,10 @@ class RedisDriver(coordination.CoordinationDriver):
                                               encoded_group,
                                               value_from_callable=True))
 
+    def _destroy_group(self, group_id):
+        """Should only be used in tests..."""
+        self._client.delete(self._encode_group_id(group_id))
+
     def get_groups(self):
 
         def _get_groups():
@@ -601,8 +605,12 @@ class RedisDriver(coordination.CoordinationDriver):
     def run_watchers(self, timeout=None):
         result = []
         for group_id in self.get_groups().get(timeout=timeout):
-            group_members = set(self.get_members(group_id)
-                                .get(timeout=timeout))
+            try:
+                group_members = self.get_members(group_id).get(timeout=timeout)
+            except coordination.GroupNotCreated:
+                group_members = set()
+            else:
+                group_members = set(group_members)
             old_group_members = self._group_members.get(group_id, set())
             for member_id in (group_members - old_group_members):
                 result.extend(
