@@ -1,4 +1,5 @@
-#!/bin/bash -x -e
+#!/bin/bash
+set -x -e
 
 . functions.sh
 
