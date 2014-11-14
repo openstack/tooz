@@ -35,6 +35,8 @@ class TestAPI(testscenarios.TestWithScenarios,
         ('ipc', {'url': 'ipc://'}),
         ('redis', {'url': 'redis://localhost:6379?timeout=5'}),
         ('postgresql', {'url': os.getenv("TOOZ_TEST_PGSQL_URL")}),
+        ('mysql', {'url': os.getenv("TOOZ_TEST_MYSQL_URL"),
+                   'bad_url': 'mysql://localhost:1'}),
     ]
 
     # Only certain drivers have the tested support for timeouts that we test
@@ -77,6 +79,14 @@ class TestAPI(testscenarios.TestWithScenarios,
     def tearDown(self):
         self._coord.stop()
         super(TestAPI, self).tearDown()
+
+    def test_connection_error(self):
+        if not hasattr(self, "bad_url"):
+            raise testcase.TestSkipped("No bad URL provided")
+        coord = tooz.coordination.get_coordinator(self.bad_url,
+                                                  self.member_id)
+        self.assertRaises(tooz.coordination.ToozConnectionError,
+                          coord.start)
 
     def test_stop_first(self):
         c = tooz.coordination.get_coordinator(self.url,
