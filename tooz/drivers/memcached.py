@@ -325,8 +325,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
     def run_watchers(self):
         result = []
         for group_id in self.client.get(self._GROUP_LIST_KEY):
-            encoded_group = self._encode_group_id(group_id)
-            group_members = set(self.client.get(encoded_group))
+            group_members = set(self._get_members(group_id))
             old_group_members = self._group_members[group_id]
 
             for member_id in (group_members - old_group_members):
