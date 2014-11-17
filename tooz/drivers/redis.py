@@ -611,6 +611,15 @@ class RedisDriver(coordination.CoordinationDriver):
                 group_members = set()
             else:
                 group_members = set(group_members)
+            # I was booted out...
+            #
+            # TODO(harlowja): perhaps we should have a way to notify
+            # watchers that this has happened (the below mechanism will
+            # also do this, but it might be better to have a separate
+            # way when 'self' membership is lost)?
+            if (group_id in self._joined_groups and
+                    self._member_id not in group_members):
+                self._joined_groups.discard(group_id)
             old_group_members = self._group_members.get(group_id, set())
             for member_id in (group_members - old_group_members):
                 result.extend(

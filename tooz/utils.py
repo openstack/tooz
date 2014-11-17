@@ -23,3 +23,10 @@ def exception_message(exc):
         return six.text_type(exc)
     except UnicodeError:
         return str(exc)
+
+
+def to_binary(text, encoding='ascii'):
+    """Return the binary representation of string (if not already binary)."""
+    if not isinstance(text, six.binary_type):
+        text = text.encode(encoding)
+    return text

@@ -266,7 +266,7 @@ class KazooDriver(BaseZooKeeperDriver):
                     lambda: hooks.run(
                         coordination.MemberJoinedGroup(
                             group_id,
-                            member_id.encode('ascii'))))
+                            utils.to_binary(member_id))))
 
             for member_id in (last_children - children):
                 # Copy function in case it's removed later from the
@@ -276,7 +276,7 @@ class KazooDriver(BaseZooKeeperDriver):
                     lambda: hooks.run(
                         coordination.MemberLeftGroup(
                             group_id,
-                            member_id.encode('ascii'))))
+                            utils.to_binary(member_id))))
 
             self._group_members[group_id] = children
 

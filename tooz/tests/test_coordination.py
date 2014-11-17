@@ -373,6 +373,34 @@ class TestAPI(testscenarios.TestWithScenarios,
                           lambda: None)
         self.assertEqual(0, len(self._coord._hooks_join_group[self.group_id]))
 
+    def test_watch_join_group_booted_out(self):
+        self._coord.create_group(self.group_id).get()
+        self._coord.join_group(self.group_id).get()
+        self._coord.watch_join_group(self.group_id, self._set_event)
+        self._coord.watch_leave_group(self.group_id, self._set_event)
+
+        member_id_test2 = self._get_random_uuid()
+        client2 = tooz.coordination.get_coordinator(self.url,
+                                                    member_id_test2)
+        client2.start()
+        client2.join_group(self.group_id).get()
+
+        while True:
+            if self._coord.run_watchers():
+                break
+
+        client3 = tooz.coordination.get_coordinator(self.url, self.member_id)
+        client3.start()
+        client3.leave_group(self.group_id)
+
+        # Only works for clients that have access to the groups they are part
+        # of, to ensure that after we got booted out by client3 that this
+        # client now no longer believes its part of the group.
+        if hasattr(self._coord, '_joined_groups'):
+            self.assertIn(self.group_id, self._coord._joined_groups)
+            self._coord.run_watchers()
+            self.assertNotIn(self.group_id, self._coord._joined_groups)
+
     def test_watch_leave_group_non_existent(self):
         self.assertRaises(tooz.coordination.GroupNotCreated,
                           self._coord.watch_leave_group,
