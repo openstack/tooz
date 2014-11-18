@@ -4,7 +4,7 @@ from tooz import coordination
 
 ALIVE_TIME = 5
 
-coordinator = coordination.get_coordinator('memcached://localhost', b'host-1')
+coordinator = coordination.get_coordinator('zake://', b'host-1')
 coordinator.start()
 
 start = time.time()
