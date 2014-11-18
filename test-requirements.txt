@@ -2,6 +2,7 @@ pep8>=1.4.5
 pyflakes>=0.7.2,<0.7.4
 flake8>=2.1.0
 discover
+mock>=1.0  # only needed on < python 3.3
 sphinx>=1.1.2,<1.2
 python-subunit
 testrepository>=0.0.17
