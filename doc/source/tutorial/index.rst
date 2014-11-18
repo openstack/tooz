@@ -11,3 +11,4 @@ use tooz in your application.
    coordinator
    group_membership
    leader_election
+   lock
