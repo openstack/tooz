@@ -405,7 +405,7 @@ class TestAPI(testscenarios.TestWithScenarios,
 
         client3 = tooz.coordination.get_coordinator(self.url, self.member_id)
         client3.start()
-        client3.leave_group(self.group_id)
+        client3.leave_group(self.group_id).get()
 
         # Only works for clients that have access to the groups they are part
         # of, to ensure that after we got booted out by client3 that this
