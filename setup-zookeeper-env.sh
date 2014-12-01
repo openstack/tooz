@@ -52,5 +52,6 @@ if ! check_port 2181 && [ -d $ZOO_CONF ]; then
     fi
 fi
 
+export TOOZ_TEST_ZOOKEEPER_URL="kazoo://127.0.0.1:2181?timeout=5"
 # Yield execution to venv command
 $*
