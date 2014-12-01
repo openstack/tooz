@@ -1,8 +1,6 @@
 #!/bin/bash
 set -x -e
 
-. functions.sh
-
 function clean_exit(){
     local error_code="$?"
     local spawned=$(jobs -p)
@@ -14,16 +12,11 @@ function clean_exit(){
 
 trap "clean_exit" EXIT
 
-if ! check_port 11211; then
-    memcached_bin=$(which memcached || true)
-    if [ -n "$memcached_bin" ]; then
-        $memcached_bin &
-    else
-        echo "Memcached server not available"
-        exit 1
-    fi
+memcached_bin=$(which memcached || true)
+if [ -n "$memcached_bin" ]; then
+    $memcached_bin -p 11212 &
 fi
 
-export TOOZ_TEST_MEMCACHED_URL="memcached://?timeout=5"
+export TOOZ_TEST_MEMCACHED_URL="memcached://localhost:11212?timeout=5"
 # Yield execution to venv command
 $*

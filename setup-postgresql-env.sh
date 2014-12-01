@@ -1,8 +1,6 @@
 #!/bin/bash
 set -x -e
 
-. functions.sh
-
 function clean_exit() {
     local error_code="$?"
     ${PGSQL_PATH}/pg_ctl -w -D ${PGSQL_DATA} -o "-p $PGSQL_PORT" stop

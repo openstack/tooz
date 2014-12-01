@@ -1,8 +1,6 @@
 #!/bin/bash
 set -x -e
 
-. functions.sh
-
 ZOO_CONF=/etc/zookeeper
 ZOO_BIN=/usr/share/zookeeper/bin
 ZOO_TMP_DIR=$(mktemp -d /tmp/ZOO-TMP-XXXXX)
@@ -33,7 +31,7 @@ function start_zookeeper_server(){
     sed -i -r "s@(ZOOCFGDIR *= *).*@\1$ZOO_TMP_DIR@" $ZOO_TMP_DIR/bin/zkEnv.sh
 
     mkdir $ZOO_TMP_DIR/log
-    sed -i -r "s@(ZOO_LOG_DIR *= *).*@\1$ZOO_TMP_DIR/log@" $ZOO_TMP_DIR/bin/vzkEnv.sh
+    sed -i -r "s@(ZOO_LOG_DIR *= *).*@\1$ZOO_TMP_DIR/log@" $ZOO_TMP_DIR/bin/zkEnv.sh
 
     $ZOO_TMP_DIR/bin/zkServer.sh start
 }
@@ -45,7 +43,7 @@ function stop_zookeeper_server(){
 
 trap "clean_exit" EXIT
 
-if ! check_port 2181 && [ -d $ZOO_CONF ]; then
+if [ -d $ZOO_CONF ]; then
     start_zookeeper_server
     if [ $? -eq 0 ]; then
         ZOOKEEPER_STARTED=1
