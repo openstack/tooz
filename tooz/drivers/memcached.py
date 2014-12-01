@@ -229,12 +229,24 @@ class MemcachedDriver(coordination.CoordinationDriver):
 
         return MemcachedFutureResult(self._executor.submit(_leave_group))
 
+    @_retry.retry
     def _get_members(self, group_id):
-        group_members = self.client.get(self._encode_group_id(group_id))
+        encoded_group = self._encode_group_id(group_id)
+        group_members, cas = self.client.gets(encoded_group)
         if group_members is None:
             raise coordination.GroupNotCreated(group_id)
-        return dict((m, v) for m, v in six.iteritems(group_members)
-                    if self.client.get(self._encode_member_id(m)))
+        actual_group_members = {}
+        for m, v in six.iteritems(group_members):
+            # Never kick self from the group, we know we're alive
+            if (m == self._member_id
+               or self.client.get(self._encode_member_id(m))):
+                actual_group_members[m] = v
+        if group_members != actual_group_members:
+            # There are some dead members, update the group
+            if not self.client.cas(encoded_group, actual_group_members, cas):
+                # It changed, let's try again
+                raise _retry.Retry
+        return actual_group_members
 
     def get_members(self, group_id):
         def _get_members():
