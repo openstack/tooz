@@ -257,12 +257,30 @@ class TestAPI(testscenarios.TestWithScenarios,
         members_ids = self._coord.get_members(self.group_id).get()
         self.assertTrue(self.member_id in members_ids)
         self.assertTrue(member_id_test2 in members_ids)
+
+        # Watch the group, we want to be sure that when client2 is kicked out
+        # we get an event.
+        self._coord.watch_leave_group(self.group_id, self._set_event)
+
         time.sleep(3)
         self._coord.heartbeat()
         time.sleep(3)
+
+        # Now client2 has timed out!
+
         members_ids = self._coord.get_members(self.group_id).get()
+        while True:
+            if self._coord.run_watchers():
+                break
         self.assertTrue(self.member_id in members_ids)
         self.assertTrue(member_id_test2 not in members_ids)
+        # Check that the event has been triggered
+        self.assertIsInstance(self.event,
+                              tooz.coordination.MemberLeftGroup)
+        self.assertEqual(member_id_test2,
+                         self.event.member_id)
+        self.assertEqual(self.group_id,
+                         self.event.group_id)
 
     def _set_event(self, event):
         self.event = event
