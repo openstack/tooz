@@ -175,6 +175,20 @@ class MemcachedDriver(coordination.CoordinationDriver):
                 # Someone updated the group list before us, try again!
                 raise _retry.Retry
 
+    @_retry.retry
+    def _remove_from_group_list(self, group_id):
+        """Remove group from the group list.
+
+        :param group_id: The group id
+        """
+        group_list, cas = self.client.gets(self._GROUP_LIST_KEY)
+        group_list = set(group_list)
+        group_list.remove(group_id)
+        if not self.client.cas(self._GROUP_LIST_KEY,
+                               list(group_list), cas):
+            # Someone updated the group list before us, try again!
+            raise _retry.Retry
+
     def create_group(self, group_id):
         encoded_group = self._encode_group_id(group_id)
 
@@ -196,7 +210,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
         @_retry.retry
         def _join_group():
             group_members, cas = self.client.gets(encoded_group)
-            if not cas:
+            if group_members is None:
                 raise coordination.GroupNotCreated(group_id)
             if self._member_id in group_members:
                 raise coordination.MemberAlreadyExist(group_id,
@@ -217,7 +231,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
         @_retry.retry
         def _leave_group():
             group_members, cas = self.client.gets(encoded_group)
-            if not cas:
+            if group_members is None:
                 raise coordination.GroupNotCreated(group_id)
             if self._member_id not in group_members:
                 raise coordination.MemberNotJoined(group_id, self._member_id)
@@ -231,6 +245,25 @@ class MemcachedDriver(coordination.CoordinationDriver):
 
     def _destroy_group(self, group_id):
         self.client.delete(self._encode_group_id(group_id))
+
+    def delete_group(self, group_id):
+        encoded_group = self._encode_group_id(group_id)
+
+        @_retry.retry
+        def _delete_group():
+            group_members, cas = self.client.gets(encoded_group)
+            if group_members is None:
+                raise coordination.GroupNotCreated(group_id)
+            if group_members != {}:
+                raise coordination.GroupNotEmpty(group_id)
+            # Delete is not atomic, so we first set the group to
+            # using CAS, and then we delete it, to avoid race conditions.
+            if not self.client.cas(encoded_group, None, cas):
+                raise _retry.Retry
+            self.client.delete(encoded_group)
+            self._remove_from_group_list(group_id)
+
+        return MemcachedFutureResult(self._executor.submit(_delete_group))
 
     @_retry.retry
     def _get_members(self, group_id):
@@ -271,7 +304,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
         @_retry.retry
         def _update_capabilities():
             group_members, cas = self.client.gets(encoded_group)
-            if cas is None:
+            if group_members is None:
                 raise coordination.GroupNotCreated(group_id)
             if self._member_id not in group_members:
                 raise coordination.MemberNotJoined(group_id, self._member_id)

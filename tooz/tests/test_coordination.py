@@ -114,6 +114,31 @@ class TestAPI(testscenarios.TestWithScenarios,
         for group_id in groups_ids:
             self.assertTrue(group_id in created_groups)
 
+    def test_delete_group(self):
+        self._coord.create_group(self.group_id).get()
+        all_group_ids = self._coord.get_groups().get()
+        self.assertTrue(self.group_id in all_group_ids)
+        self._coord.delete_group(self.group_id).get()
+        all_group_ids = self._coord.get_groups().get()
+        self.assertFalse(self.group_id in all_group_ids)
+        join_group = self._coord.join_group(self.group_id)
+        self.assertRaises(tooz.coordination.GroupNotCreated,
+                          join_group.get)
+
+    def test_delete_group_non_existent(self):
+        delete = self._coord.delete_group(self.group_id)
+        self.assertRaises(tooz.coordination.GroupNotCreated,
+                          delete.get)
+
+    def test_delete_group_non_empty(self):
+        self._coord.create_group(self.group_id).get()
+        self._coord.join_group(self.group_id).get()
+        delete = self._coord.delete_group(self.group_id)
+        self.assertRaises(tooz.coordination.GroupNotEmpty,
+                          delete.get)
+        self._coord.leave_group(self.group_id)
+        self._coord.delete_group(self.group_id).get()
+
     def test_join_group(self):
         self._coord.create_group(self.group_id).get()
         self._coord.join_group(self.group_id).get()

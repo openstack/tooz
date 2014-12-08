@@ -244,6 +244,17 @@ class CoordinationDriver(object):
         raise tooz.NotImplemented
 
     @staticmethod
+    def delete_group(group_id):
+        """Delete a group asynchronously.
+
+        :param group_id: the id of the group to leave
+        :type group_id: str
+        :returns: Result
+        :rtype: CoordAsyncResult
+        """
+        raise tooz.NotImplemented
+
+    @staticmethod
     def get_members(group_id):
         """Return the list of all members ids of the specified group
         asynchronously.
@@ -403,3 +414,10 @@ class MemberNotJoined(ToozError):
         self.member_id = member_id
         super(MemberNotJoined, self).__init__("Member %s has not joined %s" %
                                               (member_id, group_id))
+
+
+class GroupNotEmpty(ToozError):
+    "Exception raised when the caller try to delete a group with members."
+    def __init__(self, group_id):
+        self.group_id = group_id
+        super(GroupNotEmpty, self).__init__("Group %s is not empty" % group_id)
