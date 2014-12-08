@@ -229,6 +229,9 @@ class MemcachedDriver(coordination.CoordinationDriver):
 
         return MemcachedFutureResult(self._executor.submit(_leave_group))
 
+    def _destroy_group(self, group_id):
+        self.client.delete(self._encode_group_id(group_id))
+
     @_retry.retry
     def _get_members(self, group_id):
         encoded_group = self._encode_group_id(group_id)
@@ -337,7 +340,10 @@ class MemcachedDriver(coordination.CoordinationDriver):
     def run_watchers(self):
         result = []
         for group_id in self.client.get(self._GROUP_LIST_KEY):
-            group_members = set(self._get_members(group_id))
+            try:
+                group_members = set(self._get_members(group_id))
+            except coordination.GroupNotCreated:
+                group_members = set()
             old_group_members = self._group_members[group_id]
 
             for member_id in (group_members - old_group_members):
