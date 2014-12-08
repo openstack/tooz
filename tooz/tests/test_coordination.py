@@ -146,8 +146,7 @@ class TestAPI(testscenarios.TestWithScenarios,
         self.assertTrue(self.member_id in member_list)
 
     def test_join_nonexistent_group(self):
-        group_id_test = self._get_random_uuid()
-        join_group = self._coord.join_group(group_id_test)
+        join_group = self._coord.join_group(self.group_id)
         self.assertRaises(tooz.coordination.GroupNotCreated,
                           join_group.get)
 
