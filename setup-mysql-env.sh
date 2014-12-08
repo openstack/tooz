@@ -1,8 +1,6 @@
 #!/bin/bash
 set -x -e
 
-. functions.sh
-
 clean_exit () {
     local error_code="$?"
     kill $(jobs -p)
