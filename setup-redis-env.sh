@@ -19,9 +19,11 @@ if ! check_port 6379; then
     if [ -n "$redis_bin" ]; then
         $redis_bin --port 6379 &
     else
-        echo "Redis server not available, testing being skipped..."
+        echo "Redis server not available"
+        exit 1
     fi
 fi
 
+export TOOZ_TEST_REDIS_URL="redis://localhost:6379?timeout=5"
 # Yield execution to venv command
 $*

@@ -29,13 +29,13 @@ class TestAPI(testscenarios.TestWithScenarios,
               tests.TestCaseSkipNotImplemented):
 
     scenarios = [
-        ('zookeeper', {'url': 'kazoo://127.0.0.1:2181?timeout=5',
-                       'bad_url': 'kazoo://localhost:1'}),
+        ('kazoo', {'url': os.getenv("TOOZ_TEST_ZOOKEEPER_URL"),
+                   'bad_url': 'kazoo://localhost:1'}),
         ('zake', {'url': 'zake://?timeout=5'}),
-        ('memcached', {'url': 'memcached://?timeout=5',
+        ('memcached', {'url': os.getenv("TOOZ_TEST_MEMCACHED_URL"),
                        'bad_url': 'memcached://localhost:1'}),
         ('ipc', {'url': 'ipc://'}),
-        ('redis', {'url': 'redis://localhost:6379?timeout=5',
+        ('redis', {'url': os.getenv("TOOZ_TEST_REDIS_URL"),
                    'bad_url': 'redis://localhost:1'}),
         ('postgresql', {'url': os.getenv("TOOZ_TEST_PGSQL_URL"),
                         'bad_url': 'postgresql://localhost:1'}),
@@ -75,10 +75,7 @@ class TestAPI(testscenarios.TestWithScenarios,
         self.member_id = self._get_random_uuid()
         self._coord = tooz.coordination.get_coordinator(self.url,
                                                         self.member_id)
-        try:
-            self._coord.start()
-        except tooz.coordination.ToozConnectionError as e:
-            raise testcase.TestSkipped(str(e))
+        self._coord.start()
 
     def tearDown(self):
         self._coord.stop()

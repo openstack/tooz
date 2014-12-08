@@ -19,9 +19,11 @@ if ! check_port 11211; then
     if [ -n "$memcached_bin" ]; then
         $memcached_bin &
     else
-        echo "Memcached server not available, testing being skipped..."
+        echo "Memcached server not available"
+        exit 1
     fi
 fi
 
+export TOOZ_TEST_MEMCACHED_URL="memcached://?timeout=5"
 # Yield execution to venv command
 $*
