@@ -67,6 +67,7 @@ class MySQLLock(locking.Lock):
 
 
 class MySQLDriver(coordination.CoordinationDriver):
+    """A mysql based driver."""
 
     def __init__(self, member_id, parsed_url, options):
         """Initialize the MySQL driver."""
