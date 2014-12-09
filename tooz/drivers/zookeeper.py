@@ -94,6 +94,27 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
                               group_id=group_id)
 
     @staticmethod
+    def _delete_group_handler(async_result, timeout,
+                              timeout_exception, group_id):
+        try:
+            async_result.get(block=True, timeout=timeout)
+        except timeout_exception as e:
+            raise coordination.OperationTimedOut(utils.exception_message(e))
+        except exceptions.NoNodeError:
+            raise coordination.GroupNotCreated(group_id)
+        except exceptions.NotEmptyError:
+            raise coordination.GroupNotEmpty(group_id)
+        except exceptions.ZookeeperError as e:
+            raise coordination.ToozError(utils.exception_message(e))
+
+    def delete_group(self, group_id):
+        group_path = self._path_group(group_id)
+        async_result = self._coord.delete_async(group_path)
+        return ZooAsyncResult(async_result, self._delete_group_handler,
+                              timeout_exception=self._timeout_exception,
+                              group_id=group_id)
+
+    @staticmethod
     def _join_group_handler(async_result, timeout,
                             timeout_exception, group_id, member_id):
         try:
