@@ -148,6 +148,13 @@ class RedisDriver(coordination.CoordinationDriver):
     - http://redis.io/
     - http://redis.io/topics/sentinel
     - http://redis.io/topics/cluster-spec
+
+    Note that this client will itself retry on transaction failure (when they
+    keys being watched have changed underneath the current transaction).
+    Currently the number of attempts that are tried is infinite (this might
+    be addressed in https://github.com/andymccurdy/redis-py/issues/566 when
+    that gets worked on). See http://redis.io/topics/transactions for more
+    information on this topic.
     """
 
     # The min redis version that this driver requires to operate with...
