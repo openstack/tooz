@@ -569,6 +569,25 @@ class RedisDriver(coordination.CoordinationDriver):
                                               encoded_group,
                                               value_from_callable=True))
 
+    def delete_group(self, group_id):
+        encoded_group = self._encode_group_id(group_id)
+
+        def _delete_group(p):
+            # An empty group still have the special key _GROUP_EXISTS set, so
+            # its len is 1
+            if p.hlen(encoded_group) > 1:
+                raise coordination.GroupNotEmpty(group_id)
+            if not p.delete(encoded_group):
+                raise coordination.GroupNotCreated(group_id)
+            p.srem(self._groups,
+                   self._encode_group_id(group_id,
+                                         apply_namespace=False))
+
+        return RedisFutureResult(self._submit(self._client.transaction,
+                                              _delete_group,
+                                              encoded_group,
+                                              value_from_callable=True))
+
     def _destroy_group(self, group_id):
         """Should only be used in tests..."""
         self._client.delete(self._encode_group_id(group_id))
