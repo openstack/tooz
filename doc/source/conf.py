@@ -30,6 +30,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.graphviz',
     'sphinx.ext.extlinks',
+    'oslosphinx',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -46,7 +47,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'tooz'
-copyright = u'%s, eNovance' % datetime.date.today().year
+copyright = u'%s, OpenStack Foundation' % datetime.date.today().year
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -235,7 +236,7 @@ latex_documents = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'tooz', u'tooz Documentation',
-   u'eNovance', 'tooz', 'One line description of project.',
+   u'OpenStack Foundation', 'tooz', 'One line description of project.',
    'Miscellaneous'),
 ]
 
