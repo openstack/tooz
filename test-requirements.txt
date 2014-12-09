@@ -4,6 +4,7 @@ flake8>=2.1.0
 discover
 mock>=1.0  # only needed on < python 3.3
 sphinx>=1.1.2,<1.2
+oslosphinx>=2.2.0  # Apache-2.0
 python-subunit
 testrepository>=0.0.17
 testtools>=0.9.32
