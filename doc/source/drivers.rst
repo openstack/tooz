@@ -19,8 +19,9 @@ API, some of them have different properties:
   A lot of the features provided in tooz are based on timeout (heartbeats,
   locks, etc) so are less resilient than other backends.
 
-* `ipc` is based on Posix IPC and only implements a lock mechanism for now.
-  The lock can only be distributed locally to a computer processes.
+* `ipc` is based on Posix IPC and only implements a lock mechanism for now, and
+  some basic group primitives (with huge limitations). The lock can only be
+  distributed locally to a computer processes.
 
 * `zake`_ is a driver using a fake implementation of ZooKeeper and can be
   used to use Tooz in your unit tests suite for example.
