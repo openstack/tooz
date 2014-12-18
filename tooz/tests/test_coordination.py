@@ -33,21 +33,16 @@ class TestAPI(testscenarios.TestWithScenarios,
                    'bad_url': 'kazoo://localhost:1'}),
         ('zake', {'url': 'zake://?timeout=5'}),
         ('memcached', {'url': os.getenv("TOOZ_TEST_MEMCACHED_URL"),
-                       'bad_url': 'memcached://localhost:1'}),
+                       'bad_url': 'memcached://localhost:1',
+                       'timeout_capable': True}),
         ('ipc', {'url': 'ipc://'}),
         ('redis', {'url': os.getenv("TOOZ_TEST_REDIS_URL"),
-                   'bad_url': 'redis://localhost:1'}),
+                   'bad_url': 'redis://localhost:1',
+                   'timeout_capable': True}),
         ('postgresql', {'url': os.getenv("TOOZ_TEST_PGSQL_URL"),
                         'bad_url': 'postgresql://localhost:1'}),
         ('mysql', {'url': os.getenv("TOOZ_TEST_MYSQL_URL"),
                    'bad_url': 'mysql://localhost:1'}),
-    ]
-
-    # Only certain drivers have the tested support for timeouts that we test
-    # here, these are the lists of driver types that do support our test type.
-    timeout_capable = [
-        'memcached://',
-        'redis://',
     ]
 
     def assertRaisesAny(self, exc_classes, callable_obj, *args, **kwargs):
@@ -56,16 +51,6 @@ class TestAPI(testscenarios.TestWithScenarios,
         matcher = matchers.Raises(matchers.MatchesAny(*checkers))
         callable_obj = testcase.Nullary(callable_obj, *args, **kwargs)
         self.assertThat(callable_obj, matcher)
-
-    def skipIfNotSupported(self, supported):
-        applicable = False
-        for prefix in supported:
-            if self.url.startswith(prefix):
-                applicable = True
-                break
-        if not applicable:
-            self.skipTest("This test only works with %s types for now"
-                          % list(supported))
 
     def setUp(self):
         super(TestAPI, self).setUp()
@@ -270,7 +255,8 @@ class TestAPI(testscenarios.TestWithScenarios,
         self.assertTrue(member_id_test2 not in members_ids)
 
     def test_timeout(self):
-        self.skipIfNotSupported(self.timeout_capable)
+        if not getattr(self, "timeout_capable", False):
+            self.skipTest("This test only works with timeout capable drivers")
         member_id_test2 = self._get_random_uuid()
         client2 = tooz.coordination.get_coordinator(self.url,
                                                     member_id_test2)
