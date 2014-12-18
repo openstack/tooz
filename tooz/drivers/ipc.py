@@ -120,6 +120,7 @@ class IPCLock(locking.Lock):
 
 
 class IPCDriver(coordination.CoordinationDriver):
+    """A IPC based driver."""
 
     def __init__(self, member_id, parsed_url, options):
         """Initialize the IPC driver."""

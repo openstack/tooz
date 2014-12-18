@@ -13,6 +13,7 @@ Contents:
    install
    drivers
    tutorial/index
+   developers
 
 Indices and tables
 ==================

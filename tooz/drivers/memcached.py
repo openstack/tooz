@@ -79,6 +79,7 @@ class MemcachedLock(locking.Lock):
 
 
 class MemcachedDriver(coordination.CoordinationDriver):
+    """A memcached based driver."""
 
     _GROUP_PREFIX = b'_TOOZ_GROUP_'
     _GROUP_LEADER_PREFIX = b'_TOOZ_GROUP_LEADER_'
