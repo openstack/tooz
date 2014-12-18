@@ -5,14 +5,14 @@ Installation
 Python Versions
 ===============
 
-tooz is tested under Python 2.7 and 3.4.
+Tooz is tested under Python 2.7 and 3.4.
 
 .. _install-basic:
 
 Basic Installation
 ==================
 
-tooz should be installed into the same site-packages area where
+Tooz should be installed into the same site-packages area where
 the application and extensions are installed (either a virtualenv or
 the global site-packages). You may need administrative privileges to
 do that.  The easiest way to install it is using pip_::
@@ -28,7 +28,7 @@ or::
 Download
 ========
 
-tooz releases are hosted on PyPI and can be downloaded from:
+Tooz releases are hosted on PyPI and can be downloaded from:
 http://pypi.python.org/pypi/tooz
 
 Source Code
