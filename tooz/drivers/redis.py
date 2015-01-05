@@ -26,6 +26,7 @@ from oslo.utils import strutils
 import redis
 from redis import exceptions
 from redis import lock as redis_locks
+from redis import sentinel
 import six
 from six.moves import map as compat_map
 from six.moves import zip as compat_zip
@@ -143,6 +144,13 @@ class RedisDriver(coordination.CoordinationDriver):
       some notion of HA (values *can* be lost when a failover transition
       occurs).
 
+    To use a sentinel the connection URI must point to the Sentinel server.
+    At connection time the sentinel will be asked for the current IP and port
+    of the master and then connect there. The connection URI for sentinel
+    should be written as follows::
+
+      redis://<sentinel host>:<sentinel port>?sentinel=<master name>
+
     Further resources/links:
 
     - http://redis.io/
@@ -193,6 +201,7 @@ class RedisDriver(coordination.CoordinationDriver):
         'ssl',
         'ssl_certfile',
         'ssl_keyfile',
+        'sentinel',
     ])
     _CLIENT_BOOL_ARGS = frozenset([
         'retry_on_timeout',
@@ -315,6 +324,18 @@ class RedisDriver(coordination.CoordinationDriver):
             kwargs[a] = v
         if 'socket_timeout' not in kwargs:
             kwargs['socket_timeout'] = default_socket_timeout
+
+        # Ask the sentinel for the current master if there is a
+        # sentinel arg.
+        if 'sentinel' in kwargs:
+            sentinel_server = sentinel.Sentinel(
+                [(kwargs['host'], kwargs['port'])],
+                socket_timeout=kwargs['socket_timeout'])
+            master_host, master_port = sentinel_server.discover_master(
+                kwargs['sentinel'])
+            kwargs['host'] = master_host
+            kwargs['port'] = master_port
+            del kwargs['sentinel']
         return redis.StrictRedis(**kwargs)
 
     def _start(self):

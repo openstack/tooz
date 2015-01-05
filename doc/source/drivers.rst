@@ -15,9 +15,10 @@ API, some of them have different properties:
   on timeout (heartbeats, locks, etc) so are less resilient than other
   backends.
 
-* `redis`_ is a basic implementation and provides little resiliency.
-  A lot of the features provided in tooz are based on timeout (heartbeats,
-  locks, etc) so are less resilient than other backends.
+* `redis`_ is a basic implementation and provides some resiliency
+  when used with redis-sentinel. A lot of the features provided in tooz are
+  based on timeout (heartbeats, locks, etc) so are less resilient than other
+  backends.
 
 * `ipc` is based on Posix IPC and only implements a lock mechanism for now, and
   some basic group primitives (with huge limitations). The lock can only be
