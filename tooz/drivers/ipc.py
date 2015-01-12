@@ -136,26 +136,20 @@ class IPCDriver(coordination.CoordinationDriver):
         super(IPCDriver, self).__init__()
 
     def _start(self):
-        try:
-            self._group_list = sysv_ipc.SharedMemory(
-                ftok(self._GROUP_LIST_KEY, self._GROUP_PROJECT),
-                sysv_ipc.IPC_CREAT,
-                size=self._SEGMENT_SIZE)
-        except sysv_ipc.ExistentialError:
-            raise
+        self._group_list = sysv_ipc.SharedMemory(
+            ftok(self._GROUP_LIST_KEY, self._GROUP_PROJECT),
+            sysv_ipc.IPC_CREAT,
+            size=self._SEGMENT_SIZE)
         self._lock = self.get_lock(self._INTERNAL_LOCK_NAME)
         self._executor = futures.ThreadPoolExecutor(max_workers=1)
 
     def _stop(self):
         self._executor.shutdown(wait=True)
-
-    def __del__(self):
-        if hasattr(self, "_group_list"):
-            try:
-                self._group_list.detach()
-                self._group_list.remove()
-            except sysv_ipc.ExistentialError:
-                pass
+        try:
+            self._group_list.detach()
+            self._group_list.remove()
+        except sysv_ipc.ExistentialError:
+            pass
 
     def _read_group_list(self):
         data = self._group_list.read(byte_count=2)
