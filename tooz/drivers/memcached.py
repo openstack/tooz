@@ -41,8 +41,8 @@ class MemcachedLock(locking.Lock):
         self.coord = coord
         self.timeout = timeout
 
-    @_retry.retry
     def acquire(self, blocking=True):
+        @_retry.retry(stop_max_delay=blocking)
         def _acquire():
             if self.coord.client.add(
                     self.name,
@@ -54,9 +54,7 @@ class MemcachedLock(locking.Lock):
             if blocking is False:
                 return False
             raise _retry.Retry
-        kwargs = _retry.RETRYING_KWARGS.copy()
-        kwargs['stop_max_delay'] = blocking
-        return _retry.Retrying(**kwargs).call(_acquire)
+        return _acquire()
 
     def release(self):
         if self.coord.client.delete(self.name, noreply=False):
@@ -156,7 +154,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
     def _encode_group_leader(self, group_id):
         return self._GROUP_LEADER_PREFIX + group_id
 
-    @_retry.retry
+    @_retry.retry()
     def _add_group_to_group_list(self, group_id):
         """Add group to the group list.
 
@@ -176,7 +174,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
                 # Someone updated the group list before us, try again!
                 raise _retry.Retry
 
-    @_retry.retry
+    @_retry.retry()
     def _remove_from_group_list(self, group_id):
         """Remove group from the group list.
 
@@ -208,7 +206,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
     def join_group(self, group_id, capabilities=b""):
         encoded_group = self._encode_group_id(group_id)
 
-        @_retry.retry
+        @_retry.retry()
         def _join_group():
             group_members, cas = self.client.gets(encoded_group)
             if group_members is None:
@@ -229,7 +227,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
     def leave_group(self, group_id):
         encoded_group = self._encode_group_id(group_id)
 
-        @_retry.retry
+        @_retry.retry()
         def _leave_group():
             group_members, cas = self.client.gets(encoded_group)
             if group_members is None:
@@ -250,7 +248,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
     def delete_group(self, group_id):
         encoded_group = self._encode_group_id(group_id)
 
-        @_retry.retry
+        @_retry.retry()
         def _delete_group():
             group_members, cas = self.client.gets(encoded_group)
             if group_members is None:
@@ -266,7 +264,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
 
         return MemcachedFutureResult(self._executor.submit(_delete_group))
 
-    @_retry.retry
+    @_retry.retry()
     def _get_members(self, group_id):
         encoded_group = self._encode_group_id(group_id)
         group_members, cas = self.client.gets(encoded_group)
@@ -302,7 +300,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
     def update_capabilities(self, group_id, capabilities):
         encoded_group = self._encode_group_id(group_id)
 
-        @_retry.retry
+        @_retry.retry()
         def _update_capabilities():
             group_members, cas = self.client.gets(encoded_group)
             if group_members is None:
