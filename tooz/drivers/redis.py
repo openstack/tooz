@@ -151,6 +151,14 @@ class RedisDriver(coordination.CoordinationDriver):
 
       redis://<sentinel host>:<sentinel port>?sentinel=<master name>
 
+    Additional sentinel hosts are listed with mutiple ``sentinel_fallback``
+    parameters as follows:
+
+      redis://<sentinel host>:<sentinel port>?sentinel=<master name>&
+        sentinel_fallback=<other sentinel host>:<sentinel port>&
+        sentinel_fallback=<other sentinel host>:<sentinel port>&
+        sentinel_fallback=<other sentinel host>:<sentinel port>
+
     Further resources/links:
 
     - http://redis.io/
@@ -202,6 +210,10 @@ class RedisDriver(coordination.CoordinationDriver):
         'ssl_certfile',
         'ssl_keyfile',
         'sentinel',
+        'sentinel_fallback',
+    ])
+    _CLIENT_LIST_ARGS = frozenset([
+        'sentinel_fallback',
     ])
     _CLIENT_BOOL_ARGS = frozenset([
         'retry_on_timeout',
@@ -317,6 +329,8 @@ class RedisDriver(coordination.CoordinationDriver):
             # redis://localhost:6379?timeout=5&timeout=2
             if a in cls._CLIENT_BOOL_ARGS:
                 v = strutils.bool_from_string(options[a][-1])
+            elif a in cls._CLIENT_LIST_ARGS:
+                v = options[a]
             elif a in cls._CLIENT_INT_ARGS:
                 v = int(options[a][-1])
             else:
@@ -328,14 +342,21 @@ class RedisDriver(coordination.CoordinationDriver):
         # Ask the sentinel for the current master if there is a
         # sentinel arg.
         if 'sentinel' in kwargs:
+            sentinel_hosts = [
+                tuple(fallback.split(':'))
+                for fallback in kwargs.get('sentinel_fallback', [])
+            ]
+            sentinel_hosts.insert(0, (kwargs['host'], kwargs['port']))
             sentinel_server = sentinel.Sentinel(
-                [(kwargs['host'], kwargs['port'])],
+                sentinel_hosts,
                 socket_timeout=kwargs['socket_timeout'])
             master_host, master_port = sentinel_server.discover_master(
                 kwargs['sentinel'])
             kwargs['host'] = master_host
             kwargs['port'] = master_port
             del kwargs['sentinel']
+            if 'sentinel_fallback' in kwargs:
+                del kwargs['sentinel_fallback']
         return redis.StrictRedis(**kwargs)
 
     def _start(self):

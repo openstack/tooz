@@ -15,7 +15,7 @@ API, some of them have different properties:
   on timeout (heartbeats, locks, etc) so are less resilient than other
   backends.
 
-* `redis`_ is a basic implementation and provides some resiliency
+* `redis`_ is a basic implementation and provides reasonable resiliency
   when used with redis-sentinel. A lot of the features provided in tooz are
   based on timeout (heartbeats, locks, etc) so are less resilient than other
   backends.
