@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-#    Copyright © 2013-2014 eNovance Inc. All Rights Reserved.
+#    Copyright © 2013-2015 eNovance Inc. All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -36,6 +36,7 @@ class TestAPI(testscenarios.TestWithScenarios,
                        'bad_url': 'memcached://localhost:1',
                        'timeout_capable': True}),
         ('ipc', {'url': 'ipc://'}),
+        ('file', {'url': 'file:///tmp'}),
         ('redis', {'url': os.getenv("TOOZ_TEST_REDIS_URL"),
                    'bad_url': 'redis://localhost:1',
                    'timeout_capable': True}),

@@ -24,6 +24,10 @@ API, some of them have different properties:
   some basic group primitives (with huge limitations). The lock can only be
   distributed locally to a computer processes.
 
+* `file` is based on file and only implements a lock based on POSIX or Window
+  file locking for now. The lock can only be distributed locally to a computer
+  processes.
+
 * `zake`_ is a driver using a fake implementation of ZooKeeper and can be
   used to use Tooz in your unit tests suite for example.
 
