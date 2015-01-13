@@ -33,8 +33,12 @@ RETRYING_KWARGS = dict(
 )
 
 
-def retry(f):
-    return retrying.retry(**RETRYING_KWARGS)(f)
+def retry(**kwargs):
+    def _retry(f):
+        k = RETRYING_KWARGS.copy()
+        k.update(kwargs)
+        return retrying.retry(**k)(f)
+    return _retry
 
 
 Retrying = retrying.Retrying

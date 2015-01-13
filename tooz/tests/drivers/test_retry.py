@@ -26,7 +26,7 @@ class TestRetry(testcase.TestCase):
     def test_retry(self):
         self.i = 1
 
-        @_retry.retry
+        @_retry.retry()
         def x(add_that):
             if self.i == 1:
                 self.i += add_that
