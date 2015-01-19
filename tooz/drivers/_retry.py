@@ -32,11 +32,11 @@ RETRYING_KWARGS = dict(
 
 
 def retry(**kwargs):
-    def _retry(f):
-        k = RETRYING_KWARGS.copy()
-        k.update(kwargs)
-        return retrying.retry(**k)(f)
-    return _retry
+    delay = kwargs.get('stop_max_delay', None)
+    kwargs['stop_max_delay'] = delay if delay not in (True, False) else None
+    k = RETRYING_KWARGS.copy()
+    k.update(kwargs)
+    return retrying.retry(**k)
 
 
 Retrying = retrying.Retrying
