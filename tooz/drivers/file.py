@@ -45,7 +45,7 @@ class FileLock(locking.Lock):
             try:
                 self.lock()
             except IOError as e:
-                if e.errno in (errno.EACCESS, errno.EAGAIN):
+                if e.errno in (errno.EACCES, errno.EAGAIN):
                     if blocking:
                         raise _retry.Retry
                     return False
