@@ -33,6 +33,7 @@ def print_methods(methods):
 
 driver_tpl = ":py:class:`~tooz.drivers.%s`"
 driver_class_names = [
+    "etcd.EtcdDriver",
     "file.FileDriver",
     "ipc.IPCDriver",
     "memcached.MemcachedDriver",
@@ -71,6 +72,7 @@ print_header("Driver support", delim="-")
 print("")
 grouping_table = [
     [
+        "No",  # Etcd
         "Yes",  # File
         "No",  # IPC
         "Yes",  # Memcached
@@ -101,6 +103,7 @@ print_header("Driver support", delim="-")
 print("")
 leader_table = [
     [
+        "No",  # Etcd
         "No",  # File
         "No",  # IPC
         "Yes",  # Memcached
@@ -128,6 +131,7 @@ print_header("Driver support", delim="-")
 print("")
 lock_table = [
     [
+        "Yes",  # Etcd
         "Yes",  # File
         "Yes",  # IPC
         "Yes",  # Memcached
