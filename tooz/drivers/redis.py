@@ -20,6 +20,11 @@ import contextlib
 from distutils import version
 import logging
 
+try:
+    from time import monotonic as _now  # noqa
+except ImportError:
+    from time import time as _now  # noqa
+
 from concurrent import futures
 import msgpack
 from oslo.utils import strutils
@@ -671,10 +676,17 @@ class RedisDriver(coordination.CoordinationDriver):
         raise tooz.NotImplemented
 
     def run_watchers(self, timeout=None):
+        if timeout is not None:
+            started_at = _now()
         result = []
         for group_id in self.get_groups().get(timeout=timeout):
+            leftover_timeout = None
+            if timeout is not None:
+                elapsed = max(0.0, _now() - started_at)
+                leftover_timeout = timeout - elapsed
             try:
-                group_members = self.get_members(group_id).get(timeout=timeout)
+                group_members = self.get_members(group_id).get(
+                    timeout=leftover_timeout)
             except coordination.GroupNotCreated:
                 group_members = set()
             else:
