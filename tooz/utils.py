@@ -16,6 +16,10 @@
 
 import six
 
+import msgpack
+
+from tooz import coordination
+
 
 def exception_message(exc):
     """Return the string representation of exception."""
@@ -30,3 +34,27 @@ def to_binary(text, encoding='ascii'):
     if not isinstance(text, six.binary_type):
         text = text.encode(encoding)
     return text
+
+
+def dumps(data, excp_cls=coordination.ToozError):
+    """Serializes provided data using msgpack into a byte string.
+
+    TODO(harlowja): use oslo.serialization 'msgpackutils.py' when we can since
+    that handles more native types better than the default does...
+    """
+    try:
+        return msgpack.packb(data, use_bin_type=True)
+    except (msgpack.PackException, ValueError) as e:
+        raise excp_cls(exception_message(e))
+
+
+def loads(blob, excp_cls=coordination.ToozError):
+    """Deserializes provided data using msgpack (from a prior byte string).
+
+    TODO(harlowja): use oslo.serialization 'msgpackutils.py' when we can since
+    that handles more native types better than the default does...
+    """
+    try:
+        return msgpack.unpackb(blob, encoding='utf-8')
+    except (msgpack.UnpackException, ValueError) as e:
+        raise excp_cls(exception_message(e))

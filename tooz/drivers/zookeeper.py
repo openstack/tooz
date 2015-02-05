@@ -73,6 +73,14 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         self._coord.stop()
 
     @staticmethod
+    def _dumps(data):
+        return utils.dumps(data)
+
+    @staticmethod
+    def _loads(blob):
+        return utils.loads(blob)
+
+    @staticmethod
     def _create_group_handler(async_result, timeout,
                               timeout_exception, group_id):
         try:
@@ -130,6 +138,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
 
     def join_group(self, group_id, capabilities=b""):
         member_path = self._path_member(group_id, self._member_id)
+        capabilities = self._dumps(capabilities)
         async_result = self._coord.create_async(member_path,
                                                 value=capabilities,
                                                 ephemeral=True)
@@ -191,13 +200,14 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
 
     def update_capabilities(self, group_id, capabilities):
         member_path = self._path_member(group_id, self._member_id)
+        capabilities = self._dumps(capabilities)
         async_result = self._coord.set_async(member_path, capabilities)
         return ZooAsyncResult(async_result, self._update_capabilities_handler,
                               timeout_exception=self._timeout_exception,
                               group_id=group_id, member_id=self._member_id)
 
-    @staticmethod
-    def _get_member_capabilities_handler(async_result, timeout,
+    @classmethod
+    def _get_member_capabilities_handler(cls, async_result, timeout,
                                          timeout_exception, group_id,
                                          member_id):
         try:
@@ -209,7 +219,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         except exceptions.ZookeeperError as e:
             raise coordination.ToozError(utils.exception_message(e))
         else:
-            return capabilities
+            return cls._loads(capabilities)
 
     def get_member_capabilities(self, group_id, member_id):
         member_path = self._path_member(group_id, member_id)
