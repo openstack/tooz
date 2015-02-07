@@ -21,7 +21,6 @@ from distutils import version
 import logging
 
 from concurrent import futures
-import msgpack
 from oslo.utils import strutils
 import redis
 from redis import exceptions
@@ -291,17 +290,11 @@ class RedisDriver(coordination.CoordinationDriver):
 
     @staticmethod
     def _dumps(data):
-        try:
-            return msgpack.dumps(data)
-        except (msgpack.PackException, ValueError) as e:
-            raise coordination.ToozError(utils.exception_message(e))
+        return utils.dumps(data)
 
     @staticmethod
     def _loads(blob):
-        try:
-            return msgpack.loads(blob)
-        except (msgpack.UnpackException, ValueError) as e:
-            raise coordination.ToozError(utils.exception_message(e))
+        return utils.loads(blob)
 
     @classmethod
     def _make_client(cls, parsed_url, options, default_socket_timeout):

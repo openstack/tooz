@@ -226,7 +226,7 @@ class CoordinationDriver(object):
         :param group_id: the id of the group to join
         :type group_id: str
         :param capabilities: the capabilities of the joined member
-        :type capabilities: str
+        :type capabilities: object (typically str)
         :returns: None
         :rtype: CoordAsyncResult
         """
@@ -285,7 +285,7 @@ class CoordinationDriver(object):
         :param group_id: the id of the group of the current member
         :type group_id: str
         :param capabilities: the capabilities of the updated member
-        :type capabilities: str
+        :type capabilities: object (typically str)
         :returns: None
         :rtype: CoordAsyncResult
         """

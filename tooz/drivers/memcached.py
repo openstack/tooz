@@ -18,7 +18,6 @@ import collections
 import logging
 
 from concurrent import futures
-import msgpack
 import pymemcache.client
 import six
 
@@ -103,15 +102,15 @@ class MemcachedDriver(coordination.CoordinationDriver):
     def _msgpack_serializer(key, value):
         if isinstance(value, six.binary_type):
             return value, 1
-        return msgpack.dumps(value), 2
+        return utils.dumps(value), 2
 
     @staticmethod
     def _msgpack_deserializer(key, value, flags):
         if flags == 1:
             return value
         if flags == 2:
-            return msgpack.loads(value)
-        raise Exception("Unknown serialization format")
+            return utils.loads(value)
+        raise Exception("Unknown serialization format '%s'" % flags)
 
     def _start(self):
         try:
@@ -213,7 +212,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
                 raise coordination.MemberAlreadyExist(group_id,
                                                       self._member_id)
             group_members[self._member_id] = {
-                "capabilities": capabilities,
+                b"capabilities": capabilities,
             }
             if not self.client.cas(encoded_group, group_members, cas):
                 # It changed, let's try again

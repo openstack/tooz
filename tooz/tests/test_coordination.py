@@ -199,6 +199,17 @@ class TestAPI(testscenarios.TestWithScenarios,
                                                    self.member_id).get()
         self.assertEqual(capa, b"test_capabilities")
 
+    def test_get_member_capabilities_complex(self):
+        self._coord.create_group(self.group_id).get()
+        caps = {
+            'type': 'warrior',
+            'abilities': ['fight', 'flight', 'double-hit-damage'],
+        }
+        self._coord.join_group(self.group_id, caps)
+        capa = self._coord.get_member_capabilities(self.group_id,
+                                                   self.member_id).get()
+        self.assertEqual(capa, caps)
+
     def test_get_member_capabilities_nonexistent_group(self):
         capa = self._coord.get_member_capabilities(self.group_id,
                                                    self.member_id)
