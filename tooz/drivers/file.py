@@ -15,7 +15,6 @@
 # under the License.
 import errno
 import os
-import weakref
 
 import tooz
 from tooz import coordination
@@ -94,8 +93,6 @@ else:
 class FileDriver(coordination.CoordinationDriver):
     """A file based driver."""
 
-    LOCKS = weakref.WeakValueDictionary()
-
     def __init__(self, member_id, parsed_url, options):
         """Initialize the file driver."""
         super(FileDriver, self).__init__()
@@ -103,8 +100,7 @@ class FileDriver(coordination.CoordinationDriver):
 
     def get_lock(self, name):
         path = os.path.abspath(os.path.join(self._lockdir, name.decode()))
-        lock = LockClass(path)
-        return self.LOCKS.setdefault(path, lock)
+        return locking.SharedWeakLockHelper(self._lockdir, LockClass, path)
 
     @staticmethod
     def watch_join_group(group_id, callback):

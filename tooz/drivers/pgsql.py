@@ -87,9 +87,9 @@ def _translating_cursor(conn):
 class PostgresLock(locking.Lock):
     """A PostgreSQL based lock."""
 
-    def __init__(self, name, connection):
+    def __init__(self, name, parsed_url, options):
         super(PostgresLock, self).__init__(name)
-        self._conn = connection
+        self._conn = PostgresDriver.get_connection(parsed_url, options)
         h = hashlib.md5()
         h.update(name)
         if six.PY2:
@@ -130,27 +130,20 @@ class PostgresDriver(coordination.CoordinationDriver):
     def __init__(self, member_id, parsed_url, options):
         """Initialize the PostgreSQL driver."""
         super(PostgresDriver, self).__init__()
-        self._host = options.get("host", [None])[-1]
-        self._port = parsed_url.port or options.get("port", [None])[-1]
-        self._dbname = parsed_url.path[1:] or options.get("dbname", [None])[-1]
-        self._username = parsed_url.username
-        self._password = parsed_url.password
+        self._parsed_url = parsed_url
+        self._options = options
 
     def _start(self):
-        try:
-            self._conn = psycopg2.connect(host=self._host,
-                                          port=self._port,
-                                          user=self._username,
-                                          password=self._password,
-                                          database=self._dbname)
-        except psycopg2.Error as e:
-            raise coordination.ToozConnectionError(_format_exception(e))
+        self._conn = PostgresDriver.get_connection(self._parsed_url,
+                                                   self._options)
 
     def _stop(self):
         self._conn.close()
 
     def get_lock(self, name):
-        return PostgresLock(name, self._conn)
+        return locking.WeakLockHelper(
+            self._parsed_url.geturl(),
+            PostgresLock, name, self._parsed_url, self._options)
 
     @staticmethod
     def watch_join_group(group_id, callback):
@@ -175,3 +168,20 @@ class PostgresDriver(coordination.CoordinationDriver):
     @staticmethod
     def unwatch_elected_as_leader(group_id, callback):
         raise tooz.NotImplemented
+
+    @staticmethod
+    def get_connection(parsed_url, options):
+        host = options.get("host", [None])[-1]
+        port = parsed_url.port or options.get("port", [None])[-1]
+        dbname = parsed_url.path[1:] or options.get("dbname", [None])[-1]
+        username = parsed_url.username
+        password = parsed_url.password
+
+        try:
+            return psycopg2.connect(host=host,
+                                    port=port,
+                                    user=username,
+                                    password=password,
+                                    database=dbname)
+        except psycopg2.Error as e:
+            raise coordination.ToozConnectionError(_format_exception(e))
