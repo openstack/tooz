@@ -35,4 +35,8 @@ class ZakeDriver(zookeeper.KazooDriver):
 
     @classmethod
     def _make_client(cls, parsed_url, options):
-        return fake_client.FakeClient(storage=cls.fake_storage)
+        if 'storage' in options:
+            storage = options['storage'][-1]
+        else:
+            storage = cls.fake_storage
+        return fake_client.FakeClient(storage=storage)

@@ -340,21 +340,33 @@ class CoordAsyncResult(object):
         """Returns True if the task is done, False otherwise."""
 
 
-def get_coordinator(backend_url, member_id):
+def get_coordinator(backend_url, member_id, **kwargs):
     """Initialize and load the backend.
 
     :param backend_url: the backend URL to use
     :type backend: str
     :param member_id: the id of the member
     :type member_id: str
+    :param kwargs: additional coordinator options (these take precedence over
+                   options of the **same** name found in the ``backend_url``
+                   arguments query string)
     """
     parsed_url = netutils.urlsplit(backend_url)
     parsed_qs = six.moves.urllib.parse.parse_qs(parsed_url.query)
+    if kwargs:
+        options = {}
+        for (k, v) in six.iteritems(kwargs):
+            options[k] = [v]
+        for (k, v) in six.iteritems(parsed_qs):
+            if k not in options:
+                options[k] = v
+    else:
+        options = parsed_qs
     return driver.DriverManager(
         namespace=TOOZ_BACKENDS_NAMESPACE,
         name=parsed_url.scheme,
         invoke_on_load=True,
-        invoke_args=(member_id, parsed_url, parsed_qs)).driver
+        invoke_args=(member_id, parsed_url, options)).driver
 
 
 class ToozError(Exception):
