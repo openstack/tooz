@@ -16,6 +16,8 @@
 import abc
 
 import six
+import threading
+import weakref
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -55,3 +57,67 @@ class Lock(object):
         :rtype: bool
 
         """
+
+
+class SharedWeakLockHelper(Lock):
+    """Helper for lock that need to rely on a state in memory and
+    be the same object across each coordinator.get_lock(...)
+    """
+
+    LOCKS_LOCK = threading.Lock()
+    ACQUIRED_LOCKS = dict()
+    RELEASED_LOCKS = weakref.WeakValueDictionary()
+
+    def __init__(self, namespace, lockclass, name, *args, **kwargs):
+        super(SharedWeakLockHelper, self).__init__(name)
+        self.acquired = False
+        self._lock_key = "%s:%s" % (namespace, name)
+        self._newlock = lambda: lockclass(
+            self.name, *args, **kwargs)
+
+    def acquire(self, blocking=True):
+        with self.LOCKS_LOCK:
+            try:
+                l = self.ACQUIRED_LOCKS[self._lock_key]
+            except KeyError:
+                l = self.RELEASED_LOCKS.setdefault(
+                    self._lock_key, self._newlock())
+
+        if l.acquire(blocking):
+            with self.LOCKS_LOCK:
+                self.RELEASED_LOCKS.pop(self._lock_key, None)
+                self.ACQUIRED_LOCKS[self._lock_key] = l
+            return True
+        return False
+
+    def release(self):
+        with self.LOCKS_LOCK:
+            l = self.ACQUIRED_LOCKS.pop(self._lock_key)
+            l.release()
+            self.RELEASED_LOCKS[self._lock_key] = l
+
+
+class WeakLockHelper(Lock):
+    """Helper for lock that need to rely on a state in memory and
+    be a diffrent object across each coordinator.get_lock(...)
+    """
+
+    LOCKS_LOCK = threading.Lock()
+    ACQUIRED_LOCKS = dict()
+
+    def __init__(self, namespace, lockclass, name, *args, **kwargs):
+        super(WeakLockHelper, self).__init__(name)
+        self._lock_key = "%s:%s" % (namespace, name)
+        self._lock = lockclass(self.name, *args, **kwargs)
+
+    def acquire(self, blocking=True):
+        if self._lock.acquire(blocking):
+            with self.LOCKS_LOCK:
+                self.ACQUIRED_LOCKS[self._lock_key] = self._lock
+            return True
+        return False
+
+    def release(self):
+        with self.LOCKS_LOCK:
+            self._lock.release()
+            self.ACQUIRED_LOCKS.pop(self._lock_key)

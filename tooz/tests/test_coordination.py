@@ -577,6 +577,31 @@ class TestAPI(testscenarios.TestWithScenarios,
         with lock:
             pass
 
+    def test_get_multiple_locks_with_same_coord(self):
+        name = self._get_random_uuid()
+        lock1 = self._coord.get_lock(name)
+        lock2 = self._coord.get_lock(name)
+        self.assertEqual(True, lock1.acquire())
+        self.assertEqual(False, lock2.acquire(blocking=False))
+        self.assertEqual(False,
+                         self._coord.get_lock(name).acquire(blocking=False))
+        lock1.release()
+
+    def test_get_multiple_locks_with_same_coord_without_ref(self):
+        # NOTE(sileht): weird test case who want a lock that can't be
+        # released ? This tests is here to ensure that the
+        # acquired first lock in not vanished by the gc and get accidentally
+        # released.
+        # This test ensures that the consumer application will stuck when it
+        # looses the ref of a acquired lock instead of create a race.
+        # Also, by its nature this tests don't cleanup the created
+        # semaphore by the ipc:// driver, don't close opened files and
+        # sql connections and that the desired behavior.
+        name = self._get_random_uuid()
+        self.assertEqual(True, self._coord.get_lock(name).acquire())
+        self.assertEqual(False,
+                         self._coord.get_lock(name).acquire(blocking=False))
+
     def test_get_lock_multiple_coords(self):
         member_id2 = self._get_random_uuid()
         client2 = tooz.coordination.get_coordinator(self.url,
