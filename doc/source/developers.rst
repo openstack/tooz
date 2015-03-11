@@ -8,6 +8,12 @@ Interfaces
 .. autoclass:: tooz.coordination.CoordinationDriver
    :members:
 
+File
+~~~~
+
+.. autoclass:: tooz.drivers.file.FileDriver
+   :members:
+
 IPC
 ~~~
 

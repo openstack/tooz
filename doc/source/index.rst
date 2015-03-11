@@ -14,6 +14,7 @@ Contents
 
    install
    drivers
+   compatibility
    tutorial/index
    developers
 
