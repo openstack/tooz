@@ -21,7 +21,7 @@ from distutils import version
 import logging
 
 from concurrent import futures
-from oslo.utils import strutils
+from oslo_utils import strutils
 import redis
 from redis import exceptions
 from redis import lock as redis_locks

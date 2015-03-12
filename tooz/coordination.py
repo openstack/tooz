@@ -17,7 +17,7 @@
 import abc
 import collections
 
-from oslo.utils import netutils
+from oslo_utils import netutils
 import six
 from stevedore import driver
 
