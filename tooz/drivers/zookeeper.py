@@ -23,6 +23,7 @@ from kazoo.protocol import paths
 import six
 
 from tooz import coordination
+from tooz.drivers import _retry
 from tooz import locking
 from tooz import utils
 
@@ -31,13 +32,34 @@ class ZooKeeperLock(locking.Lock):
     def __init__(self, name, lock):
         super(ZooKeeperLock, self).__init__(name)
         self._lock = lock
+        self.acquired = False
 
     def acquire(self, blocking=True):
-        return self._lock.acquire(blocking=bool(blocking),
-                                  timeout=blocking)
+
+        @_retry.retry(stop_max_delay=blocking)
+        def _lock():
+            # NOTE(sileht): kazoo lock looks broken:
+            # https://github.com/python-zk/kazoo/issues/291
+            # so we track the exclusivity internally
+            if self.acquired is True:
+                if blocking:
+                    raise _retry.Retry
+                return False
+
+            if self._lock.acquire(blocking=bool(blocking),
+                                  timeout=0):
+                self.acquired = True
+                return True
+
+            if blocking:
+                raise _retry.Retry
+            return False
+
+        return _lock()
 
     def release(self):
-        return self._lock.release()
+        self._lock.release()
+        self.acquired = False
 
 
 class BaseZooKeeperDriver(coordination.CoordinationDriver):

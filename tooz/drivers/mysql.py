@@ -13,6 +13,8 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+import logging
+
 import pymysql
 
 import tooz
@@ -21,6 +23,8 @@ from tooz.drivers import _retry
 from tooz import locking
 from tooz import utils
 
+LOG = logging.getLogger(__name__)
+
 
 class MySQLLock(locking.Lock):
     """A MySQL based lock."""
@@ -28,37 +32,54 @@ class MySQLLock(locking.Lock):
     def __init__(self, name, parsed_url, options):
         super(MySQLLock, self).__init__(name)
         self._conn = MySQLDriver.get_connection(parsed_url, options)
+        self.acquired = False
 
     def acquire(self, blocking=True):
-        def _acquire(retry=False):
+
+        @_retry.retry(stop_max_delay=blocking)
+        def _lock():
+            # NOTE(sileht): mysql-server (<5.7.5) allows only one lock per
+            # connection at a time:
+            #  select GET_LOCK("a", 0);
+            #  select GET_LOCK("b", 0); <-- this release lock "a" ...
+            # Or
+            #  select GET_LOCK("a", 0);
+            #  select GET_LOCK("a", 0); release and lock again "a"
+            #
+            # So, we track locally the lock status with self.acquired
+            if self.acquired is True:
+                if blocking:
+                    raise _retry.Retry
+                return False
+
             try:
                 with self._conn as cur:
                     cur.execute("SELECT GET_LOCK(%s, 0);", self.name)
                     # Can return NULL on error
                     if cur.fetchone()[0] is 1:
+                        self.acquired = True
                         return True
             except pymysql.MySQLError as e:
                 raise coordination.ToozError(utils.exception_message(e))
-            if retry:
-                raise _retry.Retry
-            else:
-                return False
 
-        if blocking is False:
-            return _acquire()
-        else:
-            kwargs = _retry.RETRYING_KWARGS.copy()
-            if blocking is not True:
-                kwargs['stop_max_delay'] = blocking
-            return _retry.Retrying(**kwargs).call(_acquire, retry=True)
+            if blocking:
+                raise _retry.Retry
+            return False
+
+        return _lock()
 
     def release(self):
         try:
             with self._conn as cur:
                 cur.execute("SELECT RELEASE_LOCK(%s);", self.name)
-                return cur.fetchone()[0]
+                cur.fetchone()
+                self.acquired = False
         except pymysql.MySQLError as e:
             raise coordination.ToozError(utils.exception_message(e))
+
+    def __del__(self):
+        if self.acquired:
+            LOG.warn("unreleased lock %s garbage collected" % self.name)
 
 
 class MySQLDriver(coordination.CoordinationDriver):
@@ -78,9 +99,7 @@ class MySQLDriver(coordination.CoordinationDriver):
         self._conn.close()
 
     def get_lock(self, name):
-        return locking.WeakLockHelper(
-            self._parsed_url.geturl(),
-            MySQLLock, name, self._parsed_url, self._options)
+        return MySQLLock(name, self._parsed_url, self._options)
 
     @staticmethod
     def watch_join_group(group_id, callback):

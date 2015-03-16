@@ -14,12 +14,15 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 import errno
+import logging
 import os
 
 import tooz
 from tooz import coordination
 from tooz.drivers import _retry
 from tooz import locking
+
+LOG = logging.getLogger(__name__)
 
 
 class FileLock(locking.Lock):
@@ -28,9 +31,9 @@ class FileLock(locking.Lock):
     def __init__(self, path):
         super(FileLock, self).__init__(path)
         self.acquired = False
+        self.lockfile = open(self.name, 'a')
 
     def acquire(self, blocking=True):
-        self.lockfile = open(self.name, 'a')
 
         @_retry.retry(stop_max_delay=blocking)
         def _lock():
@@ -56,7 +59,6 @@ class FileLock(locking.Lock):
 
     def release(self):
         self.unlock()
-        self.lockfile.close()
         self.acquired = False
 
     def lock(self):
@@ -64,6 +66,10 @@ class FileLock(locking.Lock):
 
     def unlock(self):
         raise NotImplementedError
+
+    def __del__(self):
+        if self.acquired:
+            LOG.warn("unreleased lock %s garbage collected" % self.name)
 
 
 class WindowsFileLock(FileLock):
