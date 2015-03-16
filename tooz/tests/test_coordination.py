@@ -14,15 +14,26 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 import os
+import threading
 import time
 import uuid
 
+from concurrent import futures
 import testscenarios
 from testtools import matchers
 from testtools import testcase
 
 import tooz.coordination
 from tooz import tests
+
+
+def try_to_lock_job(name, coord, url, member_id):
+    if not coord:
+        coord = tooz.coordination.get_coordinator(
+            url, member_id)
+        coord.start()
+    lock2 = coord.get_lock(name)
+    return lock2.acquire(blocking=False)
 
 
 class TestAPI(testscenarios.TestWithScenarios,
@@ -577,6 +588,89 @@ class TestAPI(testscenarios.TestWithScenarios,
         with lock:
             pass
 
+    def test_get_lock_concurrency_locking_same_lock(self):
+        lock = self._coord.get_lock(self._get_random_uuid())
+
+        graceful_ending = threading.Event()
+
+        def thread():
+            self.assertTrue(lock.acquire())
+            lock.release()
+            graceful_ending.set()
+
+        t = threading.Thread(target=thread)
+        t.daemon = True
+        with lock:
+            t.start()
+            # Ensure the thread try to get the lock
+            time.sleep(.1)
+        t.join()
+        graceful_ending.wait(.2)
+        self.assertTrue(graceful_ending.is_set())
+
+    def _do_test_get_lock_concurrency_locking_two_lock(self, executor,
+                                                       use_same_coord):
+        name = self._get_random_uuid()
+        lock1 = self._coord.get_lock(name)
+        with lock1:
+            with executor(max_workers=1) as e:
+                coord = self._coord if use_same_coord else None
+                f = e.submit(try_to_lock_job, name, coord, self.url,
+                             self._get_random_uuid())
+                self.assertFalse(f.result())
+
+    def test_get_lock_concurrency_locking_two_lock_process(self):
+        self._do_test_get_lock_concurrency_locking_two_lock(
+            futures.ProcessPoolExecutor, False)
+
+    def test_get_lock_concurrency_locking_two_lock_thread1(self):
+        self._do_test_get_lock_concurrency_locking_two_lock(
+            futures.ThreadPoolExecutor, False)
+
+    def test_get_lock_concurrency_locking_two_lock_thread2(self):
+        self._do_test_get_lock_concurrency_locking_two_lock(
+            futures.ThreadPoolExecutor, True)
+
+    def test_get_lock_concurrency_locking2(self):
+        # NOTE(sileht): some database based lock can have only
+        # one lock per connection, this test ensures acquiring a
+        # second lock doesn't release the first one.
+        lock1 = self._coord.get_lock(self._get_random_uuid())
+        lock2 = self._coord.get_lock(self._get_random_uuid())
+
+        graceful_ending = threading.Event()
+        thread_locked = threading.Event()
+
+        def thread():
+            with lock2:
+                self.assertFalse(lock1.acquire(blocking=False))
+                thread_locked.set()
+            graceful_ending.set()
+
+        t = threading.Thread(target=thread)
+        t.daemon = True
+
+        with lock1:
+            t.start()
+            thread_locked.wait()
+            self.assertTrue(thread_locked.is_set())
+        t.join()
+        graceful_ending.wait()
+        self.assertTrue(graceful_ending.is_set())
+
+    def test_get_lock_twice_locked_twice(self):
+        name = self._get_random_uuid()
+        lock1 = self._coord.get_lock(name)
+        lock2 = self._coord.get_lock(name)
+        with lock1:
+            self.assertEqual(False, lock2.acquire(blocking=False))
+
+    def test_get_lock_locked_twice(self):
+        name = self._get_random_uuid()
+        lock = self._coord.get_lock(name)
+        with lock:
+            self.assertEqual(False, lock.acquire(blocking=False))
+
     def test_get_multiple_locks_with_same_coord(self):
         name = self._get_random_uuid()
         lock1 = self._coord.get_lock(name)
@@ -586,21 +680,6 @@ class TestAPI(testscenarios.TestWithScenarios,
         self.assertEqual(False,
                          self._coord.get_lock(name).acquire(blocking=False))
         lock1.release()
-
-    def test_get_multiple_locks_with_same_coord_without_ref(self):
-        # NOTE(sileht): weird test case who want a lock that can't be
-        # released ? This tests is here to ensure that the
-        # acquired first lock in not vanished by the gc and get accidentally
-        # released.
-        # This test ensures that the consumer application will stuck when it
-        # looses the ref of a acquired lock instead of create a race.
-        # Also, by its nature this tests don't cleanup the created
-        # semaphore by the ipc:// driver, don't close opened files and
-        # sql connections and that the desired behavior.
-        name = self._get_random_uuid()
-        self.assertEqual(True, self._coord.get_lock(name).acquire())
-        self.assertEqual(False,
-                         self._coord.get_lock(name).acquire(blocking=False))
 
     def test_get_lock_multiple_coords(self):
         member_id2 = self._get_random_uuid()
