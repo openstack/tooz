@@ -343,13 +343,14 @@ class RedisDriver(coordination.CoordinationDriver):
             sentinel_server = sentinel.Sentinel(
                 sentinel_hosts,
                 socket_timeout=kwargs['socket_timeout'])
-            master_host, master_port = sentinel_server.discover_master(
-                kwargs['sentinel'])
-            kwargs['host'] = master_host
-            kwargs['port'] = master_port
+            sentinel_name = kwargs['sentinel']
             del kwargs['sentinel']
             if 'sentinel_fallback' in kwargs:
                 del kwargs['sentinel_fallback']
+            master_client = sentinel_server.master_for(sentinel_name, **kwargs)
+            # The master_client is a redis.StrictRedis using a
+            # Sentinel managed connection pool.
+            return master_client
         return redis.StrictRedis(**kwargs)
 
     def _start(self):
