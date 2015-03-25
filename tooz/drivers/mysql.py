@@ -108,7 +108,7 @@ class MySQLDriver(coordination.CoordinationDriver):
 
     @staticmethod
     def get_connection(parsed_url, options):
-        host = parsed_url.netloc
+        host = parsed_url.hostname
         port = parsed_url.port
         dbname = parsed_url.path[1:]
         username = parsed_url.username
@@ -128,5 +128,5 @@ class MySQLDriver(coordination.CoordinationDriver):
                                        user=username,
                                        passwd=password,
                                        database=dbname)
-        except pymysql.err.OperationalError as e:
+        except (pymysql.err.OperationalError, pymysql.err.InternalError) as e:
             raise coordination.ToozConnectionError(utils.exception_message(e))
