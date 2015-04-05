@@ -1,6 +1,14 @@
 Tooz
 ====
 
+.. image:: https://pypip.in/version/tooz/badge.svg
+    :target: https://pypi.python.org/pypi/tooz/
+    :alt: Latest Version
+
+.. image:: https://pypip.in/download/tooz/badge.svg?period=month
+    :target: https://pypi.python.org/pypi/tooz/
+    :alt: Downloads
+
 The Tooz project aims at centralizing the most common distributed primitives
 like group membership protocol, lock service and leader election by providing
 a coordination API helping developers to build distributed applications.
