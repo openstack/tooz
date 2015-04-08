@@ -21,8 +21,14 @@ from tooz.drivers import zookeeper
 
 
 class ZakeDriver(zookeeper.KazooDriver):
-    """The driver using the Zake client which mimic a fake Kazoo client
-    without the need of real ZooKeeper servers.
+    """This driver uses the `zake`_ client to mimic real `zookeeper`_ servers.
+
+    It **should** be mainly used (and **is** really only intended to be used in
+    this manner) for testing and integration (where real `zookeeper`_ servers
+    are typically not available).
+
+    .. _zake: https://pypi.python.org/pypi/zake
+    .. _zookeeper: http://zookeeper.apache.org/
     """
 
     # NOTE(harlowja): this creates a shared backend 'storage' layer that

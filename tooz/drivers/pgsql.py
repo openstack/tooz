@@ -125,7 +125,15 @@ class PostgresLock(locking.Lock):
 
 
 class PostgresDriver(coordination.CoordinationDriver):
-    """A PostgreSQL based driver."""
+    """A `PostgreSQL`_ based driver.
+
+    This driver users `PostgreSQL`_ database tables to
+    provide the coordination driver semantics and required API(s). It **is**
+    missing some functionality but in the future these not implemented API(s)
+    will be filled in.
+
+    .. _PostgreSQL: http://www.postgresql.org/
+    """
 
     def __init__(self, member_id, parsed_url, options):
         """Initialize the PostgreSQL driver."""

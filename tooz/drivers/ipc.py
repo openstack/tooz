@@ -122,7 +122,14 @@ class IPCLock(locking.Lock):
 
 
 class IPCDriver(coordination.CoordinationDriver):
-    """A IPC based driver."""
+    """A `IPC`_ based driver.
+
+    This driver uses `IPC`_ concepts to provide the coordination driver
+    semantics and required API(s). It **is** missing some functionality but
+    in the future these not implemented API(s) will be filled in.
+
+    .. _IPC: http://en.wikipedia.org/wiki/Inter-process_communication
+    """
 
     _SEGMENT_SIZE = 1024
     _GROUP_LIST_KEY = "GROUP_LIST"

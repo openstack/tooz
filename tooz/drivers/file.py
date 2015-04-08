@@ -91,7 +91,13 @@ else:
 
 
 class FileDriver(coordination.CoordinationDriver):
-    """A file based driver."""
+    """A file based driver.
+
+    This driver uses files and directories (and associated file locks) to
+    provide the coordination driver semantics and required API(s). It **is**
+    missing some functionality but in the future these not implemented API(s)
+    will be filled in.
+    """
 
     def __init__(self, member_id, parsed_url, options):
         """Initialize the file driver."""
