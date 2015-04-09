@@ -305,6 +305,9 @@ class CoordinationDriver(object):
     def get_lock(name):
         """Return a distributed lock.
 
+        This is a exclusive lock, a second call to acquire() will block or
+        return False.
+
         :param name: The lock name that is used to identify it across all
                      nodes.
 
