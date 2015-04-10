@@ -137,6 +137,10 @@ class RedisLock(locking.Lock):
 class RedisDriver(coordination.CoordinationDriver):
     """Redis provides a few nice benefits that act as a poormans zookeeper.
 
+    It **is** fully functional and implements all of the coordination
+    driver API(s). It stores data into `redis`_ using the provided `redis`_
+    API(s) using `msgpack`_ encoded values as needed.
+
     - Durability (when setup with AOF mode).
     - Consistent, note that this is still restricted to only
       one redis server, without the recently released redis (alpha)
@@ -175,6 +179,9 @@ class RedisDriver(coordination.CoordinationDriver):
     be addressed in https://github.com/andymccurdy/redis-py/issues/566 when
     that gets worked on). See http://redis.io/topics/transactions for more
     information on this topic.
+
+    .. _redis: http://redis.io/
+    .. _msgpack: http://msgpack.org/
     """
 
     # The min redis version that this driver requires to operate with...

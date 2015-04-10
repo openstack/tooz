@@ -83,7 +83,15 @@ class MySQLLock(locking.Lock):
 
 
 class MySQLDriver(coordination.CoordinationDriver):
-    """A mysql based driver."""
+    """A `MySQL`_ based driver.
+
+    This driver users `MySQL`_ database tables to
+    provide the coordination driver semantics and required API(s). It **is**
+    missing some functionality but in the future these not implemented API(s)
+    will be filled in.
+
+    .. _MySQL: http://dev.mysql.com/
+    """
 
     def __init__(self, member_id, parsed_url, options):
         """Initialize the MySQL driver."""

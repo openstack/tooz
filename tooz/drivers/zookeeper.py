@@ -289,7 +289,16 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
 
 
 class KazooDriver(BaseZooKeeperDriver):
-    """The driver using the Kazoo client against real ZooKeeper servers."""
+    """This driver uses the `kazoo`_ client against real `zookeeper`_ servers.
+
+    It **is** fully functional and implements all of the coordination
+    driver API(s). It stores data into `zookeeper`_ using znodes
+    and `msgpack`_ encoded values.
+
+    .. _kazoo: http://kazoo.readthedocs.org/
+    .. _zookeeper: http://zookeeper.apache.org/
+    .. _msgpack: http://msgpack.org/
+    """
 
     def __init__(self, member_id, parsed_url, options):
         super(KazooDriver, self).__init__(member_id, parsed_url, options)

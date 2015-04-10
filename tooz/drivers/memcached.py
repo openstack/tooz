@@ -74,7 +74,16 @@ class MemcachedLock(locking.Lock):
 
 
 class MemcachedDriver(coordination.CoordinationDriver):
-    """A memcached based driver."""
+    """A `memcached`_ based driver.
+
+    This driver users `memcached`_ concepts to provide the coordination driver
+    semantics and required API(s). It **is** fully functional and implements
+    all of the coordination driver API(s). It stores data into memcache
+    using expiries and `msgpack`_ encoded values.
+
+    .. _memcached: http://memcached.org/
+    .. _msgpack: http://msgpack.org/
+    """
 
     _GROUP_PREFIX = b'_TOOZ_GROUP_'
     _GROUP_LEADER_PREFIX = b'_TOOZ_GROUP_LEADER_'

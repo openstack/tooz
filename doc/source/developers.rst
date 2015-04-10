@@ -53,8 +53,5 @@ Zake
 Zookeeper
 ~~~~~~~~~
 
-.. autoclass:: tooz.drivers.zookeeper.BaseZooKeeperDriver
-   :members:
-
 .. autoclass:: tooz.drivers.zookeeper.KazooDriver
    :members:
