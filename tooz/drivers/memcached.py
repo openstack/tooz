@@ -18,6 +18,7 @@ import collections
 import errno
 import logging
 import socket
+import threading
 
 from concurrent import futures
 from pymemcache import client as pymemcache_client
@@ -30,6 +31,57 @@ from tooz import utils
 
 
 LOG = logging.getLogger(__name__)
+
+
+class ThreadSafeClient(pymemcache_client.Client):
+    # FIXME(harlowja): get these changes upstream into pymemcache?
+    #
+    # See: https://github.com/pinterest/pymemcache/issues/34
+
+    def __init__(self, server, serializer=None, deserializer=None,
+                 connect_timeout=None, timeout=None):
+        super(ThreadSafeClient, self).__init__(server,
+                                               serializer=serializer,
+                                               deserializer=deserializer,
+                                               connect_timeout=connect_timeout,
+                                               timeout=timeout)
+        self.lock = threading.RLock()
+
+    def _store_cmd(self, name, key, expire, noreply, data, cas=None):
+        with self.lock:
+            return super(ThreadSafeClient, self)._store_cmd(name, key, expire,
+                                                            noreply, data,
+                                                            cas=cas)
+
+    def _misc_cmd(self, cmd, cmd_name, noreply):
+        with self.lock:
+            line = super(ThreadSafeClient, self)._misc_cmd(cmd, cmd_name,
+                                                           noreply)
+            return line
+
+    def _fetch_cmd(self, name, keys, expect_cas):
+        with self.lock:
+            return super(ThreadSafeClient, self)._fetch_cmd(name, keys,
+                                                            expect_cas)
+
+    def quit(self):
+        with self.lock:
+            return super(ThreadSafeClient, self).quit()
+
+    def set_many(self, values, expire=0, noreply=True):
+        with self.lock:
+            return super(ThreadSafeClient, self).set_many(values,
+                                                          expire=expire,
+                                                          noreply=noreply)
+
+    def delete_many(self, keys, noreply=True):
+        with self.lock:
+            return super(ThreadSafeClient, self).delete_many(keys,
+                                                             noreply=noreply)
+
+    def close(self):
+        with self.lock:
+            super(ThreadSafeClient, self).close()
 
 
 def _translate_failures(func):
@@ -159,12 +211,11 @@ class MemcachedDriver(coordination.CoordinationDriver):
 
     @_translate_failures
     def _start(self):
-        self.client = pymemcache_client.Client(
-            self.host,
-            serializer=self._msgpack_serializer,
-            deserializer=self._msgpack_deserializer,
-            timeout=self.timeout,
-            connect_timeout=self.timeout)
+        self.client = ThreadSafeClient(self.host,
+                                       serializer=self._msgpack_serializer,
+                                       deserializer=self._msgpack_deserializer,
+                                       timeout=self.timeout,
+                                       connect_timeout=self.timeout)
         # Run heartbeat here because pymemcache use a lazy connection
         # method and only connect once you do an operation.
         self.heartbeat()

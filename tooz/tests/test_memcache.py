@@ -31,14 +31,14 @@ from tooz import coordination
 class TestMemcacheDriverFailures(testcase.TestCase):
     FAKE_URL = "memcached://mocked-not-really-localhost"
 
-    @mock.patch('pymemcache.client.Client')
+    @mock.patch('tooz.drivers.memcached.ThreadSafeClient')
     def test_client_failure_start(self, mock_client_cls):
         mock_client_cls.side_effect = socket.timeout('timed-out')
         member_id = str(uuid.uuid4()).encode('ascii')
         coord = coordination.get_coordinator(self.FAKE_URL, member_id)
         self.assertRaises(coordination.ToozConnectionError, coord.start)
 
-    @mock.patch('pymemcache.client.Client')
+    @mock.patch('tooz.drivers.memcached.ThreadSafeClient')
     def test_client_failure_join(self, mock_client_cls):
         mock_client = mock.MagicMock()
         mock_client_cls.return_value = mock_client
@@ -49,7 +49,7 @@ class TestMemcacheDriverFailures(testcase.TestCase):
         fut = coord.join_group(str(uuid.uuid4()).encode('ascii'))
         self.assertRaises(coordination.ToozConnectionError, fut.get)
 
-    @mock.patch('pymemcache.client.Client')
+    @mock.patch('tooz.drivers.memcached.ThreadSafeClient')
     def test_client_failure_leave(self, mock_client_cls):
         mock_client = mock.MagicMock()
         mock_client_cls.return_value = mock_client
@@ -60,7 +60,7 @@ class TestMemcacheDriverFailures(testcase.TestCase):
         fut = coord.leave_group(str(uuid.uuid4()).encode('ascii'))
         self.assertRaises(coordination.ToozConnectionError, fut.get)
 
-    @mock.patch('pymemcache.client.Client')
+    @mock.patch('tooz.drivers.memcached.ThreadSafeClient')
     def test_client_failure_heartbeat(self, mock_client_cls):
         mock_client = mock.MagicMock()
         mock_client_cls.return_value = mock_client
