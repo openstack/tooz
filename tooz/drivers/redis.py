@@ -148,24 +148,24 @@ class RedisDriver(coordination.CoordinationDriver):
       or failures occur (even redis clustering docs state it is
       not a fully AP or CP solution, which means even with it there
       will still be *potential* inconsistencies).
-    - Master/slave failover (when setup with redis sentinel), giving
+    - Master/slave failover (when setup with redis `sentinel`_), giving
       some notion of HA (values *can* be lost when a failover transition
       occurs).
 
-    To use a sentinel the connection URI must point to the Sentinel server.
+    To use a `sentinel`_ the connection URI must point to the sentinel server.
     At connection time the sentinel will be asked for the current IP and port
     of the master and then connect there. The connection URI for sentinel
     should be written as follows::
 
       redis://<sentinel host>:<sentinel port>?sentinel=<master name>
 
-    Additional sentinel hosts are listed with mutiple ``sentinel_fallback``
-    parameters as follows:
+    Additional sentinel hosts are listed with multiple ``sentinel_fallback``
+    parameters as follows::
 
-      redis://<sentinel host>:<sentinel port>?sentinel=<master name>&
-        sentinel_fallback=<other sentinel host>:<sentinel port>&
-        sentinel_fallback=<other sentinel host>:<sentinel port>&
-        sentinel_fallback=<other sentinel host>:<sentinel port>
+        redis://<sentinel host>:<sentinel port>?sentinel=<master name>&
+          sentinel_fallback=<other sentinel host>:<sentinel port>&
+          sentinel_fallback=<other sentinel host>:<sentinel port>&
+          sentinel_fallback=<other sentinel host>:<sentinel port>
 
     Further resources/links:
 
@@ -182,6 +182,7 @@ class RedisDriver(coordination.CoordinationDriver):
 
     .. _redis: http://redis.io/
     .. _msgpack: http://msgpack.org/
+    .. _sentinel: http://redis.io/topics/sentinel
     """
 
     # The min redis version that this driver requires to operate with...
