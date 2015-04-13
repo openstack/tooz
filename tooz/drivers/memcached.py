@@ -144,6 +144,10 @@ class MemcachedDriver(coordination.CoordinationDriver):
         for g in list(self._groups):
             try:
                 self.leave_group(g).get()
+            except (coordination.MemberNotJoined,
+                    coordination.GroupNotCreated):
+                # Guess we got booted out/never existed in the first place...
+                pass
             except coordination.ToozError:
                 LOG.warning("Unable to leave group '%s'", g, exc_info=True)
         if self._executor is not None:
