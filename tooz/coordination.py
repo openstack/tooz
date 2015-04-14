@@ -16,6 +16,7 @@
 
 import abc
 import collections
+import sys
 
 from oslo_utils import netutils
 import six
@@ -377,6 +378,10 @@ class ToozError(Exception):
     case of server internal error.
     """
 
+    def __init__(self, message, cause=None):
+        super(ToozError, self).__init__(message)
+        self.cause = cause
+
 
 class ToozConnectionError(ToozError):
     """Exception raised when the client cannot manage to connect to the
@@ -436,3 +441,32 @@ class GroupNotEmpty(ToozError):
     def __init__(self, group_id):
         self.group_id = group_id
         super(GroupNotEmpty, self).__init__("Group %s is not empty" % group_id)
+
+
+def raise_with_cause(excp_cls, message, *args, **kwargs):
+    """Helper to raise + chain exceptions (when able) and associate a *cause*.
+
+    **For internal usage only.**
+
+    NOTE(harlowja): Since in py3.x exceptions can be chained (due to
+    :pep:`3134`) we should try to raise the desired exception with the given
+    *cause*.
+
+    :param exc_cls: the :py:class:`~tooz.coordination.ToozError` class
+                    to raise.
+    :param message: the text/str message that will be passed to
+                    the exceptions constructor as its first positional
+                    argument.
+    :param args: any additional positional arguments to pass to the
+                 exceptions constructor.
+    :param kwargs: any additional keyword arguments to pass to the
+                   exceptions constructor.
+    """
+    if not issubclass(excp_cls, ToozError):
+        raise ValueError("Subclass of tooz error is required")
+    if 'cause' not in kwargs:
+        exc_type, exc, exc_tb = sys.exc_info()
+        if exc is not None:
+            kwargs['cause'] = exc
+        del(exc_type, exc, exc_tb)
+    six.raise_from(excp_cls(message, *args, **kwargs), kwargs.get('cause'))

@@ -105,9 +105,12 @@ def _translate_failures(func):
             if e.errno is not None:
                 msg += " (with errno %s [%s])" % (errno.errorcode[e.errno],
                                                   e.errno)
-            raise coordination.ToozConnectionError(msg)
+            coordination.raise_with_cause(coordination.ToozConnectionError,
+                                          msg, cause=e)
         except pymemcache_client.MemcacheError as e:
-            raise coordination.ToozError(utils.exception_message(e))
+            coordination.raise_with_cause(coordination.ToozError,
+                                          utils.exception_message(e),
+                                          cause=e)
 
     return wrapper
 
@@ -523,7 +526,9 @@ class MemcachedFutureResult(coordination.CoordAsyncResult):
         try:
             return self._fut.result(timeout=timeout)
         except futures.TimeoutError as e:
-            raise coordination.OperationTimedOut(utils.exception_message(e))
+            coordination.raise_with_cause(coordination.OperationTimedOut,
+                                          utils.exception_message(e),
+                                          cause=e)
 
     def done(self):
         return self._fut.done()

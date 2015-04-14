@@ -79,9 +79,13 @@ def _translate_failures():
     try:
         yield
     except (exceptions.ConnectionError, exceptions.TimeoutError) as e:
-        raise coordination.ToozConnectionError(utils.exception_message(e))
+        coordination.raise_with_cause(coordination.ToozConnectionError,
+                                      utils.exception_message(e),
+                                      cause=e)
     except exceptions.RedisError as e:
-        raise coordination.ToozError(utils.exception_message(e))
+        coordination.raise_with_cause(coordination.ToozError,
+                                      utils.exception_message(e),
+                                      cause=e)
 
 
 class RedisLock(locking.Lock):
@@ -732,7 +736,9 @@ class RedisFutureResult(coordination.CoordAsyncResult):
             with _translate_failures():
                 return self._fut.result(timeout=timeout)
         except futures.TimeoutError as e:
-            raise coordination.OperationTimedOut(utils.exception_message(e))
+            coordination.raise_with_cause(coordination.OperationTimedOut,
+                                          utils.exception_message(e),
+                                          cause=e)
 
     def done(self):
         return self._fut.done()

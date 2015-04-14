@@ -14,9 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import six
-
 import msgpack
+import six
 
 from tooz import coordination
 
@@ -45,7 +44,8 @@ def dumps(data, excp_cls=coordination.ToozError):
     try:
         return msgpack.packb(data, use_bin_type=True)
     except (msgpack.PackException, ValueError) as e:
-        raise excp_cls(exception_message(e))
+        coordination.raise_with_cause(excp_cls, exception_message(e),
+                                      cause=e)
 
 
 def loads(blob, excp_cls=coordination.ToozError):
@@ -57,4 +57,5 @@ def loads(blob, excp_cls=coordination.ToozError):
     try:
         return msgpack.unpackb(blob, encoding='utf-8')
     except (msgpack.UnpackException, ValueError) as e:
-        raise excp_cls(exception_message(e))
+        coordination.raise_with_cause(excp_cls, exception_message(e),
+                                      cause=e)

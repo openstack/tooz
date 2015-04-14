@@ -83,7 +83,9 @@ def _translating_cursor(conn):
         with conn.cursor() as cur:
             yield cur
     except psycopg2.Error as e:
-        raise coordination.ToozError(_format_exception(e))
+        coordination.raise_with_cause(coordination.ToozError,
+                                      _format_exception(e),
+                                      cause=e)
 
 
 class PostgresLock(locking.Lock):
@@ -209,4 +211,6 @@ class PostgresDriver(coordination.CoordinationDriver):
                                     password=password,
                                     database=dbname)
         except psycopg2.Error as e:
-            raise coordination.ToozConnectionError(_format_exception(e))
+            coordination.raise_with_cause(coordination.ToozConnectionError,
+                                          _format_exception(e),
+                                          cause=e)
