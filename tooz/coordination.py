@@ -376,6 +376,11 @@ def get_coordinator(backend_url, member_id, **kwargs):
 class ToozError(Exception):
     """Exception raised when an internal error occurs, for instance in
     case of server internal error.
+
+    :ivar cause: the cause of the exception being raised, when provided this
+                 should itself be an exception instance, this is useful for
+                 creating a chain of exceptions for versions of python where
+                 this is not yet implemented/supported natively
     """
 
     def __init__(self, message, cause=None):
