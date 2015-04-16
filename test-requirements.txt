@@ -16,3 +16,4 @@ coverage>=3.6
 psycopg2
 PyMySQL>=0.6.2  # MIT License
 sysv_ipc>=0.6.8  # BSD License
+fixtures>=0.3.14

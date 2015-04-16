@@ -74,14 +74,22 @@ class SharedWeakLockHelper(Lock):
         self._newlock = lambda: lockclass(
             self.name, *args, **kwargs)
 
-    def acquire(self, blocking=True):
+    @property
+    def lock(self):
+        """Access the underlying lock object.
+
+        For internal usage only.
+        """
         with self.LOCKS_LOCK:
             try:
                 l = self.ACQUIRED_LOCKS[self._lock_key]
             except KeyError:
                 l = self.RELEASED_LOCKS.setdefault(
                     self._lock_key, self._newlock())
+            return l
 
+    def acquire(self, blocking=True):
+        l = self.lock
         if l.acquire(blocking):
             with self.LOCKS_LOCK:
                 self.RELEASED_LOCKS.pop(self._lock_key, None)

@@ -57,6 +57,10 @@ class FileLock(locking.Lock):
 
         return _lock()
 
+    def close(self):
+        self.release()
+        self.lockfile.close()
+
     def release(self):
         self.unlock()
         self.acquired = False
