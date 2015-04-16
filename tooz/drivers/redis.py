@@ -145,7 +145,7 @@ class RedisDriver(coordination.CoordinationDriver):
     driver API(s). It stores data into `redis`_ using the provided `redis`_
     API(s) using `msgpack`_ encoded values as needed.
 
-    - Durability (when setup with AOF mode).
+    - Durability (when setup with `AOF`_ mode).
     - Consistent, note that this is still restricted to only
       one redis server, without the recently released redis (alpha)
       clustering > 1 server will not be consistent when partitions
@@ -187,6 +187,7 @@ class RedisDriver(coordination.CoordinationDriver):
     .. _redis: http://redis.io/
     .. _msgpack: http://msgpack.org/
     .. _sentinel: http://redis.io/topics/sentinel
+    .. _AOF: http://redis.io/topics/persistence
     """
 
     # The min redis version that this driver requires to operate with...
