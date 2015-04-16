@@ -55,3 +55,16 @@ Zookeeper
 
 .. autoclass:: tooz.drivers.zookeeper.KazooDriver
    :members:
+
+Exceptions
+----------
+
+.. autoclass:: tooz.coordination.ToozError
+.. autoclass:: tooz.coordination.ToozConnectionError
+.. autoclass:: tooz.coordination.OperationTimedOut
+.. autoclass:: tooz.coordination.GroupNotCreated
+.. autoclass:: tooz.coordination.GroupAlreadyExist
+.. autoclass:: tooz.coordination.MemberAlreadyExist
+.. autoclass:: tooz.coordination.MemberNotJoined
+.. autoclass:: tooz.coordination.GroupNotEmpty
+.. autofunction:: tooz.coordination.raise_with_cause
