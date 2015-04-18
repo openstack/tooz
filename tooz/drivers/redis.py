@@ -306,13 +306,8 @@ class RedisDriver(coordination.CoordinationDriver):
     def get_lock(self, name):
         return RedisLock(self, self._client, name, self.lock_timeout)
 
-    @staticmethod
-    def _dumps(data):
-        return utils.dumps(data)
-
-    @staticmethod
-    def _loads(blob):
-        return utils.loads(blob)
+    _dumps = staticmethod(utils.dumps)
+    _loads = staticmethod(utils.loads)
 
     @classmethod
     def _make_client(cls, parsed_url, options, default_socket_timeout):
