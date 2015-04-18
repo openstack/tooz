@@ -377,7 +377,9 @@ class RedisDriver(coordination.CoordinationDriver):
             self._client = self._make_client(self._parsed_url, self._options,
                                              self.timeout)
         except exceptions.RedisError as e:
-            raise coordination.ToozConnectionError(utils.exception_message(e))
+            coordination.raise_with_cause(coordination.ToozConnectionError,
+                                          utils.exception_message(e),
+                                          cause=e)
         else:
             # Ensure that the server is alive and not dead, this does not
             # ensure the server will always be alive, but does insure that it

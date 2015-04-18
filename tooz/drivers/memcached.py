@@ -95,7 +95,9 @@ def _translate_failures(func):
         try:
             return func(*args, **kwargs)
         except pymemcache_client.MemcacheUnexpectedCloseError as e:
-            raise coordination.ToozConnectionError(utils.exception_message(e))
+            coordination.raise_with_cause(coordination.ToozConnectionError,
+                                          utils.exception_message(e),
+                                          cause=e)
         except (socket.timeout, socket.error,
                 socket.gaierror, socket.herror) as e:
             # TODO(harlowja): get upstream pymemcache to produce a better
