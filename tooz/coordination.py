@@ -377,10 +377,10 @@ class ToozError(Exception):
     """Exception raised when an internal error occurs, for instance in
     case of server internal error.
 
-    :ivar cause: the cause of the exception being raised, when provided this
-                 should itself be an exception instance, this is useful for
+    :ivar cause: the cause of the exception being raised, when not none this
+                 will itself be an exception instance, this is useful for
                  creating a chain of exceptions for versions of python where
-                 this is not yet implemented/supported natively
+                 this is not yet implemented/supported natively.
     """
 
     def __init__(self, message, cause=None):
@@ -457,8 +457,8 @@ def raise_with_cause(excp_cls, message, *args, **kwargs):
     :pep:`3134`) we should try to raise the desired exception with the given
     *cause*.
 
-    :param exc_cls: the :py:class:`~tooz.coordination.ToozError` class
-                    to raise.
+    :param excp_cls: the :py:class:`~tooz.coordination.ToozError` class
+                     to raise.
     :param message: the text/str message that will be passed to
                     the exceptions constructor as its first positional
                     argument.
