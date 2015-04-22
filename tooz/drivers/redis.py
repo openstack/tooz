@@ -99,7 +99,8 @@ class RedisLock(locking.Lock):
         #
         # When that gets fixed (and detects the servers capabilities better
         # we can likely turn this back on to being smart).
-        self._lock = redis_locks.Lock(client, self._name, timeout=timeout)
+        self._lock = redis_locks.Lock(client, self._name,
+                                      timeout=timeout, thread_local=False)
         self._coord = coord
         self._acquired = False
 
