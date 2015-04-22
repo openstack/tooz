@@ -76,7 +76,7 @@ class CoordinationDriver(object):
                 + len(self._hooks_leave_group[group_id]))
 
     @staticmethod
-    def run_watchers():
+    def run_watchers(timeout=None):
         """Run the watchers callback."""
         raise tooz.NotImplemented
 
