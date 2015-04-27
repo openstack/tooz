@@ -434,7 +434,7 @@ class RedisDriver(coordination.CoordinationDriver):
                 expiry_ms = max(0, int(self.membership_timeout * 1000.0))
                 self._client.psetex(beat_id, time_ms=expiry_ms,
                                     value=b"Not dead!")
-        for lock in self._acquired_locks:
+        for lock in self._acquired_locks.copy():
             try:
                 lock.heartbeat()
             except coordination.ToozError:
