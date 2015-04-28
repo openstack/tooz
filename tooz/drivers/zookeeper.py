@@ -75,6 +75,8 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         super(BaseZooKeeperDriver, self).__init__()
         self._member_id = member_id
         self.timeout = int(options.get('timeout', ['10'])[-1])
+        namespace = options.get('namespace', [self._TOOZ_NAMESPACE])
+        self._namespace = namespace[-1]
 
     def _start(self):
         try:
@@ -85,7 +87,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
                                           cause=e)
 
         try:
-            self._coord.ensure_path(self.paths_join("/", self._TOOZ_NAMESPACE))
+            self._coord.ensure_path(self.paths_join("/", self._namespace))
         except exceptions.KazooException as e:
             coordination.raise_with_cause(coordination.ToozError,
                                           "operation error: %s" % (e),
@@ -226,7 +228,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
             return set(m.encode('ascii') for m in members_ids)
 
     def get_members(self, group_id):
-        group_path = self.paths_join("/", self._TOOZ_NAMESPACE, group_id)
+        group_path = self.paths_join("/", self._namespace, group_id)
         async_result = self._coord.get_children_async(group_path)
         return ZooAsyncResult(async_result, self._get_members_handler,
                               timeout_exception=self._timeout_exception,
@@ -301,16 +303,16 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
             return set(g.encode('ascii') for g in group_ids)
 
     def get_groups(self):
-        tooz_namespace = self.paths_join("/", self._TOOZ_NAMESPACE)
+        tooz_namespace = self.paths_join("/", self._namespace)
         async_result = self._coord.get_children_async(tooz_namespace)
         return ZooAsyncResult(async_result, self._get_groups_handler,
                               timeout_exception=self._timeout_exception)
 
     def _path_group(self, group_id):
-        return self.paths_join("/", self._TOOZ_NAMESPACE, group_id)
+        return self.paths_join("/", self._namespace, group_id)
 
     def _path_member(self, group_id, member_id):
-        return self.paths_join("/", self._TOOZ_NAMESPACE,
+        return self.paths_join("/", self._namespace,
                                group_id, member_id)
 
     @staticmethod
@@ -464,7 +466,7 @@ class KazooDriver(BaseZooKeeperDriver):
         return ZooKeeperLock(
             name,
             self._coord.Lock(
-                self.paths_join(b"/", self._TOOZ_NAMESPACE, b"locks", name),
+                self.paths_join(b"/", self._namespace, b"locks", name),
                 self._member_id.decode('ascii')))
 
     def run_watchers(self):
