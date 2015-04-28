@@ -9,6 +9,6 @@ only be acquired by one coordinator at a time.
    :language: python
 
 The method :meth:`tooz.coordination.CoordinationDriver.get_lock` allows
-to create a lock identified by a name. Once the you retrieve this lock, you can
+to create a lock identified by a name. Once you retrieve this lock, you can
 use it as a context manager or use the :meth:`tooz.locking.Lock.acquire` and
 :meth:`tooz.locking.Lock.release` methods to acquire and release the lock.
