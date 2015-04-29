@@ -15,6 +15,7 @@
 #    under the License.
 
 import msgpack
+from oslo_serialization import msgpackutils
 import six
 
 from tooz import coordination
@@ -36,26 +37,18 @@ def to_binary(text, encoding='ascii'):
 
 
 def dumps(data, excp_cls=coordination.ToozError):
-    """Serializes provided data using msgpack into a byte string.
-
-    TODO(harlowja): use oslo.serialization 'msgpackutils.py' when we can since
-    that handles more native types better than the default does...
-    """
+    """Serializes provided data using msgpack into a byte string."""
     try:
-        return msgpack.packb(data, use_bin_type=True)
+        return msgpackutils.dumps(data)
     except (msgpack.PackException, ValueError) as e:
         coordination.raise_with_cause(excp_cls, exception_message(e),
                                       cause=e)
 
 
 def loads(blob, excp_cls=coordination.ToozError):
-    """Deserializes provided data using msgpack (from a prior byte string).
-
-    TODO(harlowja): use oslo.serialization 'msgpackutils.py' when we can since
-    that handles more native types better than the default does...
-    """
+    """Deserializes provided data using msgpack (from a prior byte string)."""
     try:
-        return msgpack.unpackb(blob, encoding='utf-8')
+        return msgpackutils.loads(blob)
     except (msgpack.UnpackException, ValueError) as e:
         coordination.raise_with_cause(excp_cls, exception_message(e),
                                       cause=e)
