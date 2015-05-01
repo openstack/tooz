@@ -55,6 +55,8 @@ class TestAPI(testscenarios.TestWithScenarios,
                         'bad_url': 'postgresql://localhost:1'}),
         ('mysql', {'url': os.getenv("TOOZ_TEST_MYSQL_URL"),
                    'bad_url': 'mysql://localhost:1'}),
+        ('zookeeper', {'url': os.getenv("TOOZ_TEST_ZOOKEEPER_URL"),
+                       'bad_url': 'zookeeper://localhost:1'}),
     ]
 
     def assertRaisesAny(self, exc_classes, callable_obj, *args, **kwargs):
