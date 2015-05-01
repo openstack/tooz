@@ -160,7 +160,7 @@ class PostgresDriver(coordination.CoordinationDriver):
         """Initialize the PostgreSQL driver."""
         super(PostgresDriver, self).__init__()
         self._parsed_url = parsed_url
-        self._options = options
+        self._options = utils.collapse(options)
 
     def _start(self):
         self._conn = PostgresDriver.get_connection(self._parsed_url,
@@ -198,9 +198,9 @@ class PostgresDriver(coordination.CoordinationDriver):
 
     @staticmethod
     def get_connection(parsed_url, options):
-        host = options.get("host", [None])[-1]
-        port = parsed_url.port or options.get("port", [None])[-1]
-        dbname = parsed_url.path[1:] or options.get("dbname", [None])[-1]
+        host = options.get("host")
+        port = parsed_url.port or options.get("port")
+        dbname = parsed_url.path[1:] or options.get("dbname")
         username = parsed_url.username
         password = parsed_url.password
 

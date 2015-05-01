@@ -101,7 +101,7 @@ class MySQLDriver(coordination.CoordinationDriver):
         """Initialize the MySQL driver."""
         super(MySQLDriver, self).__init__()
         self._parsed_url = parsed_url
-        self._options = options
+        self._options = utils.collapse(options)
 
     def _start(self):
         self._conn = MySQLDriver.get_connection(self._parsed_url,
@@ -144,7 +144,7 @@ class MySQLDriver(coordination.CoordinationDriver):
         dbname = parsed_url.path[1:]
         username = parsed_url.username
         password = parsed_url.password
-        unix_socket = options.get("unix_socket", [None])[-1]
+        unix_socket = options.get("unix_socket")
 
         try:
             if unix_socket:

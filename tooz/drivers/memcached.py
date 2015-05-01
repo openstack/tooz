@@ -134,20 +134,22 @@ class MemcachedDriver(coordination.CoordinationDriver):
 
     def __init__(self, member_id, parsed_url, options):
         super(MemcachedDriver, self).__init__()
+        options = utils.collapse(options)
+        self._options = options
         self._member_id = member_id
         self._groups = set()
         self._executor = None
         self.host = (parsed_url.hostname or "localhost",
                      parsed_url.port or 11211)
-        default_timeout = options.get('timeout', ['30'])
-        self.timeout = int(default_timeout[-1])
+        default_timeout = options.get('timeout', '30')
+        self.timeout = int(default_timeout)
         self.membership_timeout = int(options.get(
-            'membership_timeout', default_timeout)[-1])
+            'membership_timeout', default_timeout))
         self.lock_timeout = int(options.get(
-            'lock_timeout', default_timeout)[-1])
+            'lock_timeout', default_timeout))
         self.leader_timeout = int(options.get(
-            'leader_timeout', default_timeout)[-1])
-        max_pool_size = options.get('max_pool_size', [None])[-1]
+            'leader_timeout', default_timeout))
+        max_pool_size = options.get('max_pool_size', None)
         if max_pool_size is not None:
             self.max_pool_size = int(max_pool_size)
         else:

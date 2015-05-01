@@ -242,17 +242,17 @@ class RedisDriver(coordination.CoordinationDriver):
 
     def __init__(self, member_id, parsed_url, options):
         super(RedisDriver, self).__init__()
+        options = utils.collapse(options, exclude=self._CLIENT_LIST_ARGS)
         self._parsed_url = parsed_url
         self._options = options
-        encoding = options.get('encoding', [self._DEFAULT_ENCODING])
-        self._encoding = encoding[-1]
-        timeout = options.get('timeout', [self._CLIENT_DEFAULT_SOCKET_TO])
-        self.timeout = int(timeout[-1])
+        self._encoding = options.get('encoding', self._DEFAULT_ENCODING)
+        timeout = options.get('timeout', self._CLIENT_DEFAULT_SOCKET_TO)
+        self.timeout = int(timeout)
         self.membership_timeout = float(options.get(
-            'membership_timeout', timeout)[-1])
-        lock_timeout = options.get('lock_timeout', [self.timeout])
-        self.lock_timeout = int(lock_timeout[-1])
-        namespace = options.get('namespace', ['_tooz'])[-1]
+            'membership_timeout', timeout))
+        lock_timeout = options.get('lock_timeout', self.timeout)
+        self.lock_timeout = int(lock_timeout)
+        namespace = options.get('namespace', '_tooz')
         self._namespace = self._to_binary(namespace)
         self._group_prefix = self._namespace + b"_group"
         self._leader_prefix = self._namespace + b"_leader"
@@ -322,22 +322,14 @@ class RedisDriver(coordination.CoordinationDriver):
         for a in cls._CLIENT_ARGS:
             if a not in options:
                 continue
-            # The reason the last index is used is that when multiple options
-            # of the same name are given via a url the values will be
-            # accumulated in a list (and not just be a single value)...
-            #
-            # For ex: the following is a valid url which will have 2 values
-            # for the 'timeout' argument:
-            #
-            # redis://localhost:6379?timeout=5&timeout=2
             if a in cls._CLIENT_BOOL_ARGS:
-                v = strutils.bool_from_string(options[a][-1])
+                v = strutils.bool_from_string(options[a])
             elif a in cls._CLIENT_LIST_ARGS:
                 v = options[a]
             elif a in cls._CLIENT_INT_ARGS:
-                v = int(options[a][-1])
+                v = int(options[a])
             else:
-                v = options[a][-1]
+                v = options[a]
             kwargs[a] = v
         if 'socket_timeout' not in kwargs:
             kwargs['socket_timeout'] = default_socket_timeout

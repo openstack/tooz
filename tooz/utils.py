@@ -21,6 +21,35 @@ import six
 from tooz import coordination
 
 
+def collapse(config, exclude=None, item_selector=None):
+    """Collapses config with keys and **list/tuple** values.
+
+    NOTE(harlowja): The last item/index from the list/tuple value is selected
+    be default as the new value (values that are not lists/tuples are left
+    alone). If the list/tuple value is empty (zero length), then no value
+    is set.
+    """
+    if not isinstance(config, dict):
+        raise TypeError("Unexpected config type, dict expected")
+    if not config:
+        return {}
+    if exclude is None:
+        exclude = set()
+    if item_selector is None:
+        item_selector = lambda items: items[-1]
+    collapsed = {}
+    for (k, v) in six.iteritems(config):
+        if isinstance(v, (tuple, list)):
+            if k in exclude:
+                collapsed[k] = v
+            else:
+                if len(v):
+                    collapsed[k] = item_selector(v)
+        else:
+            collapsed[k] = v
+    return collapsed
+
+
 def exception_message(exc):
     """Return the string representation of exception."""
     try:

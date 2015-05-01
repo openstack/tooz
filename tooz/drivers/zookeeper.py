@@ -73,10 +73,11 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
 
     def __init__(self, member_id, parsed_url, options):
         super(BaseZooKeeperDriver, self).__init__()
+        options = utils.collapse(options)
+        self._options = options
         self._member_id = member_id
-        self.timeout = int(options.get('timeout', ['10'])[-1])
-        namespace = options.get('namespace', [self._TOOZ_NAMESPACE])
-        self._namespace = namespace[-1]
+        self.timeout = int(options.get('timeout', '10'))
+        self._namespace = options.get('namespace', self._TOOZ_NAMESPACE)
 
     def _start(self):
         try:
@@ -340,7 +341,7 @@ class KazooDriver(BaseZooKeeperDriver):
 
     def __init__(self, member_id, parsed_url, options):
         super(KazooDriver, self).__init__(member_id, parsed_url, options)
-        self._coord = self._make_client(parsed_url, options)
+        self._coord = self._make_client(parsed_url, self._options)
         self._member_id = member_id
         self._timeout_exception = self._coord.handler.timeout_exception
 
