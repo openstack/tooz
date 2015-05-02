@@ -187,34 +187,44 @@ class RedisDriver(coordination.CoordinationDriver):
     .. _AOF: http://redis.io/topics/persistence
     """
 
-    # The min redis version that this driver requires to operate with...
-    #
-    # NOTE(harlowja): 2.2.0 was selected since its the current version that
-    # exists on ubuntu precise, that version will work to a degree (except
-    # locks will not work with that version), in the future we can raise this
-    # as we move off of precise (and/or need newer features that the older
-    # versions of redis just don't have).
-    _MIN_VERSION = version.LooseVersion("2.2.0")
+    MIN_VERSION = version.LooseVersion("2.2.0")
+    """
+    The min redis version that this driver requires to operate with...
 
-    # Redis deletes dictionaries that have no keys in them, which means the
-    # key will disappear which means we can't tell the difference between
-    # a group not existing and a group being empty without this key being
-    # saved...
-    _GROUP_EXISTS = b'__created__'
-    _NAMESPACE_SEP = b':'
+    NOTE(harlowja): 2.2.0 was selected since its the current version that
+    exists on ubuntu precise, that version will work to a degree (except
+    locks will not work with that version), in the future we can raise this
+    as we move off of precise (and/or need newer features that the older
+    versions of redis just don't have).
+    """
 
-    # This is for python3.x; which will behave differently when returned
-    # binary types or unicode types (redis uses binary internally it appears),
-    # so to just stick with a common way of doing this, make all the things
-    # binary (with this default encoding if one is not given and a unicode
-    # string is provided).
-    _DEFAULT_ENCODING = 'utf8'
+    GROUP_EXISTS = b'__created__'
+    """
+    Redis deletes dictionaries that have no keys in them, which means the
+    key will disappear which means we can't tell the difference between
+    a group not existing and a group being empty without this key being
+    saved...
+    """
 
-    # These are used when extracting options from to make a client.
-    #
-    # See: http://redis-py.readthedocs.org/en/latest/ for how to use these
-    # options to configure the underlying redis client...
-    _CLIENT_ARGS = frozenset([
+    #: Default namespace for keys when none is provided.
+    DEFAULT_NAMESPACE = b'_tooz'
+
+    NAMESPACE_SEP = b':'
+    """
+    Separator that is used to combine a key with the namespace (to get
+    the **actual** key that will be used).
+    """
+
+    DEFAULT_ENCODING = 'utf8'
+    """
+    This is for python3.x; which will behave differently when returned
+    binary types or unicode types (redis uses binary internally it appears),
+    so to just stick with a common way of doing this, make all the things
+    binary (with this default encoding if one is not given and a unicode
+    string is provided).
+    """
+
+    CLIENT_ARGS = frozenset([
         'db',
         'encoding',
         'retry_on_timeout',
@@ -226,33 +236,50 @@ class RedisDriver(coordination.CoordinationDriver):
         'sentinel',
         'sentinel_fallback',
     ])
-    _CLIENT_LIST_ARGS = frozenset([
+    """
+    Keys that we allow to proxy from the coordinator configuration into the
+    redis client (used to configure the redis client internals so that
+    it works as you expect/want it to).
+
+    See: http://redis-py.readthedocs.org/en/latest/#redis.Redis
+
+    See: https://github.com/andymccurdy/redis-py/blob/2.10.3/redis/client.py
+    """
+
+    #: Client arguments that are expected/allowed to be lists.
+    CLIENT_LIST_ARGS = frozenset([
         'sentinel_fallback',
     ])
-    _CLIENT_BOOL_ARGS = frozenset([
+
+    #: Client arguments that are expected to be boolean convertible.
+    CLIENT_BOOL_ARGS = frozenset([
         'retry_on_timeout',
         'ssl',
     ])
-    _CLIENT_INT_ARGS = frozenset([
+
+    #: Client arguments that are expected to be int convertible.
+    CLIENT_INT_ARGS = frozenset([
          'db',
          'socket_keepalive',
          'socket_timeout',
     ])
-    _CLIENT_DEFAULT_SOCKET_TO = 30
+
+    #: Default socket timeout to use when none is provided.
+    CLIENT_DEFAULT_SOCKET_TO = 30
 
     def __init__(self, member_id, parsed_url, options):
         super(RedisDriver, self).__init__()
-        options = utils.collapse(options, exclude=self._CLIENT_LIST_ARGS)
+        options = utils.collapse(options, exclude=self.CLIENT_LIST_ARGS)
         self._parsed_url = parsed_url
         self._options = options
-        self._encoding = options.get('encoding', self._DEFAULT_ENCODING)
-        timeout = options.get('timeout', self._CLIENT_DEFAULT_SOCKET_TO)
+        self._encoding = options.get('encoding', self.DEFAULT_ENCODING)
+        timeout = options.get('timeout', self.CLIENT_DEFAULT_SOCKET_TO)
         self.timeout = int(timeout)
         self.membership_timeout = float(options.get(
             'membership_timeout', timeout))
         lock_timeout = options.get('lock_timeout', self.timeout)
         self.lock_timeout = int(lock_timeout)
-        namespace = options.get('namespace', '_tooz')
+        namespace = options.get('namespace', self.DEFAULT_NAMESPACE)
         self._namespace = self._to_binary(namespace)
         self._group_prefix = self._namespace + b"_group"
         self._leader_prefix = self._namespace + b"_leader"
@@ -319,14 +346,14 @@ class RedisDriver(coordination.CoordinationDriver):
             kwargs['unix_socket_path'] = parsed_url.path
         if parsed_url.password:
             kwargs['password'] = parsed_url.password
-        for a in cls._CLIENT_ARGS:
+        for a in cls.CLIENT_ARGS:
             if a not in options:
                 continue
-            if a in cls._CLIENT_BOOL_ARGS:
+            if a in cls.CLIENT_BOOL_ARGS:
                 v = strutils.bool_from_string(options[a])
-            elif a in cls._CLIENT_LIST_ARGS:
+            elif a in cls.CLIENT_LIST_ARGS:
                 v = options[a]
-            elif a in cls._CLIENT_INT_ARGS:
+            elif a in cls.CLIENT_INT_ARGS:
                 v = int(options[a])
             else:
                 v = options[a]
@@ -374,24 +401,24 @@ class RedisDriver(coordination.CoordinationDriver):
             # to so that the basic set of features we support will actually
             # work (instead of blowing up).
             new_enough, redis_version = self._check_fetch_redis_version(
-                self._MIN_VERSION)
+                self.MIN_VERSION)
             if not new_enough:
                 raise tooz.NotImplemented("Redis version greater than or"
                                           " equal to '%s' is required"
                                           " to use this driver; '%s' is"
                                           " being used which is not new"
-                                          " enough" % (self._MIN_VERSION,
+                                          " enough" % (self.MIN_VERSION,
                                                        redis_version))
             self.heartbeat()
             self._started = True
 
     def _encode_beat_id(self, member_id):
-        return self._NAMESPACE_SEP.join([self._beat_prefix,
-                                         self._to_binary(member_id)])
+        return self.NAMESPACE_SEP.join([self._beat_prefix,
+                                        self._to_binary(member_id)])
 
     def _encode_member_id(self, member_id):
         member_id = self._to_binary(member_id)
-        if member_id == self._GROUP_EXISTS:
+        if member_id == self.GROUP_EXISTS:
             raise ValueError("Not allowed to use private keys as a member id")
         return member_id
 
@@ -402,7 +429,7 @@ class RedisDriver(coordination.CoordinationDriver):
         group_id = self._to_binary(group_id)
         if not apply_namespace:
             return group_id
-        return self._NAMESPACE_SEP.join([self._group_prefix, group_id])
+        return self.NAMESPACE_SEP.join([self._group_prefix, group_id])
 
     def _decode_group_id(self, group_id):
         return self._to_binary(group_id)
@@ -484,7 +511,7 @@ class RedisDriver(coordination.CoordinationDriver):
                    self._encode_group_id(group_id, apply_namespace=False))
             # Add our special key to avoid redis from deleting the dictionary
             # when it becomes empty (which is not what we currently want)...
-            p.hset(encoded_group, self._GROUP_EXISTS, '1')
+            p.hset(encoded_group, self.GROUP_EXISTS, '1')
 
         return RedisFutureResult(self._submit(self._client.transaction,
                                               _create_group, encoded_group,
@@ -535,7 +562,7 @@ class RedisDriver(coordination.CoordinationDriver):
             potential_members = []
             for m in p.hkeys(encoded_group):
                 m = self._decode_member_id(m)
-                if m != self._GROUP_EXISTS:
+                if m != self.GROUP_EXISTS:
                     potential_members.append(m)
             if not potential_members:
                 return []
@@ -613,7 +640,7 @@ class RedisDriver(coordination.CoordinationDriver):
         encoded_group = self._encode_group_id(group_id)
 
         def _delete_group(p):
-            # An empty group still have the special key _GROUP_EXISTS set, so
+            # An empty group still have the special key GROUP_EXISTS set, so
             # its len is 1
             if p.hlen(encoded_group) > 1:
                 raise coordination.GroupNotEmpty(group_id)
