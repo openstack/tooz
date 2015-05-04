@@ -127,10 +127,23 @@ class MemcachedDriver(coordination.CoordinationDriver):
     .. _msgpack: http://msgpack.org/
     """
 
-    _GROUP_PREFIX = b'_TOOZ_GROUP_'
-    _GROUP_LEADER_PREFIX = b'_TOOZ_GROUP_LEADER_'
-    _MEMBER_PREFIX = b'_TOOZ_MEMBER_'
-    _GROUP_LIST_KEY = b'_TOOZ_GROUP_LIST'
+    #: Key prefix attached to groups (used in name-spacing keys)
+    GROUP_PREFIX = b'_TOOZ_GROUP_'
+
+    #: Key prefix attached to leaders of groups (used in name-spacing keys)
+    GROUP_LEADER_PREFIX = b'_TOOZ_GROUP_LEADER_'
+
+    #: Key prefix attached to members of groups (used in name-spacing keys)
+    MEMBER_PREFIX = b'_TOOZ_MEMBER_'
+
+    #: Key where all groups 'known' are stored.
+    GROUP_LIST_KEY = b'_TOOZ_GROUP_LIST'
+
+    #: Default socket/lock/member/leader timeout used when none is provided.
+    DEFAULT_TIMEOUT = 30
+
+    #: String used to keep a key/member alive (until it next expires).
+    STILL_ALIVE = b"It's alive!"
 
     def __init__(self, member_id, parsed_url, options):
         super(MemcachedDriver, self).__init__()
@@ -141,7 +154,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
         self._executor = None
         self.host = (parsed_url.hostname or "localhost",
                      parsed_url.port or 11211)
-        default_timeout = options.get('timeout', '30')
+        default_timeout = options.get('timeout', self.DEFAULT_TIMEOUT)
         self.timeout = int(default_timeout)
         self.membership_timeout = int(options.get(
             'membership_timeout', default_timeout))
@@ -205,13 +218,13 @@ class MemcachedDriver(coordination.CoordinationDriver):
         self.client.close()
 
     def _encode_group_id(self, group_id):
-        return self._GROUP_PREFIX + group_id
+        return self.GROUP_PREFIX + group_id
 
     def _encode_member_id(self, member_id):
-        return self._MEMBER_PREFIX + member_id
+        return self.MEMBER_PREFIX + member_id
 
     def _encode_group_leader(self, group_id):
-        return self._GROUP_LEADER_PREFIX + group_id
+        return self.GROUP_LEADER_PREFIX + group_id
 
     @_retry.retry()
     def _add_group_to_group_list(self, group_id):
@@ -219,16 +232,16 @@ class MemcachedDriver(coordination.CoordinationDriver):
 
         :param group_id: The group id
         """
-        group_list, cas = self.client.gets(self._GROUP_LIST_KEY)
+        group_list, cas = self.client.gets(self.GROUP_LIST_KEY)
         if cas:
             group_list = set(group_list)
             group_list.add(group_id)
-            if not self.client.cas(self._GROUP_LIST_KEY,
+            if not self.client.cas(self.GROUP_LIST_KEY,
                                    list(group_list), cas):
                 # Someone updated the group list before us, try again!
                 raise _retry.Retry
         else:
-            if not self.client.add(self._GROUP_LIST_KEY,
+            if not self.client.add(self.GROUP_LIST_KEY,
                                    [group_id], noreply=False):
                 # Someone updated the group list before us, try again!
                 raise _retry.Retry
@@ -239,10 +252,10 @@ class MemcachedDriver(coordination.CoordinationDriver):
 
         :param group_id: The group id
         """
-        group_list, cas = self.client.gets(self._GROUP_LIST_KEY)
+        group_list, cas = self.client.gets(self.GROUP_LIST_KEY)
         group_list = set(group_list)
         group_list.remove(group_id)
-        if not self.client.cas(self._GROUP_LIST_KEY,
+        if not self.client.cas(self.GROUP_LIST_KEY,
                                list(group_list), cas):
             # Someone updated the group list before us, try again!
             raise _retry.Retry
@@ -262,7 +275,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
 
         @_translate_failures
         def _get_groups():
-            return self.client.get(self._GROUP_LIST_KEY) or []
+            return self.client.get(self.GROUP_LIST_KEY) or []
 
         return MemcachedFutureResult(self._executor.submit(_get_groups))
 
@@ -397,7 +410,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
     @_translate_failures
     def heartbeat(self):
         self.client.set(self._encode_member_id(self._member_id),
-                        "It's alive!",
+                        self.STILL_ALIVE,
                         expire=self.membership_timeout)
         # Reset the acquired locks
         for lock in self._acquired_locks:
