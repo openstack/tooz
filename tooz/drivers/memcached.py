@@ -21,6 +21,7 @@ import socket
 import threading
 
 from concurrent import futures
+from oslo_utils import timeutils
 from pymemcache import client as pymemcache_client
 import six
 
@@ -488,13 +489,21 @@ class MemcachedDriver(coordination.CoordinationDriver):
                              self.leader_timeout)
 
     @_translate_failures
-    def run_watchers(self):
+    def run_watchers(self, timeout=None):
+        w = timeutils.StopWatch(duration=timeout)
+        w.start()
+        leftover_timeout = w.leftover(return_none=True)
+        known_groups = self.get_groups().get(timeout=leftover_timeout)
         result = []
-        for group_id in self.client.get(self._GROUP_LIST_KEY):
+        for group_id in known_groups:
+            leftover_timeout = w.leftover(return_none=True)
             try:
-                group_members = set(self._get_members(group_id))
+                group_members_fut = self.get_members(group_id)
+                group_members = group_members_fut.get(timeout=leftover_timeout)
             except coordination.GroupNotCreated:
                 group_members = set()
+            else:
+                group_members = set(group_members)
             old_group_members = self._group_members[group_id]
 
             for member_id in (group_members - old_group_members):
@@ -514,7 +523,8 @@ class MemcachedDriver(coordination.CoordinationDriver):
         for group_id, hooks in six.iteritems(self._hooks_elected_leader):
             # Try to grab the lock, if that fails, that means someone has it
             # already.
-            if self._get_leader_lock(group_id).acquire(blocking=False):
+            leader_lock = self._get_leader_lock(group_id)
+            if leader_lock.acquire(blocking=False):
                 # We got the lock
                 hooks.run(coordination.LeaderElected(
                     group_id,

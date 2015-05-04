@@ -469,12 +469,11 @@ class KazooDriver(BaseZooKeeperDriver):
                 self.paths_join(b"/", self._namespace, b"locks", name),
                 self._member_id.decode('ascii')))
 
-    def run_watchers(self):
+    def run_watchers(self, timeout=None):
         ret = []
         while self._watchers:
             cb = self._watchers.popleft()
             ret.extend(cb())
-
         for group_id in six.iterkeys(self._hooks_elected_leader):
             if self._get_group_leader_lock(group_id).acquire(blocking=False):
                 # We are now leader for this group
@@ -482,7 +481,6 @@ class KazooDriver(BaseZooKeeperDriver):
                     coordination.LeaderElected(
                         group_id,
                         self._member_id))
-
         return ret
 
 
