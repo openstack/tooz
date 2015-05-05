@@ -448,6 +448,10 @@ class GroupNotEmpty(ToozError):
         super(GroupNotEmpty, self).__init__("Group %s is not empty" % group_id)
 
 
+class SerializationError(ToozError):
+    "Exception raised when serialization or deserialization breaks."
+
+
 def raise_with_cause(excp_cls, message, *args, **kwargs):
     """Helper to raise + chain exceptions (when able) and associate a *cause*.
 
