@@ -170,6 +170,9 @@ class RedisDriver(coordination.CoordinationDriver):
     saved...
     """
 
+    #: Value used (with group exists key) to keep a group from disappearing.
+    GROUP_EXISTS_VALUE = b'1'
+
     #: Default namespace for keys when none is provided.
     DEFAULT_NAMESPACE = b'_tooz'
 
@@ -230,6 +233,9 @@ class RedisDriver(coordination.CoordinationDriver):
 
     #: Default socket timeout to use when none is provided.
     CLIENT_DEFAULT_SOCKET_TO = 30
+
+    #: String used to keep a key/member alive (until it next expires).
+    STILL_ALIVE = b"Not dead!"
 
     def __init__(self, member_id, parsed_url, options):
         super(RedisDriver, self).__init__()
@@ -400,7 +406,7 @@ class RedisDriver(coordination.CoordinationDriver):
             beat_id = self._encode_beat_id(self._member_id)
             expiry_ms = max(0, int(self.membership_timeout * 1000.0))
             self._client.psetex(beat_id, time_ms=expiry_ms,
-                                value=b"Not dead!")
+                                value=self.STILL_ALIVE)
         for lock in self._acquired_locks.copy():
             try:
                 lock.heartbeat()
@@ -469,7 +475,7 @@ class RedisDriver(coordination.CoordinationDriver):
                    self._encode_group_id(group_id, apply_namespace=False))
             # Add our special key to avoid redis from deleting the dictionary
             # when it becomes empty (which is not what we currently want)...
-            p.hset(encoded_group, self.GROUP_EXISTS, '1')
+            p.hset(encoded_group, self.GROUP_EXISTS, self.GROUP_EXISTS_VALUE)
 
         return RedisFutureResult(self._submit(self._client.transaction,
                                               _create_group, encoded_group,
