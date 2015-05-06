@@ -65,7 +65,7 @@ def to_binary(text, encoding='ascii'):
     return text
 
 
-def dumps(data, excp_cls=coordination.ToozError):
+def dumps(data, excp_cls=coordination.SerializationError):
     """Serializes provided data using msgpack into a byte string."""
     try:
         return msgpackutils.dumps(data)
@@ -74,7 +74,7 @@ def dumps(data, excp_cls=coordination.ToozError):
                                       cause=e)
 
 
-def loads(blob, excp_cls=coordination.ToozError):
+def loads(blob, excp_cls=coordination.SerializationError):
     """Deserializes provided data using msgpack (from a prior byte string)."""
     try:
         return msgpackutils.loads(blob)

@@ -181,7 +181,8 @@ class MemcachedDriver(coordination.CoordinationDriver):
             return value
         if flags == 2:
             return utils.loads(value)
-        raise Exception("Unknown serialization format '%s'" % flags)
+        raise coordination.SerializationError("Unknown serialization"
+                                              " format '%s'" % flags)
 
     @_translate_failures
     def _start(self):
