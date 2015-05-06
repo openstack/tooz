@@ -68,8 +68,8 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
     :param timeout: connection timeout to wait when first connecting to the
                     zookeeper server
     """
-
-    _TOOZ_NAMESPACE = b"tooz"
+    #: Default namespace when none is provided.
+    TOOZ_NAMESPACE = b"tooz"
 
     def __init__(self, member_id, parsed_url, options):
         super(BaseZooKeeperDriver, self).__init__()
@@ -77,7 +77,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
         self._options = options
         self._member_id = member_id
         self.timeout = int(options.get('timeout', '10'))
-        self._namespace = options.get('namespace', self._TOOZ_NAMESPACE)
+        self._namespace = options.get('namespace', self.TOOZ_NAMESPACE)
 
     def _start(self):
         try:
