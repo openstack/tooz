@@ -39,36 +39,6 @@ from tooz import utils
 LOG = logging.getLogger(__name__)
 
 
-def _version_checker(version_required):
-    """Checks server version is supported *before* running decorated method."""
-
-    if isinstance(version_required, six.string_types):
-        desired_version = version.LooseVersion(version_required)
-    elif isinstance(version_required, version.LooseVersion):
-        desired_version = version_required
-    else:
-        raise TypeError("Version decorator expects a string/version type")
-
-    def wrapper(meth):
-
-        @six.wraps(meth)
-        def decorator(self, *args, **kwargs):
-            useable, redis_version = self._check_fetch_redis_version(
-                desired_version)
-            if not useable:
-                raise tooz.NotImplemented("Redis version greater than or"
-                                          " equal to '%s' is required"
-                                          " to use this feature; '%s' is"
-                                          " being used which is not new"
-                                          " enough" % (desired_version,
-                                                       redis_version))
-            return meth(self, *args, **kwargs)
-
-        return decorator
-
-    return wrapper
-
-
 @contextlib.contextmanager
 def _translate_failures():
     """Translates common redis exceptions into tooz exceptions."""
@@ -187,15 +157,9 @@ class RedisDriver(coordination.CoordinationDriver):
     .. _AOF: http://redis.io/topics/persistence
     """
 
-    MIN_VERSION = version.LooseVersion("2.2.0")
+    MIN_VERSION = version.LooseVersion("2.6.0")
     """
     The min redis version that this driver requires to operate with...
-
-    NOTE(harlowja): 2.2.0 was selected since its the current version that
-    exists on ubuntu precise, that version will work to a degree (except
-    locks will not work with that version), in the future we can raise this
-    as we move off of precise (and/or need newer features that the older
-    versions of redis just don't have).
     """
 
     GROUP_EXISTS = b'__created__'
@@ -324,9 +288,6 @@ class RedisDriver(coordination.CoordinationDriver):
     def running(self):
         return self._started
 
-    # 2.6.0 is required since internally PEXPIRE is used and that was only
-    # added in 2.6.0; so avoid using this on versions less than that...
-    @_version_checker("2.6.0")
     def get_lock(self, name):
         return RedisLock(self, self._client, name, self.lock_timeout)
 
@@ -437,19 +398,9 @@ class RedisDriver(coordination.CoordinationDriver):
     def heartbeat(self):
         with _translate_failures():
             beat_id = self._encode_beat_id(self._member_id)
-            # Use milliseconds if we can (which are more accurate than
-            # just seconds); but this PSETEX support was added in 2.6.0 or
-            # newer so we can only use it then...
-            supports_psetex, _version = self._check_fetch_redis_version(
-                '2.6.0', not_existent=False)
-            if not supports_psetex:
-                expiry_secs = max(0, int(self.membership_timeout))
-                self._client.setex(beat_id, time=expiry_secs,
-                                   value=b"Not dead!")
-            else:
-                expiry_ms = max(0, int(self.membership_timeout * 1000.0))
-                self._client.psetex(beat_id, time_ms=expiry_ms,
-                                    value=b"Not dead!")
+            expiry_ms = max(0, int(self.membership_timeout * 1000.0))
+            self._client.psetex(beat_id, time_ms=expiry_ms,
+                                value=b"Not dead!")
         for lock in self._acquired_locks.copy():
             try:
                 lock.heartbeat()
@@ -591,18 +542,13 @@ class RedisDriver(coordination.CoordinationDriver):
                     gone_members.add(potential_member)
             # Trash all the members that no longer are with us... RIP...
             if gone_members:
-                many_at_once, _version = self._check_fetch_redis_version(
-                    "2.4.0", not_existent=False)
                 p.multi()
-                if not many_at_once:
-                    for m in gone_members:
-                        p.hdel(encoded_group, self._encode_member_id(m))
-                else:
-                    encoded_gone_members = [self._encode_member_id(m)
-                                            for m in gone_members]
-                    p.hdel(encoded_group, *encoded_gone_members)
+                encoded_gone_members = list(self._encode_member_id(m)
+                                            for m in gone_members)
+                p.hdel(encoded_group, *encoded_gone_members)
                 p.execute()
-                return [m for m in potential_members if m not in gone_members]
+                return list(m for m in potential_members
+                            if m not in gone_members)
             else:
                 return potential_members
 
