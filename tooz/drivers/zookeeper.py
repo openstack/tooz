@@ -23,7 +23,6 @@ from kazoo.protocol import paths
 import six
 
 from tooz import coordination
-from tooz.drivers import _retry
 from tooz import locking
 from tooz import utils
 
@@ -35,25 +34,14 @@ class ZooKeeperLock(locking.Lock):
         self.acquired = False
 
     def acquire(self, blocking=True):
-
-        @_retry.retry(stop_max_delay=blocking)
-        def _lock():
-            # NOTE(sileht): kazoo lock looks broken:
-            # https://github.com/python-zk/kazoo/issues/291
-            # so we track the exclusivity internally
-            if self.acquired is True:
-                if blocking:
-                    raise _retry.Retry
-                return False
-            if self._lock.acquire(blocking=bool(blocking),
-                                  timeout=0):
-                self.acquired = True
-                return True
-            if blocking:
-                raise _retry.Retry
-            return False
-
-        return _lock()
+        if isinstance(blocking, bool):
+            timeout = None
+        else:
+            blocking = True
+            timeout = float(blocking)
+        self.acquired = self._lock.acquire(blocking=blocking,
+                                           timeout=timeout)
+        return self.acquired
 
     def release(self):
         if self.acquired:
@@ -478,7 +466,11 @@ class KazooDriver(BaseZooKeeperDriver):
             cb = self._watchers.popleft()
             ret.extend(cb())
         for group_id in six.iterkeys(self._hooks_elected_leader):
-            if self._get_group_leader_lock(group_id).acquire(blocking=False):
+            leader_lock = self._get_group_leader_lock(group_id)
+            if leader_lock.is_acquired:
+                # Previously acquired/still leader, leave it be...
+                continue
+            if leader_lock.acquire(blocking=False):
                 # We are now leader for this group
                 self._hooks_elected_leader[group_id].run(
                     coordination.LeaderElected(
