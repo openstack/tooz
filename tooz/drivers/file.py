@@ -13,13 +13,16 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-import errno
+
 import logging
 import os
+import threading
+
+import fasteners
+from oslo_utils import timeutils
 
 import tooz
 from tooz import coordination
-from tooz.drivers import _retry
 from tooz import locking
 
 LOG = logging.getLogger(__name__)
@@ -31,73 +34,44 @@ class FileLock(locking.Lock):
     def __init__(self, path):
         super(FileLock, self).__init__(path)
         self.acquired = False
-        self.lockfile = open(self.name, 'a')
+        self._lock = fasteners.InterProcessLock(path)
+        self._cond = threading.Condition()
 
     def acquire(self, blocking=True):
-
-        @_retry.retry(stop_max_delay=blocking)
-        def _lock():
-            # NOTE(jd) If the same process try to grab the lock, the call to
-            # self.lock() will succeed, so we track internally if the process
-            # already has the lock.
-            if self.acquired is True:
-                if blocking:
-                    raise _retry.Retry
-                return False
-            try:
-                self.lock()
-            except IOError as e:
-                if e.errno in (errno.EACCES, errno.EAGAIN):
-                    if blocking:
-                        raise _retry.Retry
+        timeout = None
+        if not isinstance(blocking, bool):
+            timeout = float(blocking)
+            blocking = True
+        watch = timeutils.StopWatch(duration=timeout)
+        watch.start()
+        while True:
+            with self._cond:
+                if self.acquired and blocking:
+                    if watch.expired():
+                        return False
+                    # If in the same process wait until we can attempt to
+                    # acquire it (aka, another thread should release it before
+                    # we can try to get it).
+                    self._cond.wait(watch.leftover(return_none=True))
+                elif self.acquired and not blocking:
                     return False
-            else:
-                self.acquired = True
-                return True
-
-        return _lock()
-
-    def close(self):
-        self.release()
-        self.lockfile.close()
+                else:
+                    # All the prior waits may have left less time to wait...
+                    timeout = watch.leftover(return_none=True)
+                    self.acquired = self._lock.acquire(blocking=blocking,
+                                                       timeout=timeout)
+                    return self.acquired
 
     def release(self):
-        self.unlock()
-        self.acquired = False
-
-    def lock(self):
-        raise NotImplementedError
-
-    def unlock(self):
-        raise NotImplementedError
+        with self._cond:
+            if self.acquired:
+                self._lock.release()
+                self.acquired = False
+                self._cond.notify_all()
 
     def __del__(self):
         if self.acquired:
             LOG.warn("unreleased lock %s garbage collected" % self.name)
-
-
-class WindowsFileLock(FileLock):
-    def lock(self):
-        msvcrt.locking(self.lockfile.fileno(), msvcrt.LK_NBLCK, 1)
-
-    def unlock(self):
-        msvcrt.locking(self.lockfile.fileno(), msvcrt.LK_UNLCK, 1)
-
-
-class PosixFileLock(FileLock):
-    def lock(self):
-        fcntl.lockf(self.lockfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
-
-    def unlock(self):
-        fcntl.lockf(self.lockfile, fcntl.LOCK_UN)
-
-
-if os.name == 'nt':
-    import msvcrt
-    LockClass = WindowsFileLock
-else:
-    import fcntl
-    LockClass = PosixFileLock
 
 
 class FileDriver(coordination.CoordinationDriver):
@@ -116,7 +90,7 @@ class FileDriver(coordination.CoordinationDriver):
 
     def get_lock(self, name):
         path = os.path.abspath(os.path.join(self._lockdir, name.decode()))
-        return locking.SharedWeakLockHelper(self._lockdir, LockClass, path)
+        return locking.SharedWeakLockHelper(self._lockdir, FileLock, path)
 
     @staticmethod
     def watch_join_group(group_id, callback):
