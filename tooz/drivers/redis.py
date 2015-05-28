@@ -57,16 +57,9 @@ def _translate_failures():
 class RedisLock(locking.Lock):
     def __init__(self, coord, client, name, timeout):
         self._name = "%s_%s_lock" % (coord.namespace, six.text_type(name))
-        # Avoid using lua locks to keep compatible with more versions
-        # of redis (and not just the ones that have lua support, also avoids
-        # ones that don't appear to have fully working lua support...)
-        #
-        # Issue opened: https://github.com/andymccurdy/redis-py/issues/550
-        #
-        # When that gets fixed (and detects the servers capabilities better
-        # we can likely turn this back on to being smart).
-        self._lock = redis_locks.Lock(client, self._name,
-                                      timeout=timeout, thread_local=False)
+        self._lock = redis_locks.LuaLock(client, self._name,
+                                         timeout=timeout,
+                                         thread_local=False)
         self._coord = coord
         self._acquired = False
 
