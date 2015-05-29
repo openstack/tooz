@@ -4,7 +4,7 @@
 
 pep8==1.5.7
 pyflakes==0.8.1
-flake8==2.4.0
+flake8>=2.2.4,<=2.4.1
 discover
 mock>=1.0
 sphinx>=1.1.2,!=1.2.0,!=1.3b1,<1.3
