@@ -29,6 +29,8 @@ LOG = logging.getLogger(__name__)
 class MySQLLock(locking.Lock):
     """A MySQL based lock."""
 
+    MYSQL_DEFAULT_PORT = 3306
+
     def __init__(self, name, parsed_url, options):
         super(MySQLLock, self).__init__(name)
         self._conn = MySQLDriver.get_connection(parsed_url, options)
@@ -140,7 +142,7 @@ class MySQLDriver(coordination.CoordinationDriver):
     @staticmethod
     def get_connection(parsed_url, options):
         host = parsed_url.hostname
-        port = parsed_url.port
+        port = parsed_url.port or MySQLLock.MYSQL_DEFAULT_PORT
         dbname = parsed_url.path[1:]
         username = parsed_url.username
         password = parsed_url.password
