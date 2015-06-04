@@ -13,12 +13,14 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 import os
 import threading
 import time
 import uuid
 
 from concurrent import futures
+import fixtures
 import testscenarios
 from testtools import matchers
 from testtools import testcase
@@ -68,6 +70,7 @@ class TestAPI(testscenarios.TestWithScenarios,
 
     def setUp(self):
         super(TestAPI, self).setUp()
+        self.useFixture(fixtures.NestedTempfile())
         if self.url is None:
             self.skipTest("No URL set for this driver")
         self.group_id = self._get_random_uuid()
