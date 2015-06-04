@@ -15,7 +15,6 @@
 # under the License.
 
 import logging
-import os
 import threading
 
 import fasteners
@@ -24,6 +23,7 @@ from oslo_utils import timeutils
 import tooz
 from tooz import coordination
 from tooz import locking
+from tooz import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -89,7 +89,7 @@ class FileDriver(coordination.CoordinationDriver):
         self._lockdir = parsed_url.path
 
     def get_lock(self, name):
-        path = os.path.abspath(os.path.join(self._lockdir, name.decode()))
+        path = utils.safe_abs_path(self._lockdir, name.decode())
         return locking.SharedWeakLockHelper(self._lockdir, FileLock, path)
 
     @staticmethod

@@ -15,11 +15,31 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os
+import tempfile
 
 import six
 from testtools import testcase
 
 from tooz import utils
+
+
+class TestUtilsSafePath(testcase.TestCase):
+    base = tempfile.gettempdir()
+
+    def test_join(self):
+        self.assertEqual(os.path.join(self.base, 'b'),
+                         utils.safe_abs_path(self.base, "b"))
+        self.assertEqual(os.path.join(self.base, 'b', 'c'),
+                         utils.safe_abs_path(self.base, "b", 'c'))
+        self.assertEqual(self.base,
+                         utils.safe_abs_path(self.base, "b", 'c', '../..'))
+
+    def test_unsafe_join(self):
+        self.assertRaises(ValueError, utils.safe_abs_path,
+                          self.base, "../b")
+        self.assertRaises(ValueError, utils.safe_abs_path,
+                          self.base, "b", 'c', '../../../')
 
 
 class TestUtilsCollapse(testcase.TestCase):

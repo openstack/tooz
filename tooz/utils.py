@@ -14,11 +14,29 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os
+
 import msgpack
 from oslo_serialization import msgpackutils
 import six
 
 from tooz import coordination
+
+
+def safe_abs_path(rooted_at, *pieces):
+    # Avoids the following junk...
+    #
+    # >>> import os
+    # >>> os.path.join("/b", "..")
+    # '/b/..'
+    # >>> os.path.abspath(os.path.join("/b", ".."))
+    # '/'
+    path = os.path.abspath(os.path.join(rooted_at, *pieces))
+    if not path.startswith(rooted_at):
+        raise ValueError("Unable to create path that is outside of"
+                         " parent directory '%s' using segments %s"
+                         % (rooted_at, list(pieces)))
+    return path
 
 
 def collapse(config, exclude=None, item_selector=None):
