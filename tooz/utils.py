@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import errno
 import os
 
 import msgpack
@@ -37,6 +38,21 @@ def safe_abs_path(rooted_at, *pieces):
                          " parent directory '%s' using segments %s"
                          % (rooted_at, list(pieces)))
     return path
+
+
+def ensure_tree(path):
+    """Create a directory (and any ancestor directories required).
+
+    :param path: Directory to create
+    """
+    try:
+        os.makedirs(path)
+    except EnvironmentError as e:
+        if e.errno != errno.EEXIST or not os.path.isdir(path):
+            raise
+        return False
+    else:
+        return True
 
 
 def collapse(config, exclude=None, item_selector=None):
