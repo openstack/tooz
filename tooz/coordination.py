@@ -19,6 +19,7 @@ import collections
 
 from oslo_utils import excutils
 from oslo_utils import netutils
+from oslo_utils import timeutils
 import six
 from stevedore import driver
 
@@ -342,6 +343,39 @@ class CoordAsyncResult(object):
     @abc.abstractmethod
     def done(self):
         """Returns True if the task is done, False otherwise."""
+
+
+class _RunWatchersMixin(object):
+    """Mixin to share the *mostly* common ``run_watchers`` implementation."""
+
+    def run_watchers(self, timeout=None):
+        with timeutils.StopWatch(duration=timeout) as w:
+            known_groups = self.get_groups().get(
+                timeout=w.leftover(return_none=True))
+            result = []
+            for group_id in known_groups:
+                try:
+                    group_members_fut = self.get_members(group_id)
+                    group_members = group_members_fut.get(
+                        timeout=w.leftover(return_none=True))
+                except GroupNotCreated:
+                    group_members = set()
+                else:
+                    group_members = set(group_members)
+                if (group_id in self._joined_groups and
+                        self._member_id not in group_members):
+                    self._joined_groups.discard(group_id)
+                old_group_members = self._group_members.get(group_id, set())
+                for member_id in (group_members - old_group_members):
+                    result.extend(
+                        self._hooks_join_group[group_id].run(
+                            MemberJoinedGroup(group_id, member_id)))
+                for member_id in (old_group_members - group_members):
+                    result.extend(
+                        self._hooks_leave_group[group_id].run(
+                            MemberLeftGroup(group_id, member_id)))
+                self._group_members[group_id] = group_members
+            return result
 
 
 def get_coordinator(backend_url, member_id, **kwargs):
