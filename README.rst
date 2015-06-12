@@ -1,11 +1,11 @@
 Tooz
 ====
 
-.. image:: https://pypip.in/version/tooz/badge.svg
+.. image:: https://img.shields.io/pypi/v/tooz.svg
     :target: https://pypi.python.org/pypi/tooz/
     :alt: Latest Version
 
-.. image:: https://pypip.in/download/tooz/badge.svg?period=month
+.. image:: https://img.shields.io/pypi/dm/tooz.svg
     :target: https://pypi.python.org/pypi/tooz/
     :alt: Downloads
 
