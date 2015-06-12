@@ -245,6 +245,10 @@ class FileDriver(coordination.CoordinationDriver):
         return FileFutureResult(fut)
 
     def get_members(self, group_id):
+        fut = self._get_members(group_id)
+        return FileFutureResult(fut)
+
+    def _get_members(self, group_id, async=True):
         safe_group_id = self._make_filesystem_safe(group_id)
         group_dir = os.path.join(self._group_dir, safe_group_id)
 
@@ -283,8 +287,10 @@ class FileDriver(coordination.CoordinationDriver):
                         members.append(member_id)
             return members
 
-        fut = self._submit(_do_get_members)
-        return FileFutureResult(fut)
+        if async:
+            return self._submit(_do_get_members)
+        else:
+            return _do_get_members()
 
     def get_member_capabilities(self, group_id, member_id):
         safe_group_id = self._make_filesystem_safe(group_id)
@@ -342,7 +348,7 @@ class FileDriver(coordination.CoordinationDriver):
         fut = self._submit(_do_delete_group)
         return FileFutureResult(fut)
 
-    def get_groups(self):
+    def _get_groups(self, async=True):
 
         def _read_group_id(path):
             with open(path, 'rb') as fh:
@@ -357,8 +363,7 @@ class FileDriver(coordination.CoordinationDriver):
         def _do_get_groups():
             groups = []
             for entry in os.listdir(self._group_dir):
-                path = os.path.join(self._group_dir, entry,
-                                    '.metadata')
+                path = os.path.join(self._group_dir, entry, '.metadata')
                 try:
                     groups.append(_read_group_id(path))
                 except EnvironmentError as e:
@@ -366,24 +371,32 @@ class FileDriver(coordination.CoordinationDriver):
                         raise
             return groups
 
-        fut = self._submit(_do_get_groups)
+        if async:
+            return self._submit(_do_get_groups)
+        else:
+            return _do_get_groups()
+
+    def get_groups(self):
+        fut = self._get_groups()
         return FileFutureResult(fut)
 
-    @staticmethod
-    def watch_join_group(group_id, callback):
-        raise tooz.NotImplemented
+    def _init_watch_group(self, group_id):
+        members = self._get_members(group_id, async=False)
+        self._group_members[group_id].update(members)
 
-    @staticmethod
-    def unwatch_join_group(group_id, callback):
-        raise tooz.NotImplemented
+    def watch_join_group(self, group_id, callback):
+        self._init_watch_group(group_id)
+        return super(FileDriver, self).watch_join_group(group_id, callback)
 
-    @staticmethod
-    def watch_leave_group(group_id, callback):
-        raise tooz.NotImplemented
+    def unwatch_join_group(self, group_id, callback):
+        return super(FileDriver, self).unwatch_join_group(group_id, callback)
 
-    @staticmethod
-    def unwatch_leave_group(group_id, callback):
-        raise tooz.NotImplemented
+    def watch_leave_group(self, group_id, callback):
+        self._init_watch_group(group_id)
+        return super(FileDriver, self).watch_leave_group(group_id, callback)
+
+    def unwatch_leave_group(self, group_id, callback):
+        return super(FileDriver, self).unwatch_leave_group(group_id, callback)
 
     @staticmethod
     def watch_elected_as_leader(group_id, callback):
@@ -392,6 +405,33 @@ class FileDriver(coordination.CoordinationDriver):
     @staticmethod
     def unwatch_elected_as_leader(group_id, callback):
         raise tooz.NotImplemented
+
+    def run_watchers(self, timeout=None):
+        known_groups = self._get_groups(async=False)
+        result = []
+        for group_id in known_groups:
+            try:
+                group_members = self._get_members(group_id, async=False)
+            except coordination.GroupNotCreated:
+                group_members = set()
+            else:
+                group_members = set(group_members)
+            if (group_id in self._joined_groups and
+                    self._member_id not in group_members):
+                self._joined_groups.discard(group_id)
+            old_group_members = self._group_members.get(group_id, set())
+            for member_id in (group_members - old_group_members):
+                result.extend(
+                    self._hooks_join_group[group_id].run(
+                        coordination.MemberJoinedGroup(group_id,
+                                                       member_id)))
+            for member_id in (old_group_members - group_members):
+                result.extend(
+                    self._hooks_leave_group[group_id].run(
+                        coordination.MemberLeftGroup(group_id,
+                                                     member_id)))
+            self._group_members[group_id] = group_members
+        return result
 
 
 class FileFutureResult(coordination.CoordAsyncResult):
