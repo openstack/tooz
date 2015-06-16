@@ -16,8 +16,8 @@
 
 import abc
 import collections
-import sys
 
+from oslo_utils import excutils
 from oslo_utils import netutils
 import six
 from stevedore import driver
@@ -452,7 +452,7 @@ class SerializationError(ToozError):
     "Exception raised when serialization or deserialization breaks."
 
 
-def raise_with_cause(excp_cls, message, *args, **kwargs):
+def raise_with_cause(exc_cls, message, *args, **kwargs):
     """Helper to raise + chain exceptions (when able) and associate a *cause*.
 
     **For internal usage only.**
@@ -461,8 +461,8 @@ def raise_with_cause(excp_cls, message, *args, **kwargs):
     :pep:`3134`) we should try to raise the desired exception with the given
     *cause*.
 
-    :param excp_cls: the :py:class:`~tooz.coordination.ToozError` class
-                     to raise.
+    :param exc_cls: the :py:class:`~tooz.coordination.ToozError` class
+                    to raise.
     :param message: the text/str message that will be passed to
                     the exceptions constructor as its first positional
                     argument.
@@ -471,11 +471,6 @@ def raise_with_cause(excp_cls, message, *args, **kwargs):
     :param kwargs: any additional keyword arguments to pass to the
                    exceptions constructor.
     """
-    if not issubclass(excp_cls, ToozError):
+    if not issubclass(exc_cls, ToozError):
         raise ValueError("Subclass of tooz error is required")
-    if 'cause' not in kwargs:
-        exc_type, exc, exc_tb = sys.exc_info()
-        if exc is not None:
-            kwargs['cause'] = exc
-        del(exc_type, exc, exc_tb)
-    six.raise_from(excp_cls(message, *args, **kwargs), kwargs.get('cause'))
+    excutils.raise_with_cause(exc_cls, message, *args, **kwargs)
