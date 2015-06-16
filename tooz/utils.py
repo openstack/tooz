@@ -19,6 +19,7 @@ import os
 
 import msgpack
 from oslo_serialization import msgpackutils
+from oslo_utils import encodeutils
 import six
 
 from tooz import coordination
@@ -84,12 +85,9 @@ def collapse(config, exclude=None, item_selector=None):
     return collapsed
 
 
-def exception_message(exc):
-    """Return the string representation of exception."""
-    try:
-        return six.text_type(exc)
-    except UnicodeError:
-        return str(exc)
+# TODO(harlowja): get rid of this...
+#: Return the string (unicode) representation of an exception.
+exception_message = encodeutils.exception_to_unicode
 
 
 def to_binary(text, encoding='ascii'):
