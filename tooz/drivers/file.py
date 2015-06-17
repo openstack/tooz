@@ -263,6 +263,7 @@ class FileDriver(coordination.CoordinationDriver):
                         "Expected dict encoded in '%s'"
                         " but got %s instead" % (path, type(details)))
 
+        @_lock_me(self._driver_lock)
         def _do_get_members():
             if not os.path.isdir(group_dir):
                 raise coordination.GroupNotCreated(group_id)
@@ -298,6 +299,7 @@ class FileDriver(coordination.CoordinationDriver):
         safe_member_id = self._make_filesystem_safe(member_id)
         member_path = os.path.join(group_dir, "%s.raw" % safe_member_id)
 
+        @_lock_me(self._driver_lock)
         def _do_get_member_capabilities():
             try:
                 with open(member_path, "rb") as fh:
@@ -360,6 +362,7 @@ class FileDriver(coordination.CoordinationDriver):
                                                              type(details)))
                 return details['group_id']
 
+        @_lock_me(self._driver_lock)
         def _do_get_groups():
             groups = []
             for entry in os.listdir(self._group_dir):
