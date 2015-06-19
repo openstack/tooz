@@ -245,10 +245,6 @@ class FileDriver(coordination.CoordinationDriver):
         return FileFutureResult(fut)
 
     def get_members(self, group_id):
-        fut = self._get_members(group_id)
-        return FileFutureResult(fut)
-
-    def _get_members(self, group_id, async=True):
         safe_group_id = self._make_filesystem_safe(group_id)
         group_dir = os.path.join(self._group_dir, safe_group_id)
 
@@ -288,10 +284,8 @@ class FileDriver(coordination.CoordinationDriver):
                         members.append(member_id)
             return members
 
-        if async:
-            return self._submit(_do_get_members)
-        else:
-            return _do_get_members()
+        fut = self._submit(_do_get_members)
+        return FileFutureResult(fut)
 
     def get_member_capabilities(self, group_id, member_id):
         safe_group_id = self._make_filesystem_safe(group_id)
@@ -350,7 +344,7 @@ class FileDriver(coordination.CoordinationDriver):
         fut = self._submit(_do_delete_group)
         return FileFutureResult(fut)
 
-    def _get_groups(self, async=True):
+    def get_groups(self):
 
         def _read_group_id(path):
             with open(path, 'rb') as fh:
@@ -374,18 +368,13 @@ class FileDriver(coordination.CoordinationDriver):
                         raise
             return groups
 
-        if async:
-            return self._submit(_do_get_groups)
-        else:
-            return _do_get_groups()
-
-    def get_groups(self):
-        fut = self._get_groups()
+        fut = self._submit(_do_get_groups)
         return FileFutureResult(fut)
 
     def _init_watch_group(self, group_id):
-        members = self._get_members(group_id, async=False)
-        self._group_members[group_id].update(members)
+        group_members_fut = self.get_members(group_id)
+        group_members = group_members_fut.get(timeout=None)
+        self._group_members[group_id].update(group_members)
 
     def watch_join_group(self, group_id, callback):
         self._init_watch_group(group_id)
@@ -410,11 +399,16 @@ class FileDriver(coordination.CoordinationDriver):
         raise tooz.NotImplemented
 
     def run_watchers(self, timeout=None):
-        known_groups = self._get_groups(async=False)
+        w = timeutils.StopWatch(duration=timeout)
+        w.start()
+        leftover_timeout = w.leftover(return_none=True)
+        known_groups = self.get_groups().get(timeout=leftover_timeout)
         result = []
         for group_id in known_groups:
+            leftover_timeout = w.leftover(return_none=True)
             try:
-                group_members = self._get_members(group_id, async=False)
+                group_members_fut = self.get_members(group_id)
+                group_members = group_members_fut.get(timeout=leftover_timeout)
             except coordination.GroupNotCreated:
                 group_members = set()
             else:
