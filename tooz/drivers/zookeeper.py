@@ -45,12 +45,10 @@ class ZooKeeperLock(locking.Lock):
                 if blocking:
                     raise _retry.Retry
                 return False
-
             if self._lock.acquire(blocking=bool(blocking),
                                   timeout=0):
                 self.acquired = True
                 return True
-
             if blocking:
                 raise _retry.Retry
             return False
@@ -58,8 +56,12 @@ class ZooKeeperLock(locking.Lock):
         return _lock()
 
     def release(self):
-        self._lock.release()
-        self.acquired = False
+        if self.acquired:
+            self._lock.release()
+            self.acquired = False
+            return True
+        else:
+            return False
 
 
 class BaseZooKeeperDriver(coordination.CoordinationDriver):

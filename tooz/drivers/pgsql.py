@@ -103,6 +103,7 @@ class PostgresLock(locking.Lock):
             self.key = h.digest()[0:2]
 
     def acquire(self, blocking=True):
+
         @_retry.retry(stop_max_delay=blocking)
         def _lock():
             # NOTE(sileht) One the same session the lock is not exclusive
@@ -134,11 +135,14 @@ class PostgresLock(locking.Lock):
         return _lock()
 
     def release(self):
+        if not self.acquired:
+            return False
         with _translating_cursor(self._conn) as cur:
             cur.execute("SELECT pg_advisory_unlock(%s, %s);",
                         self.key)
             cur.fetchone()
             self.acquired = False
+            return True
 
     def __del__(self):
         if self.acquired:

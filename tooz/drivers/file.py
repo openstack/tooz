@@ -101,6 +101,9 @@ class FileLock(locking.Lock):
                 self._lock.release()
                 self.acquired = False
                 self._cond.notify_all()
+                return True
+            else:
+                return False
 
     def __del__(self):
         if self.acquired:

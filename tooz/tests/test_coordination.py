@@ -588,8 +588,8 @@ class TestAPI(testscenarios.TestWithScenarios,
 
     def test_get_lock(self):
         lock = self._coord.get_lock(self._get_random_uuid())
-        self.assertEqual(True, lock.acquire())
-        lock.release()
+        self.assertTrue(lock.acquire())
+        self.assertTrue(lock.release())
         with lock:
             pass
 
@@ -600,7 +600,7 @@ class TestAPI(testscenarios.TestWithScenarios,
 
         def thread():
             self.assertTrue(lock.acquire())
-            lock.release()
+            self.assertTrue(lock.release())
             graceful_ending.set()
 
         t = threading.Thread(target=thread)
@@ -668,23 +668,29 @@ class TestAPI(testscenarios.TestWithScenarios,
         lock1 = self._coord.get_lock(name)
         lock2 = self._coord.get_lock(name)
         with lock1:
-            self.assertEqual(False, lock2.acquire(blocking=False))
+            self.assertFalse(lock2.acquire(blocking=False))
 
     def test_get_lock_locked_twice(self):
         name = self._get_random_uuid()
         lock = self._coord.get_lock(name)
         with lock:
-            self.assertEqual(False, lock.acquire(blocking=False))
+            self.assertFalse(lock.acquire(blocking=False))
 
     def test_get_multiple_locks_with_same_coord(self):
         name = self._get_random_uuid()
         lock1 = self._coord.get_lock(name)
         lock2 = self._coord.get_lock(name)
-        self.assertEqual(True, lock1.acquire())
-        self.assertEqual(False, lock2.acquire(blocking=False))
-        self.assertEqual(False,
-                         self._coord.get_lock(name).acquire(blocking=False))
-        lock1.release()
+        self.assertTrue(lock1.acquire())
+        self.assertFalse(lock2.acquire(blocking=False))
+        self.assertFalse(self._coord.get_lock(name).acquire(blocking=False))
+        self.assertTrue(lock1.release())
+
+    def test_ensure_acquire_release_return(self):
+        name = self._get_random_uuid()
+        lock1 = self._coord.get_lock(name)
+        self.assertTrue(lock1.acquire())
+        self.assertTrue(lock1.release())
+        self.assertFalse(lock1.release())
 
     def test_get_lock_multiple_coords(self):
         member_id2 = self._get_random_uuid()
@@ -694,13 +700,13 @@ class TestAPI(testscenarios.TestWithScenarios,
 
         lock_name = self._get_random_uuid()
         lock = self._coord.get_lock(lock_name)
-        self.assertEqual(True, lock.acquire())
+        self.assertTrue(lock.acquire())
 
         lock2 = client2.get_lock(lock_name)
-        self.assertEqual(False, lock2.acquire(blocking=False))
-        lock.release()
-        self.assertEqual(True, lock2.acquire(blocking=True))
-        lock2.release()
+        self.assertFalse(lock2.acquire(blocking=False))
+        self.assertTrue(lock.release())
+        self.assertTrue(lock2.acquire(blocking=True))
+        self.assertTrue(lock2.release())
 
     @staticmethod
     def _get_random_uuid():
