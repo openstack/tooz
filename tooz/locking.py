@@ -99,6 +99,15 @@ class SharedWeakLockHelper(Lock):
 
     def release(self):
         with self.LOCKS_LOCK:
-            l = self.ACQUIRED_LOCKS.pop(self._lock_key)
-            self.RELEASED_LOCKS[self._lock_key] = l
-            l.release()
+            try:
+                l = self.ACQUIRED_LOCKS.pop(self._lock_key)
+            except KeyError:
+                return False
+            else:
+                if l.release():
+                    self.RELEASED_LOCKS[self._lock_key] = l
+                    return True
+                else:
+                    # Put it back...
+                    self.ACQUIRED_LOCKS[self._lock_key] = l
+                    return False

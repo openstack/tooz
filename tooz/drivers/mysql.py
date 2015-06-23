@@ -73,11 +73,14 @@ class MySQLLock(locking.Lock):
         return _lock()
 
     def release(self):
+        if not self.acquired:
+            return False
         try:
             with self._conn as cur:
                 cur.execute("SELECT RELEASE_LOCK(%s);", self.name)
                 cur.fetchone()
                 self.acquired = False
+                return True
         except pymysql.MySQLError as e:
             coordination.raise_with_cause(coordination.ToozError,
                                           utils.exception_message(e),
