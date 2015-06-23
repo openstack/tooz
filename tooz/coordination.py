@@ -160,8 +160,8 @@ class CoordinationDriver(object):
 
         """
         self._hooks_elected_leader[group_id].remove(callback)
-        if not self._hooks.elected_leader[group_id]:
-            del self._hooks.elected_leader[group_id]
+        if not self._hooks_elected_leader[group_id]:
+            del self._hooks_elected_leader[group_id]
 
     @staticmethod
     def stand_down_group_leader(group_id):

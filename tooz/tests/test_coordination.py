@@ -586,6 +586,18 @@ class TestAPI(testscenarios.TestWithScenarios,
         self.assertEqual(self.group_id,
                          self.event.group_id)
 
+    def test_unwatch_elected_as_leader(self):
+        # Create a group and add a elected_as_leader callback
+        self._coord.create_group(self.group_id).get()
+        self._coord.watch_elected_as_leader(self.group_id, self._set_event)
+
+        # Ensure exactly one leader election hook exists
+        self.assertEqual(1, len(self._coord._hooks_elected_leader))
+
+        # Unwatch, and ensure no leader election hooks exist
+        self._coord.unwatch_elected_as_leader(self.group_id, self._set_event)
+        self.assertEqual(0, len(self._coord._hooks_elected_leader))
+
     def test_get_lock(self):
         lock = self._coord.get_lock(self._get_random_uuid())
         self.assertTrue(lock.acquire())
