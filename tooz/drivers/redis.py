@@ -98,7 +98,8 @@ class RedisLock(locking.Lock):
                 self._lock.extend(self._lock.timeout)
 
 
-class RedisDriver(coordination.CoordinationDriver):
+class RedisDriver(coordination.CoordinationDriver,
+                  coordination._RunWatchersMixin):
     """Redis provides a few nice benefits that act as a poormans zookeeper.
 
     It **is** fully functional and implements all of the coordination
@@ -677,39 +678,7 @@ class RedisDriver(coordination.CoordinationDriver):
     def run_watchers(self, timeout=None):
         w = timeutils.StopWatch(duration=timeout)
         w.start()
-        result = []
-        leftover_timeout = w.leftover(return_none=True)
-        known_groups = self.get_groups().get(timeout=leftover_timeout)
-        for group_id in known_groups:
-            leftover_timeout = w.leftover(return_none=True)
-            try:
-                group_members_fut = self.get_members(group_id)
-                group_members = group_members_fut.get(timeout=leftover_timeout)
-            except coordination.GroupNotCreated:
-                group_members = set()
-            else:
-                group_members = set(group_members)
-            # I was booted out...
-            #
-            # TODO(harlowja): perhaps we should have a way to notify
-            # watchers that this has happened (the below mechanism will
-            # also do this, but it might be better to have a separate
-            # way when 'self' membership is lost)?
-            if (group_id in self._joined_groups and
-                    self._member_id not in group_members):
-                self._joined_groups.discard(group_id)
-            old_group_members = self._group_members.get(group_id, set())
-            for member_id in (group_members - old_group_members):
-                result.extend(
-                    self._hooks_join_group[group_id].run(
-                        coordination.MemberJoinedGroup(group_id,
-                                                       member_id)))
-            for member_id in (old_group_members - group_members):
-                result.extend(
-                    self._hooks_leave_group[group_id].run(
-                        coordination.MemberLeftGroup(group_id,
-                                                     member_id)))
-            self._group_members[group_id] = group_members
+        result = super(RedisDriver, self).run_watchers(timeout=timeout)
         self._run_leadership(w)
         return result
 

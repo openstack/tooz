@@ -20,7 +20,6 @@ import logging
 import socket
 
 from concurrent import futures
-from oslo_utils import timeutils
 from pymemcache import client as pymemcache_client
 import six
 
@@ -115,7 +114,8 @@ class MemcachedLock(locking.Lock):
         return self.coord.client.get(self.name)
 
 
-class MemcachedDriver(coordination.CoordinationDriver):
+class MemcachedDriver(coordination.CoordinationDriver,
+                      coordination._RunWatchersMixin):
     """A `memcached`_ based driver.
 
     This driver users `memcached`_ concepts to provide the coordination driver
@@ -150,7 +150,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
         options = utils.collapse(options)
         self._options = options
         self._member_id = member_id
-        self._groups = set()
+        self._joined_groups = set()
         self._executor = None
         self.host = (parsed_url.hostname or "localhost",
                      parsed_url.port or 11211)
@@ -204,7 +204,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
         for lock in list(self._acquired_locks):
             lock.release()
         self.client.delete(self._encode_member_id(self._member_id))
-        for g in list(self._groups):
+        for g in list(self._joined_groups):
             try:
                 self.leave_group(g).get()
             except (coordination.MemberNotJoined,
@@ -298,7 +298,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
             if not self.client.cas(encoded_group, group_members, cas):
                 # It changed, let's try again
                 raise _retry.Retry
-            self._groups.add(group_id)
+            self._joined_groups.add(group_id)
 
         return MemcachedFutureResult(self._executor.submit(_join_group))
 
@@ -317,7 +317,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
             if not self.client.cas(encoded_group, group_members, cas):
                 # It changed, let's try again
                 raise _retry.Retry
-            self._groups.discard(group_id)
+            self._joined_groups.discard(group_id)
 
         return MemcachedFutureResult(self._executor.submit(_leave_group))
 
@@ -460,37 +460,7 @@ class MemcachedDriver(coordination.CoordinationDriver):
                              self.leader_timeout)
 
     @_translate_failures
-    def run_watchers(self, timeout=None):
-        w = timeutils.StopWatch(duration=timeout)
-        w.start()
-        leftover_timeout = w.leftover(return_none=True)
-        known_groups = self.get_groups().get(timeout=leftover_timeout)
-        result = []
-        for group_id in known_groups:
-            leftover_timeout = w.leftover(return_none=True)
-            try:
-                group_members_fut = self.get_members(group_id)
-                group_members = group_members_fut.get(timeout=leftover_timeout)
-            except coordination.GroupNotCreated:
-                group_members = set()
-            else:
-                group_members = set(group_members)
-            old_group_members = self._group_members[group_id]
-
-            for member_id in (group_members - old_group_members):
-                result.extend(
-                    self._hooks_join_group[group_id].run(
-                        coordination.MemberJoinedGroup(group_id,
-                                                       member_id)))
-
-            for member_id in (old_group_members - group_members):
-                result.extend(
-                    self._hooks_leave_group[group_id].run(
-                        coordination.MemberLeftGroup(group_id,
-                                                     member_id)))
-
-            self._group_members[group_id] = group_members
-
+    def _run_leadership(self):
         for group_id, hooks in six.iteritems(self._hooks_elected_leader):
             # Try to grab the lock, if that fails, that means someone has it
             # already.
@@ -501,6 +471,9 @@ class MemcachedDriver(coordination.CoordinationDriver):
                     group_id,
                     self._member_id))
 
+    def run_watchers(self, timeout=None):
+        result = super(MemcachedDriver, self).run_watchers(timeout=timeout)
+        self._run_leadership()
         return result
 
 

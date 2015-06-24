@@ -110,7 +110,8 @@ class FileLock(locking.Lock):
             LOG.warn("Unreleased lock %s garbage collected", self.name)
 
 
-class FileDriver(coordination.CoordinationDriver):
+class FileDriver(coordination.CoordinationDriver,
+                 coordination._RunWatchersMixin):
     """A file based driver.
 
     This driver uses files and directories (and associated file locks) to
@@ -400,38 +401,6 @@ class FileDriver(coordination.CoordinationDriver):
     @staticmethod
     def unwatch_elected_as_leader(group_id, callback):
         raise tooz.NotImplemented
-
-    def run_watchers(self, timeout=None):
-        w = timeutils.StopWatch(duration=timeout)
-        w.start()
-        leftover_timeout = w.leftover(return_none=True)
-        known_groups = self.get_groups().get(timeout=leftover_timeout)
-        result = []
-        for group_id in known_groups:
-            leftover_timeout = w.leftover(return_none=True)
-            try:
-                group_members_fut = self.get_members(group_id)
-                group_members = group_members_fut.get(timeout=leftover_timeout)
-            except coordination.GroupNotCreated:
-                group_members = set()
-            else:
-                group_members = set(group_members)
-            if (group_id in self._joined_groups and
-                    self._member_id not in group_members):
-                self._joined_groups.discard(group_id)
-            old_group_members = self._group_members.get(group_id, set())
-            for member_id in (group_members - old_group_members):
-                result.extend(
-                    self._hooks_join_group[group_id].run(
-                        coordination.MemberJoinedGroup(group_id,
-                                                       member_id)))
-            for member_id in (old_group_members - group_members):
-                result.extend(
-                    self._hooks_leave_group[group_id].run(
-                        coordination.MemberLeftGroup(group_id,
-                                                     member_id)))
-            self._group_members[group_id] = group_members
-        return result
 
 
 class FileFutureResult(coordination.CoordAsyncResult):
