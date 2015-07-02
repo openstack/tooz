@@ -110,8 +110,8 @@ class FileLock(locking.Lock):
             LOG.warn("Unreleased lock %s garbage collected", self.name)
 
 
-class FileDriver(coordination.CoordinationDriver,
-                 coordination._RunWatchersMixin):
+class FileDriver(coordination._RunWatchersMixin,
+                 coordination.CoordinationDriver):
     """A file based driver.
 
     This driver uses files and directories (and associated file locks) to

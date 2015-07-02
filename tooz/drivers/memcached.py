@@ -114,8 +114,8 @@ class MemcachedLock(locking.Lock):
         return self.coord.client.get(self.name)
 
 
-class MemcachedDriver(coordination.CoordinationDriver,
-                      coordination._RunWatchersMixin):
+class MemcachedDriver(coordination._RunWatchersMixin,
+                      coordination.CoordinationDriver):
     """A `memcached`_ based driver.
 
     This driver users `memcached`_ concepts to provide the coordination driver

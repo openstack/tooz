@@ -98,8 +98,8 @@ class RedisLock(locking.Lock):
                 self._lock.extend(self._lock.timeout)
 
 
-class RedisDriver(coordination.CoordinationDriver,
-                  coordination._RunWatchersMixin):
+class RedisDriver(coordination._RunWatchersMixin,
+                  coordination.CoordinationDriver):
     """Redis provides a few nice benefits that act as a poormans zookeeper.
 
     It **is** fully functional and implements all of the coordination

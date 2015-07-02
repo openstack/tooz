@@ -69,3 +69,16 @@ class TestMemcacheDriverFailures(testcase.TestCase):
         coord.start()
         mock_client.set.side_effect = socket.timeout('timed-out')
         self.assertRaises(coordination.ToozConnectionError, coord.heartbeat)
+
+    @mock.patch('tooz.coordination._RunWatchersMixin.run_watchers',
+                autospec=True)
+    @mock.patch('pymemcache.client.PooledClient')
+    def test_client_run_watchers_mixin(self, mock_client_cls,
+                                       mock_run_watchers):
+        mock_client = mock.MagicMock()
+        mock_client_cls.return_value = mock_client
+        member_id = str(uuid.uuid4()).encode('ascii')
+        coord = coordination.get_coordinator(self.FAKE_URL, member_id)
+        coord.start()
+        coord.run_watchers()
+        self.assertTrue(mock_run_watchers.called)
