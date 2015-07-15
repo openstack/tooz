@@ -2,10 +2,11 @@
 # of appearance. Changing the order has an impact on the overall integration
 # process, which may cause wedges in the gate later.
 
+hacking>=0.10.0,<0.11
 pep8==1.5.7
 pyflakes==0.8.1
 flake8<=2.4.1,>=2.2.4
-discover
+doc8 # Apache-2.0
 mock>=1.1;python_version!='2.6'
 mock==1.0.1;python_version=='2.6'
 sphinx!=1.2.0,!=1.3b1,<1.3,>=1.1.2
