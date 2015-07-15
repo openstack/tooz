@@ -2,7 +2,7 @@
 # of appearance. Changing the order has an impact on the overall integration
 # process, which may cause wedges in the gate later.
 
-hacking>=0.10.0,<0.11
+hacking<0.11,>=0.10.0
 pep8==1.5.7
 pyflakes==0.8.1
 flake8<=2.4.1,>=2.2.4
