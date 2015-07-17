@@ -25,7 +25,11 @@ class Lock(object):
     def __init__(self, name):
         if not name:
             raise ValueError("Locks must be provided a name")
-        self.name = name
+        self._name = name
+
+    @property
+    def name(self):
+        return self._name
 
     def __enter__(self):
         self.acquire()

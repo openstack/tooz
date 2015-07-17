@@ -726,6 +726,11 @@ class TestAPI(testscenarios.TestWithScenarios,
         self.assertFalse(self._coord.is_started)
         self._coord.start()
 
+    def do_test_name_property(self):
+        name = self._get_random_uuid()
+        lock = self._coord.get_lock(name)
+        self.assertEqual(name, lock.name)
+
     @staticmethod
     def _get_random_uuid():
         return str(uuid.uuid4()).encode('ascii')
