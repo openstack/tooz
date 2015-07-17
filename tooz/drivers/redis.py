@@ -56,16 +56,13 @@ def _translate_failures():
 
 class RedisLock(locking.Lock):
     def __init__(self, coord, client, name, timeout):
-        self._name = "%s_%s_lock" % (coord.namespace, six.text_type(name))
-        self._lock = redis_locks.LuaLock(client, self._name,
+        name = "%s_%s_lock" % (coord.namespace, six.text_type(name))
+        super(RedisLock, self).__init__(name)
+        self._lock = redis_locks.LuaLock(client, name,
                                          timeout=timeout,
                                          thread_local=False)
         self._coord = coord
-        self._acquired = False
-
-    @property
-    def name(self):
-        return self._name
+        self.acquired = False
 
     def acquire(self, blocking=True):
         if blocking is True or blocking is False:
@@ -74,14 +71,14 @@ class RedisLock(locking.Lock):
             blocking_timeout = float(blocking)
             blocking = True
         with _translate_failures():
-            self._acquired = self._lock.acquire(
+            self.acquired = self._lock.acquire(
                 blocking=blocking, blocking_timeout=blocking_timeout)
-            if self._acquired:
+            if self.acquired:
                 self._coord._acquired_locks.add(self)
-            return self._acquired
+            return self.acquired
 
     def release(self):
-        if not self._acquired:
+        if not self.acquired:
             return False
         with _translate_failures():
             try:
@@ -89,11 +86,11 @@ class RedisLock(locking.Lock):
             except exceptions.LockError:
                 return False
             self._coord._acquired_locks.discard(self)
-            self._acquired = False
+            self.acquired = False
             return True
 
     def heartbeat(self):
-        if self._acquired:
+        if self.acquired:
             with _translate_failures():
                 self._lock.extend(self._lock.timeout)
 
