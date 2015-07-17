@@ -172,6 +172,10 @@ class CoordinationDriver(object):
         """
         raise tooz.NotImplemented
 
+    @property
+    def is_started(self):
+        return self._started
+
     def start(self):
         """Start the service engine.
 

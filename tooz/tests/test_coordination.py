@@ -720,6 +720,12 @@ class TestAPI(testscenarios.TestWithScenarios,
         self.assertTrue(lock2.acquire(blocking=True))
         self.assertTrue(lock2.release())
 
+    def test_get_started_status(self):
+        self.assertTrue(self._coord.is_started)
+        self._coord.stop()
+        self.assertFalse(self._coord.is_started)
+        self._coord.start()
+
     @staticmethod
     def _get_random_uuid():
         return str(uuid.uuid4()).encode('ascii')
