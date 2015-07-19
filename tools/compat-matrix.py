@@ -71,7 +71,7 @@ print_header("Driver support", delim="-")
 print("")
 grouping_table = [
     [
-        "No",  # File
+        "Yes",  # File
         "No",  # IPC
         "Yes",  # Memcached
         "No",  # MySQL
@@ -106,7 +106,7 @@ leader_table = [
         "Yes",  # Memcached
         "No",  # MySQL
         "No",  # PostgreSQL
-        "No",  # Redis
+        "Yes",  # Redis
         "Yes",  # Zake
         "Yes",  # Zookeeper
     ],
