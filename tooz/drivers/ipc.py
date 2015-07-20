@@ -139,6 +139,7 @@ class IPCDriver(coordination.CoordinationDriver):
     def __init__(self, member_id, parsed_url, options):
         """Initialize the IPC driver."""
         super(IPCDriver, self).__init__()
+        self._executor = utils.ProxyExecutor.build("IPC", options)
 
     def _start(self):
         self._group_list = sysv_ipc.SharedMemory(
@@ -146,10 +147,10 @@ class IPCDriver(coordination.CoordinationDriver):
             sysv_ipc.IPC_CREAT,
             size=self._SEGMENT_SIZE)
         self._lock = self.get_lock(self._INTERNAL_LOCK_NAME)
-        self._executor = futures.ThreadPoolExecutor(max_workers=1)
+        self._executor.start()
 
     def _stop(self):
-        self._executor.shutdown(wait=True)
+        self._executor.stop()
         try:
             self._group_list.detach()
             self._group_list.remove()

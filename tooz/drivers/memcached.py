@@ -151,7 +151,7 @@ class MemcachedDriver(coordination._RunWatchersMixin,
         self._options = options
         self._member_id = member_id
         self._joined_groups = set()
-        self._executor = None
+        self._executor = utils.ProxyExecutor.build("Memcached", options)
         self.host = (parsed_url.hostname or "localhost",
                      parsed_url.port or 11211)
         default_timeout = options.get('timeout', self.DEFAULT_TIMEOUT)
@@ -197,7 +197,7 @@ class MemcachedDriver(coordination._RunWatchersMixin,
         # method and only connect once you do an operation.
         self.heartbeat()
         self._group_members = collections.defaultdict(set)
-        self._executor = futures.ThreadPoolExecutor(max_workers=1)
+        self._executor.start()
 
     @_translate_failures
     def _stop(self):
@@ -213,9 +213,7 @@ class MemcachedDriver(coordination._RunWatchersMixin,
                 pass
             except coordination.ToozError:
                 LOG.warning("Unable to leave group '%s'", g, exc_info=True)
-        if self._executor is not None:
-            self._executor.shutdown(wait=True)
-            self._executor = None
+        self._executor.stop()
         self.client.close()
 
     def _encode_group_id(self, group_id):

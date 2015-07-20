@@ -14,8 +14,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from concurrent import futures
-
 import contextlib
 import datetime
 import errno
@@ -24,6 +22,8 @@ import logging
 import os
 import shutil
 import threading
+
+from concurrent import futures
 
 import fasteners
 from oslo_utils import timeutils
@@ -133,6 +133,7 @@ class FileDriver(coordination._RunWatchersMixin,
         super(FileDriver, self).__init__()
         self._member_id = member_id
         self._dir = parsed_url.path
+        self._executor = utils.ProxyExecutor.build("File", options)
         self._group_dir = os.path.join(self._dir, 'groups')
         self._driver_lock_path = os.path.join(self._dir, '.driver_lock')
         self._driver_lock = locking.SharedWeakLockHelper(
@@ -140,7 +141,6 @@ class FileDriver(coordination._RunWatchersMixin,
         self._reserved_dirs = [self._dir, self._group_dir]
         self._reserved_paths = list(self._reserved_dirs)
         self._reserved_paths.append(self._driver_lock_path)
-        self._executor = None
         self._joined_groups = set()
         self._safe_member_id = self._make_filesystem_safe(member_id)
 
@@ -159,25 +159,12 @@ class FileDriver(coordination._RunWatchersMixin,
     def _start(self):
         for a_dir in self._reserved_dirs:
             utils.ensure_tree(a_dir)
-        self._executor = futures.ThreadPoolExecutor(max_workers=1)
+        self._executor.start()
 
     def _stop(self):
         while self._joined_groups:
             self.leave_group(self._joined_groups.pop())
-        if self._executor is not None:
-            self._executor.shutdown(wait=True)
-            self._executor = None
-
-    def _submit(self, cb, *args, **kwargs):
-        executor = self._executor
-        if executor is None:
-            raise coordination.ToozError("File driver has not been started")
-        else:
-            try:
-                return executor.submit(cb, *args, **kwargs)
-            except RuntimeError:
-                raise coordination.ToozError("File driver asynchronous"
-                                             " executor has been shutdown")
+        self._executor.stop()
 
     def create_group(self, group_id):
         safe_group_id = self._make_filesystem_safe(group_id)
@@ -197,7 +184,7 @@ class FileDriver(coordination._RunWatchersMixin,
                 with open(group_meta_path, "wb") as fh:
                     fh.write(details_blob)
 
-        fut = self._submit(_do_create_group)
+        fut = self._executor.submit(_do_create_group)
         return FileFutureResult(fut)
 
     def join_group(self, group_id, capabilities=b""):
@@ -222,7 +209,7 @@ class FileDriver(coordination._RunWatchersMixin,
                 fh.write(details_blob)
             self._joined_groups.add(group_id)
 
-        fut = self._submit(_do_join_group)
+        fut = self._executor.submit(_do_join_group)
         return FileFutureResult(fut)
 
     def leave_group(self, group_id):
@@ -245,7 +232,7 @@ class FileDriver(coordination._RunWatchersMixin,
             else:
                 self._joined_groups.discard(group_id)
 
-        fut = self._submit(_do_leave_group)
+        fut = self._executor.submit(_do_leave_group)
         return FileFutureResult(fut)
 
     def get_members(self, group_id):
@@ -288,7 +275,7 @@ class FileDriver(coordination._RunWatchersMixin,
                         members.append(member_id)
             return members
 
-        fut = self._submit(_do_get_members)
+        fut = self._executor.submit(_do_get_members)
         return FileFutureResult(fut)
 
     def get_member_capabilities(self, group_id, member_id):
@@ -319,7 +306,7 @@ class FileDriver(coordination._RunWatchersMixin,
                                                              type(details)))
                 return details["capabilities"]
 
-        fut = self._submit(_do_get_member_capabilities)
+        fut = self._executor.submit(_do_get_member_capabilities)
         return FileFutureResult(fut)
 
     def delete_group(self, group_id):
@@ -345,7 +332,7 @@ class FileDriver(coordination._RunWatchersMixin,
                         if e.errno != errno.ENOENT:
                             raise
 
-        fut = self._submit(_do_delete_group)
+        fut = self._executor.submit(_do_delete_group)
         return FileFutureResult(fut)
 
     def get_groups(self):
@@ -372,7 +359,7 @@ class FileDriver(coordination._RunWatchersMixin,
                         raise
             return groups
 
-        fut = self._submit(_do_get_groups)
+        fut = self._executor.submit(_do_get_groups)
         return FileFutureResult(fut)
 
     def _init_watch_group(self, group_id):

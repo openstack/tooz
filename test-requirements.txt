@@ -25,3 +25,6 @@ sysv-ipc>=0.6.8 # BSD License
 kazoo>=2.2
 pymemcache>=1.2.9 # Apache 2.0 License
 redis>=2.10.0
+
+# Ensure that the eventlet executor continues to operate...
+eventlet>=0.17.4
