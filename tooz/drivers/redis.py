@@ -311,7 +311,7 @@ return 1
         self._member_id = self._to_binary(member_id)
         self._acquired_locks = set()
         self._joined_groups = set()
-        self._executor = None
+        self._executor = utils.ProxyExecutor.build("Redis", options)
         self._started = False
         self._server_info = {}
         self._scripts = {}
@@ -403,7 +403,7 @@ return 1
         return redis.StrictRedis(**kwargs)
 
     def _start(self):
-        self._executor = futures.ThreadPoolExecutor(max_workers=1)
+        self._executor.start()
         try:
             self._client = self._make_client(self._parsed_url, self._options,
                                              self.timeout)
@@ -505,9 +505,7 @@ return 1
             except coordination.ToozError:
                 LOG.warning("Unable to leave group '%s'", group_id,
                             exc_info=True)
-        if self._executor is not None:
-            self._executor.shutdown(wait=True)
-            self._executor = None
+        self._executor.stop()
         if self._client is not None:
             # Make sure we no longer exist...
             beat_id = self._encode_beat_id(self._member_id)
@@ -527,11 +525,7 @@ return 1
     def _submit(self, cb, *args, **kwargs):
         if not self._started:
             raise coordination.ToozError("Redis driver has not been started")
-        try:
-            return self._executor.submit(cb, *args, **kwargs)
-        except RuntimeError:
-            raise coordination.ToozError("Redis driver asynchronous executor"
-                                         " has been shutdown")
+        return self._executor.submit(cb, *args, **kwargs)
 
     def _get_script(self, script_key):
         try:

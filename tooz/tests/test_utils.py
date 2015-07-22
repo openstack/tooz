@@ -18,10 +18,63 @@
 import os
 import tempfile
 
+import futurist
 import six
 from testtools import testcase
 
+from tooz import coordination
 from tooz import utils
+
+
+class TestProxyExecutor(testcase.TestCase):
+    def test_fetch_check_executor(self):
+        try_options = [
+            ({'executor': 'sync'}, futurist.SynchronousExecutor),
+            ({'executor': 'thread'}, futurist.ThreadPoolExecutor),
+            ({'executor': 'greenthread'}, futurist.GreenThreadPoolExecutor),
+        ]
+        for options, expected_cls in try_options:
+            executor = utils.ProxyExecutor.build("test", options)
+            self.assertTrue(executor.internally_owned)
+
+            executor.start()
+            self.assertTrue(executor.started)
+            self.assertIsInstance(executor.executor, expected_cls)
+
+            executor.stop()
+            self.assertFalse(executor.started)
+
+    def test_fetch_default_executor(self):
+        executor = utils.ProxyExecutor.build("test", {})
+        executor.start()
+        try:
+            self.assertIsInstance(executor.executor,
+                                  futurist.ThreadPoolExecutor)
+        finally:
+            executor.stop()
+
+    def test_given_executor(self):
+        backing_executor = futurist.SynchronousExecutor()
+        options = {'executor': backing_executor}
+        executor = utils.ProxyExecutor.build("test", options)
+        executor.start()
+        try:
+            self.assertIs(backing_executor, executor.executor)
+        finally:
+            executor.stop()
+        # The backing executor should not be shutoff...
+        self.assertTrue(backing_executor.alive)
+
+    def test_fetch_unknown_executor(self):
+        options = {'executor': 'huh'}
+        self.assertRaises(coordination.ToozError,
+                          utils.ProxyExecutor.build, 'test',
+                          options)
+
+    def test_no_submit_stopped(self):
+        executor = utils.ProxyExecutor.build("test", {})
+        self.assertRaises(coordination.ToozError,
+                          executor.submit, lambda: None)
 
 
 class TestUtilsSafePath(testcase.TestCase):
