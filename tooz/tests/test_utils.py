@@ -31,7 +31,6 @@ class TestProxyExecutor(testcase.TestCase):
         try_options = [
             ({'executor': 'sync'}, futurist.SynchronousExecutor),
             ({'executor': 'thread'}, futurist.ThreadPoolExecutor),
-            ({'executor': 'greenthread'}, futurist.GreenThreadPoolExecutor),
         ]
         for options, expected_cls in try_options:
             executor = utils.ProxyExecutor.build("test", options)
@@ -52,18 +51,6 @@ class TestProxyExecutor(testcase.TestCase):
                                   futurist.ThreadPoolExecutor)
         finally:
             executor.stop()
-
-    def test_given_executor(self):
-        backing_executor = futurist.SynchronousExecutor()
-        options = {'executor': backing_executor}
-        executor = utils.ProxyExecutor.build("test", options)
-        executor.start()
-        try:
-            self.assertIs(backing_executor, executor.executor)
-        finally:
-            executor.stop()
-        # The backing executor should not be shutoff...
-        self.assertTrue(backing_executor.alive)
 
     def test_fetch_unknown_executor(self):
         options = {'executor': 'huh'}
