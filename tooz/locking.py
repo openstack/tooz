@@ -19,6 +19,8 @@ import six
 import threading
 import weakref
 
+from tooz import coordination
+
 
 @six.add_metaclass(abc.ABCMeta)
 class Lock(object):
@@ -32,7 +34,12 @@ class Lock(object):
         return self._name
 
     def __enter__(self):
-        self.acquire()
+        acquired = self.acquire()
+        if not acquired:
+            msg = u'Acquiring lock %s failed' % self.name
+            raise coordination.LockAcquireFailed(msg)
+
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.release()
