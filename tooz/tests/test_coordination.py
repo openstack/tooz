@@ -699,6 +699,47 @@ class TestAPI(testscenarios.TestWithScenarios,
         with lock as returned_lock:
             self.assertEqual(lock, returned_lock)
 
+    def test_lock_context_manager_acquire_no_argument(self):
+        name = self._get_random_uuid()
+        lock1 = self._coord.get_lock(name)
+        lock2 = self._coord.get_lock(name)
+        with lock1():
+            self.assertFalse(lock2.acquire(blocking=False))
+
+    def test_lock_context_manager_acquire_argument_return_value(self):
+        name = self._get_random_uuid()
+        blocking_value = 10.12
+        lock = self._coord.get_lock(name)
+        with lock(blocking_value) as returned_lock:
+            self.assertEqual(lock, returned_lock)
+
+    def test_lock_context_manager_acquire_argument_release_within(self):
+        name = self._get_random_uuid()
+        blocking_value = 10.12
+        lock = self._coord.get_lock(name)
+        with lock(blocking_value) as returned_lock:
+            self.assertTrue(returned_lock.release())
+
+    def test_lock_context_manager_acquire_argument(self):
+        name = self._get_random_uuid()
+        blocking_value = 10.12
+        lock = self._coord.get_lock(name)
+        with mock.patch.object(lock, 'acquire', wraps=True, autospec=True) as \
+                mock_acquire:
+            with lock(blocking_value):
+                mock_acquire.assert_called_once_with(blocking_value)
+
+    def test_lock_context_manager_acquire_argument_timeout(self):
+        name = self._get_random_uuid()
+        lock1 = self._coord.get_lock(name)
+        lock2 = self._coord.get_lock(name)
+        with lock1:
+            try:
+                with lock2(False):
+                    self.fail('Lock acquire should have failed')
+            except tooz.coordination.LockAcquireFailed:
+                pass
+
     def test_get_lock_locked_twice(self):
         name = self._get_random_uuid()
         lock = self._coord.get_lock(name)

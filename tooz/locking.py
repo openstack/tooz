@@ -22,6 +22,18 @@ import weakref
 from tooz import coordination
 
 
+class _LockProxy(object):
+    def __init__(self, lock, blocking=True):
+        self.lock = lock
+        self.blocking = blocking
+
+    def __enter__(self):
+        return self.lock.__enter__(self.blocking)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.lock.__exit__(exc_type, exc_val, exc_tb)
+
+
 @six.add_metaclass(abc.ABCMeta)
 class Lock(object):
     def __init__(self, name):
@@ -33,8 +45,11 @@ class Lock(object):
     def name(self):
         return self._name
 
-    def __enter__(self):
-        acquired = self.acquire()
+    def __call__(self, blocking=True):
+        return _LockProxy(self, blocking)
+
+    def __enter__(self, blocking=True):
+        acquired = self.acquire(blocking)
         if not acquired:
             msg = u'Acquiring lock %s failed' % self.name
             raise coordination.LockAcquireFailed(msg)
