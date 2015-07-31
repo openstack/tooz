@@ -436,6 +436,10 @@ class OperationTimedOut(ToozError):
     """Exception raised when an operation times out."""
 
 
+class LockAcquireFailed(ToozError):
+    """Exception raised when a lock acquire fails in a context manager."""
+
+
 class GroupNotCreated(ToozError):
     """Exception raised when the caller request a group which does
     not exist.

@@ -21,6 +21,7 @@ import uuid
 
 from concurrent import futures
 import fixtures
+import mock
 import testscenarios
 from testtools import matchers
 from testtools import testcase
@@ -681,6 +682,22 @@ class TestAPI(testscenarios.TestWithScenarios,
         lock2 = self._coord.get_lock(name)
         with lock1:
             self.assertFalse(lock2.acquire(blocking=False))
+
+    def test_get_lock_context_fails(self):
+        name = self._get_random_uuid()
+        lock1 = self._coord.get_lock(name)
+        lock2 = self._coord.get_lock(name)
+        with mock.patch.object(lock2, 'acquire', return_value=False):
+            with lock1:
+                self.assertRaises(
+                    tooz.coordination.LockAcquireFailed,
+                    lock2.__enter__)
+
+    def test_get_lock_context_check_value(self):
+        name = self._get_random_uuid()
+        lock = self._coord.get_lock(name)
+        with lock as returned_lock:
+            self.assertEqual(lock, returned_lock)
 
     def test_get_lock_locked_twice(self):
         name = self._get_random_uuid()
