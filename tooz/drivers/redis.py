@@ -23,7 +23,6 @@ import string
 
 from concurrent import futures
 from oslo_utils import strutils
-from oslo_utils import timeutils
 import redis
 from redis import exceptions
 from redis import lock as redis_locks
@@ -743,10 +742,8 @@ return 1
         name = self._encode_group_leader(group_id)
         return self.get_lock(name)
 
-    def _run_leadership(self, watch):
+    def run_elect_coordinator(self):
         for group_id, hooks in six.iteritems(self._hooks_elected_leader):
-            if watch.expired():
-                return
             leader_lock = self._get_leader_lock(group_id)
             if leader_lock.acquire(blocking=False):
                 # We got the lock
@@ -754,10 +751,8 @@ return 1
                                                      self._member_id))
 
     def run_watchers(self, timeout=None):
-        w = timeutils.StopWatch(duration=timeout)
-        w.start()
         result = super(RedisDriver, self).run_watchers(timeout=timeout)
-        self._run_leadership(w)
+        self.run_elect_coordinator()
         return result
 
 

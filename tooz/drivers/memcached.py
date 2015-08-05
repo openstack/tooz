@@ -458,7 +458,7 @@ class MemcachedDriver(coordination._RunWatchersMixin,
                              self.leader_timeout)
 
     @_translate_failures
-    def _run_leadership(self):
+    def run_elect_coordinator(self):
         for group_id, hooks in six.iteritems(self._hooks_elected_leader):
             # Try to grab the lock, if that fails, that means someone has it
             # already.
@@ -471,7 +471,7 @@ class MemcachedDriver(coordination._RunWatchersMixin,
 
     def run_watchers(self, timeout=None):
         result = super(MemcachedDriver, self).run_watchers(timeout=timeout)
-        self._run_leadership()
+        self.run_elect_coordinator()
         return result
 
 

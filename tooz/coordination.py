@@ -78,7 +78,16 @@ class CoordinationDriver(object):
 
     @staticmethod
     def run_watchers(timeout=None):
-        """Run the watchers callback."""
+        """Run the watchers callback.
+
+        This may also activate :py:meth:`.run_elect_coordinator` (depending
+        on driver implementation).
+        """
+        raise tooz.NotImplemented
+
+    @staticmethod
+    def run_elect_coordinator():
+        """Try to leader elect this coordinator & activate hooks on success."""
         raise tooz.NotImplemented
 
     @abc.abstractmethod
