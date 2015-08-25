@@ -43,3 +43,9 @@ API, some of them have different properties:
 .. _redis: http://redis.io
 .. _postgresql: http://postgresql.org
 .. _mysql: http://mysql.org
+
+Backends
+========
+.. list-plugins:: tooz.backends
+   :detailed:
+
