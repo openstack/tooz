@@ -293,6 +293,19 @@ class CoordinationDriver(object):
         raise tooz.NotImplemented
 
     @staticmethod
+    def get_member_info(group_id, member_id):
+        """Return the statistics and capabilities of a member asynchronously.
+
+        :param group_id: the id of the group of the member
+        :type group_id: str
+        :param member_id: the id of the member
+        :type member_id: str
+        :returns: capabilities and statistics of a member
+        :rtype: CoordAsyncResult
+        """
+        raise tooz.NotImplemented
+
+    @staticmethod
     def update_capabilities(group_id, capabilities):
         """Update capabilities of the caller in the specified group
         asynchronously.
