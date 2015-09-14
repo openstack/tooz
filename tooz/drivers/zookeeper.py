@@ -20,7 +20,9 @@ import copy
 from kazoo import client
 from kazoo import exceptions
 from kazoo.protocol import paths
+from oslo_utils import strutils
 import six
+from six.moves import filter as compat_filter
 
 from tooz import coordination
 from tooz import locking
@@ -63,7 +65,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
 
     def __init__(self, member_id, parsed_url, options):
         super(BaseZooKeeperDriver, self).__init__()
-        options = utils.collapse(options)
+        options = utils.collapse(options, exclude=['hosts'])
         self._options = options
         self._member_id = member_id
         self.timeout = int(options.get('timeout', '10'))
@@ -324,6 +326,23 @@ class KazooDriver(BaseZooKeeperDriver):
     driver API(s). It stores data into `zookeeper`_ using znodes
     and `msgpack`_ encoded values.
 
+    To configure the client to your liking a subset of the options defined at
+    http://kazoo.readthedocs.org/en/latest/api/client.html
+    will be extracted from the coordinator url (or any provided options),
+    so that a specific coordinator can be created that will work for you.
+
+    Currently the following options will be proxied to the contained client:
+
+    ================  ===============================  ====================
+    Name              Source                           Default
+    ================  ===============================  ====================
+    hosts             url netloc + 'hosts' option key  localhost:2181
+    timeout           'timeout' options key            10.0 (kazoo default)
+    connection_retry  'connection_retry' options key   None
+    command_retry     'command_retry' options key      None
+    randomize_hosts   'randomize_hosts' options key    True
+    ================  ===============================  ====================
+
     .. _kazoo: http://kazoo.readthedocs.org/
     .. _zookeeper: http://zookeeper.apache.org/
     .. _msgpack: http://msgpack.org/
@@ -335,9 +354,23 @@ class KazooDriver(BaseZooKeeperDriver):
         self._member_id = member_id
         self._timeout_exception = self._coord.handler.timeout_exception
 
-    @classmethod
-    def _make_client(cls, parsed_url, options):
-        return client.KazooClient(hosts=parsed_url.netloc)
+    def _make_client(self, parsed_url, options):
+        # Creates a kazoo client,
+        # See: https://github.com/python-zk/kazoo/blob/2.2.1/kazoo/client.py
+        # for what options a client takes...
+        maybe_hosts = [parsed_url.netloc] + list(options.get('hosts', []))
+        hosts = list(compat_filter(None, maybe_hosts))
+        if not hosts:
+            hosts = ['localhost:2181']
+        randomize_hosts = options.get('randomize_hosts', True)
+        client_kwargs = {
+            'hosts': ",".join(hosts),
+            'timeout': float(options.get('timeout', self.timeout)),
+            'connection_retry': options.get('connection_retry'),
+            'command_retry': options.get('command_retry'),
+            'randomize_hosts': strutils.bool_from_string(randomize_hosts),
+        }
+        return client.KazooClient(**client_kwargs)
 
     def _watch_group(self, group_id):
         get_members_req = self.get_members(group_id)
