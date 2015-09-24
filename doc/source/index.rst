@@ -18,6 +18,14 @@ Contents
    tutorial/index
    developers
 
+Release Notes
+=============
+
+.. toctree::
+   :maxdepth: 1
+
+   history
+
 Indices and tables
 ==================
 
