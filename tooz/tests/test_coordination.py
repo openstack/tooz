@@ -226,6 +226,7 @@ class TestAPI(testscenarios.TestWithScenarios,
         capa = self._coord.get_member_capabilities(self.group_id,
                                                    self.member_id).get()
         self.assertEqual(capa, caps)
+        self.assertEqual(capa['type'], caps['type'])
 
     def test_get_member_capabilities_nonexistent_group(self):
         capa = self._coord.get_member_capabilities(self.group_id,
@@ -241,6 +242,44 @@ class TestAPI(testscenarios.TestWithScenarios,
                                                    self.member_id)
         self.assertRaises(tooz.coordination.MemberNotJoined,
                           capa.get)
+
+    def test_get_member_info(self):
+        self._coord.create_group(self.group_id).get()
+        self._coord.join_group(self.group_id, b"test_capabilities")
+
+        member_info = self._coord.get_member_info(self.group_id,
+                                                  self.member_id).get()
+        self.assertEqual(member_info['capabilities'], b"test_capabilities")
+
+    def test_get_member_info_complex(self):
+        self._coord.create_group(self.group_id).get()
+        caps = {
+            'type': 'warrior',
+            'abilities': ['fight', 'flight', 'double-hit-damage'],
+        }
+        member_info = {'capabilities': 'caps',
+                       'created_at': '0',
+                       'updated_at': '0'}
+        self._coord.join_group(self.group_id, caps)
+        member_info = self._coord.get_member_info(self.group_id,
+                                                  self.member_id).get()
+        self.assertEqual(member_info['capabilities'], caps)
+
+    def test_get_member_info_nonexistent_group(self):
+        member_info = self._coord.get_member_info(self.group_id,
+                                                  self.member_id)
+        # Drivers raise one of those depending on their capability
+        self.assertRaisesAny([tooz.coordination.MemberNotJoined,
+                              tooz.coordination.GroupNotCreated],
+                             member_info.get)
+
+    def test_get_member_info_nonjoined_member(self):
+        self._coord.create_group(self.group_id).get()
+        member_id = self._get_random_uuid()
+        member_info = self._coord.get_member_info(self.group_id,
+                                                  member_id)
+        self.assertRaises(tooz.coordination.MemberNotJoined,
+                          member_info.get)
 
     def test_update_capabilities(self):
         self._coord.create_group(self.group_id).get()

@@ -278,6 +278,39 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
                               timeout_exception=self._timeout_exception,
                               group_id=group_id, member_id=self._member_id)
 
+    @classmethod
+    def _get_member_info_handler(cls, async_result, timeout,
+                                 timeout_exception, group_id,
+                                 member_id):
+        try:
+            capabilities, znode_stats = async_result.get(block=True,
+                                                         timeout=timeout)
+        except timeout_exception as e:
+            coordination.raise_with_cause(coordination.OperationTimedOut,
+                                          utils.exception_message(e),
+                                          cause=e)
+        except exceptions.NoNodeError:
+            raise coordination.MemberNotJoined(group_id, member_id)
+        except exceptions.ZookeeperError as e:
+            coordination.raise_with_cause(coordination.ToozError,
+                                          utils.exception_message(e),
+                                          cause=e)
+        else:
+            member_info = {
+                'capabilities': cls._loads(capabilities),
+                'created_at': utils.millis_to_datetime(znode_stats.ctime),
+                'updated_at': utils.millis_to_datetime(znode_stats.mtime)
+            }
+            return member_info
+
+    def get_member_info(self, group_id, member_id):
+        member_path = self._path_member(group_id, member_id)
+        async_result = self._coord.get_async(member_path)
+        return ZooAsyncResult(async_result,
+                              self._get_member_info_handler,
+                              timeout_exception=self._timeout_exception,
+                              group_id=group_id, member_id=self._member_id)
+
     @staticmethod
     def _get_groups_handler(async_result, timeout, timeout_exception):
         try:
