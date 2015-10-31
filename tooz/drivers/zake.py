@@ -17,6 +17,7 @@ from __future__ import absolute_import
 from zake import fake_client
 from zake import fake_storage
 
+from tooz import coordination
 from tooz.drivers import zookeeper
 
 
@@ -29,6 +30,14 @@ class ZakeDriver(zookeeper.KazooDriver):
 
     .. _zake: https://pypi.python.org/pypi/zake
     .. _zookeeper: http://zookeeper.apache.org/
+    """
+
+    CHARACTERISTICS = (
+        coordination.Characteristics.DISTRIBUTED_ACROSS_THREADS,
+    )
+    """
+    Tuple of :py:class:`~tooz.coordination.Characteristics` introspectable
+    enum member(s) that can be used to interogate how this driver works.
     """
 
     # NOTE(harlowja): this creates a shared backend 'storage' layer that

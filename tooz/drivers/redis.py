@@ -160,6 +160,17 @@ class RedisDriver(coordination._RunWatchersMixin,
     .. _AOF: http://redis.io/topics/persistence
     """
 
+    CHARACTERISTICS = (
+        coordination.Characteristics.DISTRIBUTED_ACROSS_THREADS,
+        coordination.Characteristics.DISTRIBUTED_ACROSS_PROCESSES,
+        coordination.Characteristics.DISTRIBUTED_ACROSS_HOSTS,
+        coordination.Characteristics.CAUSAL,
+    )
+    """
+    Tuple of :py:class:`~tooz.coordination.Characteristics` introspectable
+    enum member(s) that can be used to interogate how this driver works.
+    """
+
     MIN_VERSION = version.LooseVersion("2.6.0")
     """
     The min redis version that this driver requires to operate with...

@@ -173,6 +173,17 @@ class MemcachedDriver(coordination._RunWatchersMixin,
     .. _msgpack: http://msgpack.org/
     """
 
+    CHARACTERISTICS = (
+        coordination.Characteristics.DISTRIBUTED_ACROSS_THREADS,
+        coordination.Characteristics.DISTRIBUTED_ACROSS_PROCESSES,
+        coordination.Characteristics.DISTRIBUTED_ACROSS_HOSTS,
+        coordination.Characteristics.CAUSAL,
+    )
+    """
+    Tuple of :py:class:`~tooz.coordination.Characteristics` introspectable
+    enum member(s) that can be used to interogate how this driver works.
+    """
+
     #: Key prefix attached to groups (used in name-spacing keys)
     GROUP_PREFIX = b'_TOOZ_GROUP_'
 

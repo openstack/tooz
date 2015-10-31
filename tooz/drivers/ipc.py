@@ -133,6 +133,15 @@ class IPCDriver(coordination.CoordinationDriver):
     .. _IPC: http://en.wikipedia.org/wiki/Inter-process_communication
     """
 
+    CHARACTERISTICS = (
+        coordination.Characteristics.DISTRIBUTED_ACROSS_THREADS,
+        coordination.Characteristics.DISTRIBUTED_ACROSS_PROCESSES,
+    )
+    """
+    Tuple of :py:class:`~tooz.coordination.Characteristics` introspectable
+    enum member(s) that can be used to interogate how this driver works.
+    """
+
     _SEGMENT_SIZE = 1024
     _GROUP_LIST_KEY = "GROUP_LIST"
     _GROUP_PROJECT = "_TOOZ_INTERNAL"
