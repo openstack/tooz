@@ -19,6 +19,8 @@ import copy
 
 from kazoo import client
 from kazoo import exceptions
+from kazoo.handlers import eventlet as eventlet_handler
+from kazoo.handlers import threading as threading_handler
 from kazoo.protocol import paths
 from oslo_utils import strutils
 import six
@@ -381,6 +383,16 @@ class KazooDriver(BaseZooKeeperDriver):
     .. _msgpack: http://msgpack.org/
     """
 
+    HANDLERS = {
+        'eventlet': eventlet_handler.SequentialEventletHandler,
+        'threading': threading_handler.SequentialThreadingHandler,
+    }
+    """
+    Restricted immutable dict of handler 'kinds' -> handler classes that
+    this driver can accept via 'handler' option key (the expected value for
+    this option is one of the keys in this dictionary).
+    """
+
     def __init__(self, member_id, parsed_url, options):
         super(KazooDriver, self).__init__(member_id, parsed_url, options)
         self._coord = self._make_client(parsed_url, self._options)
@@ -403,6 +415,16 @@ class KazooDriver(BaseZooKeeperDriver):
             'command_retry': options.get('command_retry'),
             'randomize_hosts': strutils.bool_from_string(randomize_hosts),
         }
+        handler_kind = options.get('handler')
+        if handler_kind:
+            try:
+                handler_cls = self.HANDLERS[handler_kind]
+            except KeyError:
+                raise ValueError("Unknown handler '%s' requested"
+                                 " valid handlers are %s"
+                                 % (handler_kind,
+                                    sorted(self.HANDLERS.keys())))
+            client_kwargs['handler'] = handler_cls()
         return client.KazooClient(**client_kwargs)
 
     def _watch_group(self, group_id):
