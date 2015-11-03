@@ -19,8 +19,12 @@ import copy
 
 from kazoo import client
 from kazoo import exceptions
+from kazoo.handlers import eventlet as eventlet_handler
+from kazoo.handlers import threading as threading_handler
 from kazoo.protocol import paths
+from oslo_utils import strutils
 import six
+from six.moves import filter as compat_filter
 
 from tooz import coordination
 from tooz.drivers import _retry
@@ -73,6 +77,8 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
 
     def __init__(self, member_id, parsed_url, options):
         super(BaseZooKeeperDriver, self).__init__()
+        options = utils.collapse(options, exclude=['hosts'])
+        self._options = options
         self._member_id = member_id
         self.timeout = int(options.get('timeout', ['10'])[-1])
 
@@ -291,15 +297,49 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
 class KazooDriver(BaseZooKeeperDriver):
     """The driver using the Kazoo client against real ZooKeeper servers."""
 
+    HANDLERS = {
+        'eventlet': eventlet_handler.SequentialEventletHandler,
+        'threading': threading_handler.SequentialThreadingHandler,
+    }
+    """
+    Restricted immutable dict of handler 'kinds' -> handler classes that
+    this driver can accept via 'handler' option key (the expected value for
+    this option is one of the keys in this dictionary).
+    """
+
     def __init__(self, member_id, parsed_url, options):
         super(KazooDriver, self).__init__(member_id, parsed_url, options)
-        self._coord = self._make_client(parsed_url, options)
+        self._coord = self._make_client(parsed_url, self._options)
         self._member_id = member_id
         self._timeout_exception = self._coord.handler.timeout_exception
 
-    @classmethod
-    def _make_client(cls, parsed_url, options):
-        return client.KazooClient(hosts=parsed_url.netloc)
+    def _make_client(self, parsed_url, options):
+        # Creates a kazoo client,
+        # See: https://github.com/python-zk/kazoo/blob/1.3.1/kazoo/client.py
+        # for what options a client takes...
+        maybe_hosts = [parsed_url.netloc] + list(options.get('hosts', []))
+        hosts = list(compat_filter(None, maybe_hosts))
+        if not hosts:
+            hosts = ['localhost:2181']
+        randomize_hosts = options.get('randomize_hosts', True)
+        client_kwargs = {
+            'hosts': ",".join(hosts),
+            'timeout': float(options.get('timeout', self.timeout)),
+            'connection_retry': options.get('connection_retry'),
+            'command_retry': options.get('command_retry'),
+            'randomize_hosts': strutils.bool_from_string(randomize_hosts),
+        }
+        handler_kind = options.get('handler')
+        if handler_kind:
+            try:
+                handler_cls = self.HANDLERS[handler_kind]
+            except KeyError:
+                raise ValueError("Unknown handler '%s' requested"
+                                 " valid handlers are %s"
+                                 % (handler_kind,
+                                    sorted(self.HANDLERS.keys())))
+            client_kwargs['handler'] = handler_cls()
+        return client.KazooClient(**client_kwargs)
 
     def _watch_group(self, group_id):
         get_members_req = self.get_members(group_id)

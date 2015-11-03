@@ -58,3 +58,31 @@ def loads(blob, excp_cls=coordination.ToozError):
         return msgpack.unpackb(blob, encoding='utf-8')
     except (msgpack.UnpackException, ValueError) as e:
         raise excp_cls(exception_message(e))
+
+
+def collapse(config, exclude=None, item_selector=None):
+    """Collapses config with keys and **list/tuple** values.
+    NOTE(harlowja): The last item/index from the list/tuple value is selected
+    be default as the new value (values that are not lists/tuples are left
+    alone). If the list/tuple value is empty (zero length), then no value
+    is set.
+    """
+    if not isinstance(config, dict):
+        raise TypeError("Unexpected config type, dict expected")
+    if not config:
+        return {}
+    if exclude is None:
+        exclude = set()
+    if item_selector is None:
+        item_selector = lambda items: items[-1]
+    collapsed = {}
+    for (k, v) in six.iteritems(config):
+        if isinstance(v, (tuple, list)):
+            if k in exclude:
+                collapsed[k] = v
+            else:
+                if len(v):
+                    collapsed[k] = item_selector(v)
+        else:
+            collapsed[k] = v
+    return collapsed
