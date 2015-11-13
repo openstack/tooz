@@ -61,7 +61,8 @@ class TestAPI(testscenarios.TestWithScenarios,
         ('zookeeper', {'url': os.getenv("TOOZ_TEST_ZOOKEEPER_URL"),
                        'bad_url': 'zookeeper://localhost:1'}),
         ('etcd', {'url': os.getenv("TOOZ_TEST_ETCD_URL"),
-                  'bad_url': 'etcd://localhost:1'})
+                  'bad_url': 'etcd://localhost:1'}),
+        ('consul', {'url': os.getenv("TOOZ_TEST_CONSUL_URL")}),
     ]
 
     def assertRaisesAny(self, exc_classes, callable_obj, *args, **kwargs):
