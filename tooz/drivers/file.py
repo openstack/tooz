@@ -70,6 +70,9 @@ class FileLock(locking.Lock):
         self._lock = fasteners.InterProcessLock(path)
         self._cond = threading.Condition()
 
+    def is_still_owner(self):
+        return self.acquired
+
     def acquire(self, blocking=True):
         timeout = None
         if not isinstance(blocking, bool):

@@ -62,7 +62,16 @@ class RedisLock(locking.Lock):
                                          timeout=timeout,
                                          thread_local=False)
         self._coord = coord
+        self._client = client
         self.acquired = False
+
+    def is_still_owner(self):
+        with _translate_failures():
+            lock_tok = self._lock.local.token
+            if not lock_tok:
+                return False
+            owner_tok = self._client.get(self.name)
+            return owner_tok == lock_tok
 
     def acquire(self, blocking=True):
         if blocking is True or blocking is False:
