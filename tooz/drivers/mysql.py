@@ -33,8 +33,8 @@ class MySQLLock(locking.Lock):
 
     def __init__(self, name, parsed_url, options):
         super(MySQLLock, self).__init__(name)
-        self._conn = MySQLDriver.get_connection(parsed_url, options)
         self.acquired = False
+        self._conn = MySQLDriver.get_connection(parsed_url, options)
 
     def acquire(self, blocking=True):
 
