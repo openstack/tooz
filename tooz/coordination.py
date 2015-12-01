@@ -64,6 +64,14 @@ class LeaderElected(Event):
 @six.add_metaclass(abc.ABCMeta)
 class CoordinationDriver(object):
 
+    requires_beating = False
+    """
+    Usage requirement that if true requires that the :py:meth:`~.heartbeat`
+    be called periodically (at a given rate) to avoid locks, sessions and
+    other from being automatically closed/discarded by the coordinators
+    backing store.
+    """
+
     def __init__(self):
         self._started = False
         self._hooks_join_group = collections.defaultdict(Hooks)
