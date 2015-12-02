@@ -130,8 +130,6 @@ class PostgresLock(locking.Lock):
                     else:
                         raise _retry.Retry
 
-        kwargs = _retry.RETRYING_KWARGS.copy()
-        kwargs['stop_max_delay'] = blocking
         return _lock()
 
     def release(self):
