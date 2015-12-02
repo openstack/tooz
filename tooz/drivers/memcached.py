@@ -132,12 +132,11 @@ class MemcachedLock(locking.Lock):
         # id and then do the delete and bail out if the session id is not
         # as expected but memcache doesn't seem to have any equivalent
         # capability.
-        if self.coord.client.delete(self.name, noreply=False):
-            self.acquired = False
+        if (self in self.coord._acquired_locks
+           and self.coord.client.delete(self.name, noreply=False)):
             self.coord._acquired_locks.remove(self)
             return True
-        else:
-            return False
+        return False
 
     @_translate_failures
     def heartbeat(self):

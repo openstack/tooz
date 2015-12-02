@@ -16,8 +16,6 @@
 import abc
 
 import six
-import threading
-import weakref
 
 import tooz
 from tooz import coordination
@@ -93,57 +91,3 @@ class Lock(object):
         :rtype: bool
 
         """
-
-
-class SharedWeakLockHelper(Lock):
-    """Helper for lock that need to rely on a state in memory and
-    be the same object across each coordinator.get_lock(...)
-    """
-
-    LOCKS_LOCK = threading.Lock()
-    ACQUIRED_LOCKS = dict()
-    RELEASED_LOCKS = weakref.WeakValueDictionary()
-
-    def __init__(self, namespace, lockclass, name, *args, **kwargs):
-        super(SharedWeakLockHelper, self).__init__(name)
-        self._lock_key = "%s:%s" % (namespace, name)
-        self._newlock = lambda: lockclass(
-            self.name, *args, **kwargs)
-
-    @property
-    def lock(self):
-        """Access the underlying lock object.
-
-        For internal usage only.
-        """
-        with self.LOCKS_LOCK:
-            try:
-                l = self.ACQUIRED_LOCKS[self._lock_key]
-            except KeyError:
-                l = self.RELEASED_LOCKS.setdefault(
-                    self._lock_key, self._newlock())
-            return l
-
-    def acquire(self, blocking=True):
-        l = self.lock
-        if l.acquire(blocking):
-            with self.LOCKS_LOCK:
-                self.RELEASED_LOCKS.pop(self._lock_key, None)
-                self.ACQUIRED_LOCKS[self._lock_key] = l
-            return True
-        return False
-
-    def release(self):
-        with self.LOCKS_LOCK:
-            try:
-                l = self.ACQUIRED_LOCKS.pop(self._lock_key)
-            except KeyError:
-                return False
-            else:
-                if l.release():
-                    self.RELEASED_LOCKS[self._lock_key] = l
-                    return True
-                else:
-                    # Put it back...
-                    self.ACQUIRED_LOCKS[self._lock_key] = l
-                    return False
