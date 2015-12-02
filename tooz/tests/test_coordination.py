@@ -700,7 +700,10 @@ class TestAPI(testscenarios.TestWithScenarios,
 
         def thread():
             with lock2:
-                self.assertFalse(lock1.acquire(blocking=False))
+                try:
+                    self.assertFalse(lock1.acquire(blocking=False))
+                except tooz.NotImplemented:
+                    pass
                 thread_locked.set()
             graceful_ending.set()
 
