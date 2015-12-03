@@ -56,11 +56,7 @@ class ZooKeeperLock(locking.Lock):
                                           cause=e)
 
     def acquire(self, blocking=True):
-        if isinstance(blocking, bool):
-            timeout = None
-        else:
-            blocking = True
-            timeout = float(blocking)
+        blocking, timeout = utils.convert_blocking(blocking)
         self.acquired = self._lock.acquire(blocking=blocking,
                                            timeout=timeout)
         return self.acquired

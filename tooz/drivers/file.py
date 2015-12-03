@@ -74,10 +74,7 @@ class FileLock(locking.Lock):
         return self.acquired
 
     def acquire(self, blocking=True):
-        timeout = None
-        if not isinstance(blocking, bool):
-            timeout = float(blocking)
-            blocking = True
+        blocking, timeout = utils.convert_blocking(blocking)
         watch = timeutils.StopWatch(duration=timeout)
         watch.start()
         while True:
