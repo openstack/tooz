@@ -145,6 +145,9 @@ class MemcachedDriver(coordination._RunWatchersMixin,
     #: String used to keep a key/member alive (until it next expires).
     STILL_ALIVE = b"It's alive!"
 
+    #: This driver requires constant periodic (heart) beatings.
+    requires_beating = True
+
     def __init__(self, member_id, parsed_url, options):
         super(MemcachedDriver, self).__init__()
         options = utils.collapse(options)
