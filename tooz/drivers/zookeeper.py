@@ -35,7 +35,25 @@ class ZooKeeperLock(locking.Lock):
     def __init__(self, name, lock):
         super(ZooKeeperLock, self).__init__(name)
         self._lock = lock
+        self._client = lock.client
         self.acquired = False
+
+    def is_still_owner(self):
+        if not self.acquired:
+            return False
+        try:
+            data, _znode = self._client.get(
+                paths.join(self._lock.path, self._lock.node))
+            return data == self._lock.data
+        except (self._client.handler.timeout_exception,
+                exceptions.ConnectionLoss,
+                exceptions.ConnectionDropped,
+                exceptions.NoNodeError):
+            return False
+        except exceptions.KazooException as e:
+            coordination.raise_with_cause(coordination.ToozError,
+                                          "operation error: %s" % (e),
+                                          cause=e)
 
     def acquire(self, blocking=True):
         if isinstance(blocking, bool):
@@ -542,11 +560,10 @@ class KazooDriver(BaseZooKeeperDriver):
         return ZooAsyncResult(None, lambda *args: leader)
 
     def get_lock(self, name):
-        return ZooKeeperLock(
-            name,
-            self._coord.Lock(
-                self.paths_join(b"/", self._namespace, b"locks", name),
-                self._member_id.decode('ascii')))
+        z_lock = self._coord.Lock(
+            self.paths_join(b"/", self._namespace, b"locks", name),
+            self._member_id.decode('ascii'))
+        return ZooKeeperLock(name, z_lock)
 
     def run_elect_coordinator(self):
         for group_id in six.iterkeys(self._hooks_elected_leader):

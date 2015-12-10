@@ -19,6 +19,7 @@ import six
 import threading
 import weakref
 
+import tooz
 from tooz import coordination
 
 
@@ -58,6 +59,15 @@ class Lock(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.release()
+
+    def is_still_owner(self):
+        """Checks if the lock is still owned by the acquiree.
+
+        :returns: returns true if still acquired (false if not) and
+                  false if the lock was never acquired in the first place
+                  or raises ``NotImplemented`` if not implemented.
+        """
+        raise tooz.NotImplemented
 
     @abc.abstractmethod
     def release(self):

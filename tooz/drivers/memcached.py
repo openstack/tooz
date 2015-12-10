@@ -72,6 +72,16 @@ class MemcachedLock(locking.Lock):
         super(MemcachedLock, self).__init__(self._LOCK_PREFIX + name)
         self.coord = coord
         self.timeout = timeout
+        self.acquired = False
+
+    def is_still_owner(self):
+        if not self.acquired:
+            return False
+        else:
+            owner = self.get_owner()
+            if owner is None:
+                return False
+            return owner == self.coord._member_id
 
     def acquire(self, blocking=True):
 
@@ -89,11 +99,15 @@ class MemcachedLock(locking.Lock):
                 return False
             raise _retry.Retry
 
-        return _acquire()
+        self.acquired = gotten = _acquire()
+        return gotten
 
     @_translate_failures
     def release(self):
+        if not self.acquired:
+            return False
         if self.coord.client.delete(self.name, noreply=False):
+            self.acquired = False
             self.coord._acquired_locks.remove(self)
             return True
         else:
@@ -102,12 +116,14 @@ class MemcachedLock(locking.Lock):
     @_translate_failures
     def heartbeat(self):
         """Keep the lock alive."""
-        poked = self.coord.client.touch(self.name,
-                                        expire=self.timeout,
-                                        noreply=False)
-        if not poked:
-            LOG.warn("Unable to heartbeat by updating key '%s' with extended"
-                     " expiry of %s seconds", self.name, self.timeout)
+        if self.acquired:
+            poked = self.coord.client.touch(self.name,
+                                            expire=self.timeout,
+                                            noreply=False)
+            if not poked:
+                LOG.warn("Unable to heartbeat by updating key '%s' with"
+                         " extended expiry of %s seconds", self.name,
+                         self.timeout)
 
     @_translate_failures
     def get_owner(self):
