@@ -106,6 +106,32 @@ class MemcachedLock(locking.Lock):
     def release(self):
         if not self.acquired:
             return False
+        # NOTE(harlowja): this has the potential to delete others locks
+        # especially if this key expired before the delete/release call is
+        # triggered.
+        #
+        # For example:
+        #
+        # 1. App #1 with coordinator 'A' acquires lock "b"
+        # 2. App #1 heartbeats every 10 seconds, expiry for lock let's
+        #    say is 11 seconds.
+        # 3. App #2 with coordinator also named 'A' blocks trying to get
+        #    lock "b" (let's say it retries attempts every 0.5 seconds)
+        # 4. App #1 is running behind a little bit, tries to heartbeat but
+        #    key has expired (log message is written); at this point app #1
+        #    doesn't own the lock anymore but it doesn't know that.
+        # 5. App #2 now retries and adds the key, and now it believes it
+        #    has the lock.
+        # 6. App #1 (still believing it has the lock) calls release, and
+        #    deletes app #2 lock, app #2 now doesn't own the lock anymore
+        #    but it doesn't know that and now app #(X + 1) can get it.
+        # 7. App #2 calls release (repeat #6 as many times as desired)
+        #
+        # Sadly I don't think memcache has the primitives to actually make
+        # this work, redis does because it has lua which can check a session
+        # id and then do the delete and bail out if the session id is not
+        # as expected but memcache doesn't seem to have any equivalent
+        # capability.
         if self.coord.client.delete(self.name, noreply=False):
             self.acquired = False
             self.coord._acquired_locks.remove(self)
