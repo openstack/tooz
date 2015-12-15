@@ -74,14 +74,10 @@ class RedisLock(locking.Lock):
             return owner_tok == lock_tok
 
     def acquire(self, blocking=True):
-        if blocking is True or blocking is False:
-            blocking_timeout = None
-        else:
-            blocking_timeout = float(blocking)
-            blocking = True
+        blocking, timeout = utils.convert_blocking(blocking)
         with _translate_failures():
             self.acquired = self._lock.acquire(
-                blocking=blocking, blocking_timeout=blocking_timeout)
+                blocking=blocking, blocking_timeout=timeout)
             if self.acquired:
                 self._coord._acquired_locks.add(self)
             return self.acquired
