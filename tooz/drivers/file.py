@@ -266,7 +266,7 @@ class FileDriver(coordination._RunWatchersMixin,
                     raise
             else:
                 for entry in entries:
-                    if entry == ".metadata":
+                    if not entry.endswith('.raw'):
                         continue
                     entry_path = os.path.join(group_dir, entry)
                     try:
