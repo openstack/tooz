@@ -122,9 +122,15 @@ class FileDriver(coordination._RunWatchersMixin,
     missing some functionality but in the future these not implemented API(s)
     will be filled in.
 
-    NOTE(harlowja): it does **not** automatically delete members from
-    groups of processes that have died, manual cleanup will be needed
-    for those types of failures.
+    General recommendations/usage considerations:
+
+    - It does **not** automatically delete members from
+      groups of processes that have died, manual cleanup will be needed
+      for those types of failures.
+
+    - It is **not** distributed (or recommended to be used in those
+      situations, so the developer using this should really take that into
+      account when applying this driver in there app).
     """
 
     HASH_ROUTINE = 'sha1'

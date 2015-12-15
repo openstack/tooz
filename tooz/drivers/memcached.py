@@ -139,6 +139,11 @@ class MemcachedDriver(coordination._RunWatchersMixin,
     all of the coordination driver API(s). It stores data into memcache
     using expiries and `msgpack`_ encoded values.
 
+    General recommendations/usage considerations:
+
+    - Memcache (without different backend technology) is a **cache** enough
+      said.
+
     .. _memcached: http://memcached.org/
     .. _msgpack: http://msgpack.org/
     """
