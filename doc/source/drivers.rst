@@ -4,48 +4,163 @@ Drivers
 
 Tooz is provided with several drivers implementing the provided coordination
 API. While all drivers provides the same set of features with respect to the
-API, some of them have different properties:
+API, some of them have different properties.
 
-* `zookeeper`_ is the reference implementation and provides the most solid
-  features as it's possible to build a cluster of ZooKeeper that is
-  resilient towards network partitions for example.
+Zookeeper
+---------
 
-* `memcached`_ is a basic implementation and provides little resiliency, though
-  it's much simpler to setup. A lot of the features provided in tooz are based
-  on timeout (heartbeats, locks, etc) so are less resilient than other
-  backends.
+**Driver:** :py:class:`tooz.drivers.zookeeper.KazooDriver`
 
-* `redis`_ is a basic implementation and provides reasonable resiliency
-  when used with redis-sentinel. A lot of the features provided in tooz are
-  based on timeout (heartbeats, locks, etc) so are less resilient than other
-  backends.
+**Entrypoint name:** ``zookeeper`` or ``kazoo``
 
-* `ipc` is based on Posix IPC and only implements a lock mechanism for now, and
-  some basic group primitives (with huge limitations). The lock can only be
-  distributed locally to a computer processes.
+**Summary:**
 
-* `file` is based on file and only implements a lock based on POSIX or Window
-  file locking for now. The lock can only be distributed locally to a computer
+The zookeeper is the reference implementation and provides the most solid
+features as it's possible to build a cluster of zookeeper servers that is
+resilient towards network partitions for example.
+
+**Test driver:** :py:class:`tooz.drivers.zake.ZakeDriver`
+
+**Test driver entrypoint name:** ``zake``
+
+Considerations
+~~~~~~~~~~~~~~
+
+- Primitives are based on sessions (and typically require careful selection
+  of session heartbeat periodicity and server side configuration of session
+  expiry).
+
+Memcached
+---------
+
+**Driver:** :py:class:`tooz.drivers.memcached.MemcachedDriver`
+
+**Entrypoint name:** ``memcached``
+
+**Summary:**
+
+The memcached driver is a basic implementation and provides little
+resiliency, though it's much simpler to setup. A lot of the features provided
+in tooz are based on timeout (heartbeats, locks, etc) so are less resilient
+than other backends.
+
+Considerations
+~~~~~~~~~~~~~~
+
+- Less resilient than other backends such as zookeeper and redis.
+- Primitives are often based on TTL(s) that may expire before
+  being renewed.
+- Lacks certain primitives (compare and delete) so certain functionality
+  is fragile and/or broken due to this.
+
+Redis
+-----
+
+**Driver:** :py:class:`tooz.drivers.redis.RedisDriver`
+
+**Entrypoint name:** ``redis``
+
+**Summary:**
+
+The redis driver is a basic implementation and provides reasonable resiliency
+when used with `redis-sentinel`_. A lot of the features provided in tooz are
+based on timeout (heartbeats, locks, etc) so are less resilient than other
+backends.
+
+Considerations
+~~~~~~~~~~~~~~
+
+- Less resilient than other backends such as zookeeper.
+- Primitives are often based on TTL(s) that may expire before
+  being renewed.
+
+IPC
+---
+
+**Driver:** :py:class:`tooz.drivers.ipc.IPCDriver`
+
+**Entrypoint name:** ``ipc``
+
+**Summary:**
+
+The IPC driver is based on Posix IPC API and implements a lock
+mechanism and some basic group primitives (with **huge**
+limitations).
+
+Considerations
+~~~~~~~~~~~~~~
+
+- The lock can **only** be distributed locally to a computer
   processes.
 
-* `zake`_ is a driver using a fake implementation of ZooKeeper and can be
-  used to use Tooz in your unit tests suite for example.
+File
+----
 
-* `postgresql`_ is a driver providing only distributed lock (for now)
-  and based on the PostgreSQL database server.
+**Driver:** :py:class:`tooz.drivers.file.FileDriver`
 
-* `mysql`_ is a driver providing only distributed lock (for now)
-  and based on the MySQL database server.
+**Entrypoint name:** ``file``
 
-.. _zookeeper: http://zookeeper.apache.org/
-.. _memcached: http://memcached.org/
-.. _zake: https://pypi.python.org/pypi/zake
-.. _redis: http://redis.io
-.. _postgresql: http://postgresql.org
-.. _mysql: http://mysql.org
+**Summary:**
 
-Backends
-========
-.. list-plugins:: tooz.backends
-   :detailed:
+The file driver is a **simple** driver based on files and directories. It
+implements a lock based on POSIX or Window file level locking
+mechanism and some basic group primitives (with **huge**
+limitations).
 
+Considerations
+~~~~~~~~~~~~~~
+
+- The lock can **only** be distributed locally to a computer processes.
+- Certain concepts provided by it are **not** crash tolerant.
+
+PostgreSQL
+----------
+
+**Driver:** :py:class:`tooz.drivers.pgsql.PostgresDriver`
+
+**Entrypoint name:** ``postgresql``
+
+**Summary:**
+
+The postgresql driver is a driver providing only a distributed lock (for now)
+and is based on the `PostgreSQL database server`_ and its API(s) that provide
+for `advisory locks`_ to be created and used by applications. When a lock is
+acquired it will release either when explicitly released or automatically when
+the database session ends (for example if the program using the lock crashes).
+
+Considerations
+~~~~~~~~~~~~~~
+
+- Lock that may be acquired restricted by
+  ``max_locks_per_transaction * (max_connections + max_prepared_transactions)``
+  upper bound (PostgreSQL server configuration settings).
+
+MySQL
+-----
+
+**Driver:**  :py:class:`tooz.drivers.mysql.MySQLDriver`
+
+**Entrypoint name:** ``mysql``
+
+**Summary:**
+
+The MySQL driver is a driver providing only distributed locks (for now)
+and is based on the `MySQL database server`_ supported `get_lock`_
+primitives. When a lock is acquired it will release either when explicitly
+released or automatically when the database session ends (for example if
+the program using the lock crashes).
+
+Considerations
+~~~~~~~~~~~~~~
+
+- Does **not** work correctly on some MySQL versions.
+- Does **not** work when MySQL replicates from one server to another (locks
+  are local to the server that they were created from).
+
+.. _advisory locks: http://www.postgresql.org/docs/8.2/interactive/\
+                    explicit-locking.html#ADVISORY-LOCKS
+.. _get_lock: http://dev.mysql.com/doc/refman/5.5/en/\
+              miscellaneous-functions.html#function_get-lock
+.. _PostgreSQL database server: http://postgresql.org
+.. _MySQL database server: http://mysql.org
+.. _redis-sentinel: http://redis.io/topics/sentinel
