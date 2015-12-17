@@ -124,6 +124,12 @@ class IPCDriver(coordination.CoordinationDriver):
     semantics and required API(s). It **is** missing some functionality but
     in the future these not implemented API(s) will be filled in.
 
+    General recommendations/usage considerations:
+
+    - It is **not** distributed (or recommended to be used in those
+      situations, so the developer using this should really take that into
+      account when applying this driver in there app).
+
     .. _IPC: http://en.wikipedia.org/wiki/Inter-process_communication
     """
 
