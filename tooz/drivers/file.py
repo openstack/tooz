@@ -26,6 +26,7 @@ import threading
 from concurrent import futures
 
 import fasteners
+import jsonschema
 from oslo_utils import timeutils
 import six
 
@@ -41,10 +42,51 @@ LOG = logging.getLogger(__name__)
 def _translate_failures():
     try:
         yield
-    except EnvironmentError as e:
+    except (EnvironmentError, jsonschema.ValidationError) as e:
         coordination.raise_with_cause(coordination.ToozError,
                                       utils.exception_message(e),
                                       cause=e)
+
+
+_SCHEMA_TYPES = {
+    'array': (list, tuple),
+    'string': six.string_types + (six.binary_type,),
+}
+_SCHEMAS = {
+    'group': {
+        "type": "object",
+        "properties": {
+            "group_id": {
+                "type": "string"
+            },
+        },
+        "required": [
+            "group_id",
+        ],
+        "additionalProperties": True,
+    },
+    'member': {
+        "type": "object",
+        "properties": {
+            "member_id": {
+                "type": "string"
+            },
+            # For now joined_on and capabilities are left out as
+            # capabilities can be nearly arbitrary and joined_on is a date
+            # type (that is a python custom type).
+        },
+        "required": [
+            "member_id",
+        ],
+        "additionalProperties": True,
+    },
+}
+
+
+def _validate(data, schema_key):
+    schema = _SCHEMAS[schema_key]
+    jsonschema.validate(data, schema, types=_SCHEMA_TYPES)
+    return data
 
 
 def _lock_me(lock):
@@ -248,13 +290,8 @@ class FileDriver(coordination._RunWatchersMixin,
         def _read_member_id(path):
             with open(path, 'rb') as fh:
                 contents = fh.read()
-                details = utils.loads(contents)
-                if isinstance(details, (dict)):
-                    return details['member_id']
-                else:
-                    raise TypeError(
-                        "Expected dict encoded in '%s'"
-                        " but got %s instead" % (path, type(details)))
+                details = _validate(utils.loads(contents), 'member')
+                return details['member_id']
 
         @_lock_me(self._driver_lock)
         def _do_get_members():
@@ -305,12 +342,8 @@ class FileDriver(coordination._RunWatchersMixin,
                 else:
                     raise
             else:
-                details = utils.loads(contents)
-                if not isinstance(details, (dict)):
-                    raise TypeError("Expected dict encoded in '%s'"
-                                    " but got %s instead" % (member_path,
-                                                             type(details)))
-                return details["capabilities"]
+                details = _validate(utils.loads(contents), 'member')
+                return details.get("capabilities")
 
         fut = self._executor.submit(_do_get_member_capabilities)
         return FileFutureResult(fut)
@@ -346,11 +379,7 @@ class FileDriver(coordination._RunWatchersMixin,
         def _read_group_id(path):
             with open(path, 'rb') as fh:
                 contents = fh.read()
-                details = utils.loads(contents)
-                if not isinstance(details, (dict)):
-                    raise TypeError("Expected dict encoded in '%s'"
-                                    " but got %s instead" % (path,
-                                                             type(details)))
+                details = _validate(utils.loads(contents), 'group')
                 return details['group_id']
 
         @_lock_me(self._driver_lock)
