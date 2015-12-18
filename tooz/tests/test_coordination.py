@@ -194,6 +194,16 @@ class TestAPI(testscenarios.TestWithScenarios,
         self.assertRaises(tooz.coordination.MemberNotJoined,
                           leave_group.get)
 
+    def test_get_lock_twice_locked_one_released_two(self):
+        name = self._get_random_uuid()
+        lock1 = self._coord.get_lock(name)
+        lock2 = self._coord.get_lock(name)
+        self.assertTrue(lock1.acquire())
+        self.assertFalse(lock2.acquire(blocking=False))
+        self.assertFalse(lock2.release())
+        self.assertTrue(lock1.release())
+        self.assertFalse(lock2.release())
+
     def test_get_members(self):
         group_id_test2 = self._get_random_uuid()
         member_id_test2 = self._get_random_uuid()
