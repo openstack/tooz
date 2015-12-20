@@ -5,7 +5,7 @@ Installation
 Python Versions
 ===============
 
-Tooz is tested under Python 2.6 and 2.7 and 3.4.
+Tooz is tested under Python 2.7 and 3.4.
 
 .. _install-basic:
 
