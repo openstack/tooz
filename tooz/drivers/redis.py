@@ -314,12 +314,12 @@ return 1
         lock_timeout = options.get('lock_timeout', self.timeout)
         self.lock_timeout = int(lock_timeout)
         namespace = options.get('namespace', self.DEFAULT_NAMESPACE)
-        self._namespace = self._to_binary(namespace)
+        self._namespace = utils.to_binary(namespace, encoding=self._encoding)
         self._group_prefix = self._namespace + b"_group"
         self._beat_prefix = self._namespace + b"_beats"
         self._groups = self._namespace + b"_groups"
         self._client = None
-        self._member_id = self._to_binary(member_id)
+        self._member_id = utils.to_binary(member_id, encoding=self._encoding)
         self._acquired_locks = set()
         self._joined_groups = set()
         self._executor = utils.ProxyExecutor.build("Redis", options)
@@ -344,11 +344,6 @@ return 1
                 return (False, redis_version)
             else:
                 return (True, redis_version)
-
-    def _to_binary(self, text):
-        if not isinstance(text, six.binary_type):
-            text = text.encode(self._encoding)
-        return text
 
     @property
     def namespace(self):
@@ -461,30 +456,30 @@ return 1
             self._started = True
 
     def _encode_beat_id(self, member_id):
-        return self.NAMESPACE_SEP.join([self._beat_prefix,
-                                        self._to_binary(member_id)])
+        member_id = utils.to_binary(member_id, encoding=self._encoding)
+        return self.NAMESPACE_SEP.join([self._beat_prefix, member_id])
 
     def _encode_member_id(self, member_id):
-        member_id = self._to_binary(member_id)
+        member_id = utils.to_binary(member_id, encoding=self._encoding)
         if member_id == self.GROUP_EXISTS:
             raise ValueError("Not allowed to use private keys as a member id")
         return member_id
 
     def _decode_member_id(self, member_id):
-        return self._to_binary(member_id)
+        return utils.to_binary(member_id, encoding=self._encoding)
 
     def _encode_group_leader(self, group_id):
-        group_id = self._to_binary(group_id)
+        group_id = utils.to_binary(group_id, encoding=self._encoding)
         return b"leader_of_" + group_id
 
     def _encode_group_id(self, group_id, apply_namespace=True):
-        group_id = self._to_binary(group_id)
+        group_id = utils.to_binary(group_id, encoding=self._encoding)
         if not apply_namespace:
             return group_id
         return self.NAMESPACE_SEP.join([self._group_prefix, group_id])
 
     def _decode_group_id(self, group_id):
-        return self._to_binary(group_id)
+        return utils.to_binary(group_id, encoding=self._encoding)
 
     def heartbeat(self):
         with _translate_failures():
