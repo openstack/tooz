@@ -489,13 +489,19 @@ class _RunWatchersMixin(object):
             return result
 
 
-def get_coordinator(backend_url, member_id, **kwargs):
+def get_coordinator(backend_url, member_id,
+                    characteristics=frozenset(), **kwargs):
     """Initialize and load the backend.
 
     :param backend_url: the backend URL to use
     :type backend: str
     :param member_id: the id of the member
     :type member_id: str
+    :param characteristics: set
+    :type characteristics: set of :py:class:`.Characteristics` that will
+                           be matched to the requested driver (this **will**
+                           become a **required** parameter in a future tooz
+                           version)
     :param kwargs: additional coordinator options (these take precedence over
                    options of the **same** name found in the ``backend_url``
                    arguments query string)
@@ -511,11 +517,23 @@ def get_coordinator(backend_url, member_id, **kwargs):
                 options[k] = v
     else:
         options = parsed_qs
-    return driver.DriverManager(
+    d = driver.DriverManager(
         namespace=TOOZ_BACKENDS_NAMESPACE,
         name=parsed_url.scheme,
         invoke_on_load=True,
         invoke_args=(member_id, parsed_url, options)).driver
+    characteristics = set(characteristics)
+    driver_characteristics = set(getattr(d, 'CHARACTERISTICS', set()))
+    missing_characteristics = characteristics - driver_characteristics
+    if missing_characteristics:
+        raise ToozDriverChosenPoorly("Desired characteristics %s"
+                                     " is not a strict subset of driver"
+                                     " characteristics %s, %s"
+                                     " characteristics were not found"
+                                     % (characteristics,
+                                        driver_characteristics,
+                                        missing_characteristics))
+    return d
 
 
 class ToozError(Exception):
@@ -533,6 +551,10 @@ class ToozError(Exception):
     def __init__(self, message, cause=None):
         super(ToozError, self).__init__(message)
         self.cause = cause
+
+
+class ToozDriverChosenPoorly(ToozError):
+    """Raised when a driver does not match desired characteristics."""
 
 
 class ToozConnectionError(ToozError):
