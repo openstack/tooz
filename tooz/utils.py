@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import base64
 import datetime
 import errno
 import operator
@@ -26,6 +27,30 @@ from oslo_utils import encodeutils
 import six
 
 from tooz import coordination
+
+
+class Base64LockEncoder(object):
+    def __init__(self, keyspace_url, prefix=''):
+        self.keyspace_url = keyspace_url
+        if prefix:
+            self.keyspace_url += prefix
+
+    def check_and_encode(self, name):
+        if not isinstance(name, (six.text_type, six.binary_type)):
+            raise TypeError("Provided lock name is expected to be a string"
+                            " or binary type and not %s" % type(name))
+        try:
+            return self.encode(name)
+        except (UnicodeDecodeError, UnicodeEncodeError) as e:
+            raise ValueError("Invalid lock name due to encoding/decoding "
+                             " issue: %s"
+                             % encodeutils.exception_to_unicode(e))
+
+    def encode(self, name):
+        if isinstance(name, six.text_type):
+            name = name.encode("ascii")
+        enc_name = base64.urlsafe_b64encode(name)
+        return self.keyspace_url + "/" + enc_name.decode("ascii")
 
 
 class ProxyExecutor(object):
