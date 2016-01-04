@@ -20,6 +20,7 @@ import logging
 import socket
 
 from concurrent import futures
+from oslo_utils import encodeutils
 from pymemcache import client as pymemcache_client
 import six
 
@@ -44,14 +45,14 @@ def _translate_failures(func):
             return func(*args, **kwargs)
         except pymemcache_client.MemcacheUnexpectedCloseError as e:
             coordination.raise_with_cause(coordination.ToozConnectionError,
-                                          utils.exception_message(e),
+                                          encodeutils.exception_to_unicode(e),
                                           cause=e)
         except (socket.timeout, socket.error,
                 socket.gaierror, socket.herror) as e:
             # TODO(harlowja): get upstream pymemcache to produce a better
             # exception for these, using socket (vs. a memcache specific
             # error) seems sorta not right and/or the best approach...
-            msg = utils.exception_message(e)
+            msg = encodeutils.exception_to_unicode(e)
             if e.errno is not None:
                 msg += " (with errno %s [%s])" % (errno.errorcode[e.errno],
                                                   e.errno)
@@ -59,7 +60,7 @@ def _translate_failures(func):
                                           msg, cause=e)
         except pymemcache_client.MemcacheError as e:
             coordination.raise_with_cause(coordination.ToozError,
-                                          utils.exception_message(e),
+                                          encodeutils.exception_to_unicode(e),
                                           cause=e)
 
     return wrapper
@@ -533,9 +534,10 @@ class MemcachedFutureResult(coordination.CoordAsyncResult):
         try:
             return self._fut.result(timeout=timeout)
         except futures.TimeoutError as e:
-            coordination.raise_with_cause(coordination.OperationTimedOut,
-                                          utils.exception_message(e),
-                                          cause=e)
+            coordination.raise_with_cause(
+                coordination.OperationTimedOut,
+                encodeutils.exception_to_unicode(e),
+                cause=e)
 
     def done(self):
         return self._fut.done()

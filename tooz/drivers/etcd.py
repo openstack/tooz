@@ -14,6 +14,7 @@
 
 import logging
 
+from oslo_utils import encodeutils
 from oslo_utils import timeutils
 import requests
 import six
@@ -36,7 +37,7 @@ def _translate_failures(func):
             return func(*args, **kwargs)
         except requests.exceptions.RequestException as e:
             coordination.raise_with_cause(coordination.ToozConnectionError,
-                                          utils.exception_message(e),
+                                          encodeutils.exception_to_unicode(e),
                                           cause=e)
 
     return wrapper
@@ -175,7 +176,8 @@ class EtcdDriver(coordination.CoordinationDriver):
         try:
             self.client.self_stats()
         except requests.exceptions.ConnectionError as e:
-            raise coordination.ToozConnectionError(utils.exception_message(e))
+            raise coordination.ToozConnectionError(
+                encodeutils.exception_to_unicode(e))
 
     def get_lock(self, name):
         return EtcdLock(name, self, self.client, self.lock_timeout)

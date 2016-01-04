@@ -22,6 +22,7 @@ import logging
 import string
 
 from concurrent import futures
+from oslo_utils import encodeutils
 from oslo_utils import strutils
 import redis
 from redis import exceptions
@@ -46,11 +47,11 @@ def _translate_failures():
         yield
     except (exceptions.ConnectionError, exceptions.TimeoutError) as e:
         coordination.raise_with_cause(coordination.ToozConnectionError,
-                                      utils.exception_message(e),
+                                      encodeutils.exception_to_unicode(e),
                                       cause=e)
     except exceptions.RedisError as e:
         coordination.raise_with_cause(coordination.ToozError,
-                                      utils.exception_message(e),
+                                      encodeutils.exception_to_unicode(e),
                                       cause=e)
 
 
@@ -415,7 +416,7 @@ return 1
                                              self.timeout)
         except exceptions.RedisError as e:
             coordination.raise_with_cause(coordination.ToozConnectionError,
-                                          utils.exception_message(e),
+                                          encodeutils.exception_to_unicode(e),
                                           cause=e)
         else:
             # Ensure that the server is alive and not dead, this does not
@@ -779,7 +780,7 @@ class RedisFutureResult(coordination.CoordAsyncResult):
                 return self._fut.result(timeout=timeout)
         except futures.TimeoutError as e:
             coordination.raise_with_cause(coordination.OperationTimedOut,
-                                          utils.exception_message(e),
+                                          encodeutils.exception_to_unicode(e),
                                           cause=e)
 
     def done(self):

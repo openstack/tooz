@@ -20,6 +20,7 @@ import time
 
 from concurrent import futures
 import msgpack
+from oslo_utils import encodeutils
 import six
 import sysv_ipc
 
@@ -243,7 +244,7 @@ class IPCFutureResult(coordination.CoordAsyncResult):
             return self._fut.result(timeout=timeout)
         except futures.TimeoutError as e:
             coordination.raise_with_cause(coordination.OperationTimedOut,
-                                          utils.exception_message(e),
+                                          encodeutils.exception_to_unicode(e),
                                           cause=e)
 
     def done(self):

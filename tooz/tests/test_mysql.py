@@ -18,11 +18,11 @@
 import os
 import uuid
 
+from oslo_utils import encodeutils
 import testtools
 from testtools import testcase
 
 from tooz import coordination
-from tooz import utils
 
 
 @testtools.skipUnless(os.getenv("TOOZ_TEST_MYSQL_URL"),
@@ -37,7 +37,7 @@ class TestMYSQLDriver(testcase.TestCase):
             try:
                 coord.stop()
             except coordination.ToozError as e:
-                message = utils.exception_message(e)
+                message = encodeutils.exception_to_unicode(e)
                 if (message != 'Can not stop a driver which has not'
                                ' been started'):
                     raise

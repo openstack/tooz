@@ -22,11 +22,11 @@ try:
 except ImportError:
     import mock
 
+from oslo_utils import encodeutils
 import testtools
 from testtools import testcase
 
 from tooz import coordination
-from tooz import utils
 
 # Handle the case gracefully where the driver is not installed.
 try:
@@ -51,7 +51,7 @@ class TestPostgreSQLFailures(testcase.TestCase):
             except coordination.ToozError as e:
                 # TODO(harlowja): make this better, so that we don't have to
                 # do string checking...
-                message = utils.exception_message(e)
+                message = encodeutils.exception_to_unicode(e)
                 if (message != 'Can not stop a driver which has not'
                                ' been started'):
                     raise

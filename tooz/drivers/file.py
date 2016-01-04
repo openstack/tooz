@@ -28,6 +28,7 @@ from concurrent import futures
 
 import fasteners
 import jsonschema
+from oslo_utils import encodeutils
 from oslo_utils import timeutils
 import six
 
@@ -51,7 +52,7 @@ def _translate_failures():
         yield
     except (EnvironmentError, jsonschema.ValidationError) as e:
         coordination.raise_with_cause(coordination.ToozError,
-                                      utils.exception_message(e),
+                                      encodeutils.exception_to_unicode(e),
                                       cause=e)
 
 
@@ -473,7 +474,7 @@ class FileFutureResult(coordination.CoordAsyncResult):
                 return self._fut.result(timeout=timeout)
         except futures.TimeoutError as e:
             coordination.raise_with_cause(coordination.OperationTimedOut,
-                                          utils.exception_message(e),
+                                          encodeutils.exception_to_unicode(e),
                                           cause=e)
 
     def done(self):

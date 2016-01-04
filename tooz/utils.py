@@ -157,11 +157,6 @@ def collapse(config, exclude=None, item_selector=None):
     return collapsed
 
 
-# TODO(harlowja): get rid of this...
-#: Return the string (unicode) representation of an exception.
-exception_message = encodeutils.exception_to_unicode
-
-
 def to_binary(text, encoding='ascii'):
     """Return the binary representation of string (if not already binary)."""
     if not isinstance(text, six.binary_type):
@@ -174,7 +169,8 @@ def dumps(data, excp_cls=coordination.SerializationError):
     try:
         return msgpackutils.dumps(data)
     except (msgpack.PackException, ValueError) as e:
-        coordination.raise_with_cause(excp_cls, exception_message(e),
+        coordination.raise_with_cause(excp_cls,
+                                      encodeutils.exception_to_unicode(e),
                                       cause=e)
 
 
@@ -183,7 +179,8 @@ def loads(blob, excp_cls=coordination.SerializationError):
     try:
         return msgpackutils.loads(blob)
     except (msgpack.UnpackException, ValueError) as e:
-        coordination.raise_with_cause(excp_cls, exception_message(e),
+        coordination.raise_with_cause(excp_cls,
+                                      encodeutils.exception_to_unicode(e),
                                       cause=e)
 
 

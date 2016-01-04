@@ -18,6 +18,7 @@ import contextlib
 import hashlib
 import logging
 
+from oslo_utils import encodeutils
 import psycopg2
 import six
 
@@ -55,7 +56,8 @@ _DIAGNOSTICS_ATTRS = tuple([
 
 def _format_exception(e):
     lines = [
-        "%s: %s" % (type(e).__name__, utils.exception_message(e).strip()),
+        "%s: %s" % (type(e).__name__,
+                    encodeutils.exception_to_unicode(e).strip()),
     ]
     if hasattr(e, 'pgcode') and e.pgcode is not None:
         lines.append("Error code: %s" % e.pgcode)
