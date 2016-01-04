@@ -8,6 +8,12 @@ Interfaces
 .. autoclass:: tooz.coordination.CoordinationDriver
    :members:
 
+Etcd
+~~~
+
+.. autoclass:: tooz.drivers.etcd.EtcdDriver
+   :members:
+
 File
 ~~~~
 
