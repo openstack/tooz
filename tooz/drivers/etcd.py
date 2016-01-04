@@ -70,6 +70,7 @@ class _Client(object):
 
 
 class EtcdLock(locking.Lock):
+
     _TOOZ_LOCK_PREFIX = "tooz_locks"
 
     def __init__(self, name, coord, client, ttl=60):
@@ -152,11 +153,18 @@ class EtcdDriver(coordination.CoordinationDriver):
     #: Default socket/lock/member/leader timeout used when none is provided.
     DEFAULT_TIMEOUT = 30
 
+    #: Default hostname used when none is provided.
+    DEFAULT_HOST = "localhost"
+
+    #: Default port used if none provided (4001 or 2379 are the common ones).
+    DEFAULT_PORT = 2379
+
     def __init__(self, member_id, parsed_url, options):
         super(EtcdDriver, self).__init__()
+        host = parsed_url.hostname or self.DEFAULT_HOST
+        port = parsed_url.port or self.DEFAULT_PORT
         options = utils.collapse(options)
-        self.client = _Client(host=parsed_url.hostname,
-                              port=parsed_url.port,
+        self.client = _Client(host=host, port=port,
                               protocol=options.get('protocol', 'http'))
         default_timeout = options.get('timeout', self.DEFAULT_TIMEOUT)
         self.lock_timeout = int(options.get(
