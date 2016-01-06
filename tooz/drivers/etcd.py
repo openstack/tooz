@@ -86,11 +86,12 @@ class EtcdLock(locking.Lock):
         )
 
     def acquire(self, blocking=True):
-        if isinstance(blocking, bool):
-            watch = None
-        else:
-            watch = timeutils.StopWatch(duration=blocking)
+        blocking, timeout = utils.convert_blocking(blocking)
+        if timeout is not None:
+            watch = timeutils.StopWatch(duration=timeout)
             watch.start()
+        else:
+            watch = None
 
         while True:
             try:
@@ -109,7 +110,7 @@ class EtcdLock(locking.Lock):
                 return True
 
             # We didn't get the lock and we don't want to wait
-            if blocking is False:
+            if not blocking:
                 return False
 
             # Ok, so let's wait a bit (or forever!)
