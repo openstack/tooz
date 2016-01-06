@@ -35,6 +35,11 @@ def _translate_failures(func):
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
+        except ValueError as e:
+            # Typically json decoding failed for some reason.
+            coordination.raise_with_cause(coordination.ToozError,
+                                          encodeutils.exception_to_unicode(e),
+                                          cause=e)
         except requests.exceptions.RequestException as e:
             coordination.raise_with_cause(coordination.ToozConnectionError,
                                           encodeutils.exception_to_unicode(e),
@@ -87,6 +92,12 @@ class EtcdLock(locking.Lock):
         self.lock = None
         self.ttl = ttl
         self._lock_url = lock_url
+        self._node = None
+
+    @_translate_failures
+    def break_(self):
+        reply = self.client.delete(self._lock_url, make_url=False)
+        return reply.get('errorCode') is None
 
     def acquire(self, blocking=True):
         blocking, timeout = utils.convert_blocking(blocking)
@@ -110,6 +121,7 @@ class EtcdLock(locking.Lock):
 
             # We got the lock!
             if reply.get("errorCode") is None:
+                self._node = reply['node']
                 self.coord._acquired_locks.append(self)
                 return True
 
@@ -131,10 +143,17 @@ class EtcdLock(locking.Lock):
     @_translate_failures
     def release(self):
         if self in self.coord._acquired_locks:
-            reply = self.client.delete(self._lock_url, make_url=False)
-            if reply.get("errorCode") is None:
+            lock_url = self._lock_url
+            lock_url += "?prevIndex=%s" % self._node['modifiedIndex']
+            reply = self.client.delete(lock_url, make_url=False)
+            errorcode = reply.get("errorCode")
+            if errorcode is None:
                 self.coord._acquired_locks.remove(self)
+                self._node = None
                 return True
+            else:
+                LOG.warn("Unable to release '%s' due to %d, %s",
+                         self.name, errorcode, reply.get('message'))
         return False
 
     @_translate_failures

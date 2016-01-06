@@ -79,6 +79,22 @@ class Lock(object):
         :rtype: bool
         """
 
+    def break_(self):
+        """Forcefully release the lock.
+
+        This is mostly used for testing purposes, to simulate an out of
+        band operation that breaks the lock. Backends may allow waiters to
+        acquire immediately if a lock is broken, or they should raise an
+        exception. Releasing should be successful for objects that believe
+        they hold the lock but do not have the lock anymore. However,
+        they should be careful not to re-break the lock by releasing it,
+        since they may not be the holder anymore.
+
+        :returns: returns true if forcefully broken (false if not)
+                  or raises ``NotImplemented`` if not implemented.
+        """
+        raise tooz.NotImplemented
+
     @abc.abstractmethod
     def acquire(self, blocking=True):
         """Attempts to acquire the lock.
@@ -89,5 +105,4 @@ class Lock(object):
                          number of seconds.
         :returns: returns true if acquired (false if not)
         :rtype: bool
-
         """

@@ -64,6 +64,15 @@ class IPCLock(locking.Lock):
         self.key = ftok(name, self._LOCK_PROJECT)
         self._lock = None
 
+    def break_(self):
+        try:
+            lock = sysv_ipc.Semaphore(key=self.key)
+            lock.remove()
+        except sysv_ipc.ExistentialError:
+            return False
+        else:
+            return True
+
     def acquire(self, blocking=True):
         if (blocking is not True and
                 sysv_ipc.SEMAPHORE_TIMEOUT_SUPPORTED is False):
@@ -112,8 +121,12 @@ class IPCLock(locking.Lock):
 
     def release(self):
         if self._lock is not None:
-            self._lock.remove()
-            self._lock = None
+            try:
+                self._lock.remove()
+            except sysv_ipc.ExistentialError:
+                return False
+            finally:
+                self._lock = None
             return True
         return False
 
