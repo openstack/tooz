@@ -31,7 +31,7 @@ trap "clean_exit" EXIT
 export PATH=$PATH:/usr/libexec
 
 # Start MySQL process for tests
-MYSQL_DATA=`mktemp -d /tmp/tooz-mysql-XXXXX`
+MYSQL_DATA=`mktemp -d -t tooz-mysql-XXXXX`
 mkfifo ${MYSQL_DATA}/out
 # Initialize MySQL Data Directory
 mysql_install_db --user=${USER} --ldata=${MYSQL_DATA}

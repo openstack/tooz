@@ -3,7 +3,7 @@ set -x -e
 
 ZOO_CONF=/etc/zookeeper
 ZOO_BIN=/usr/share/zookeeper/bin
-ZOO_TMP_DIR=$(mktemp -d /tmp/ZOO-TMP-XXXXX)
+ZOO_TMP_DIR=$(mktemp -d -t ZOO-TMP-XXXXX)
 ZOOKEEPER_STARTED=0
 
 mkdir $ZOO_TMP_DIR/bin
