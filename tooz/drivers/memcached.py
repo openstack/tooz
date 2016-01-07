@@ -133,8 +133,8 @@ class MemcachedLock(locking.Lock):
         # id and then do the delete and bail out if the session id is not
         # as expected but memcache doesn't seem to have any equivalent
         # capability.
-        if (self in self.coord._acquired_locks
-           and self.coord.client.delete(self.name, noreply=False)):
+        if (self in self.coord._acquired_locks and
+           self.coord.client.delete(self.name, noreply=False)):
             self.coord._acquired_locks.remove(self)
             return True
         return False
@@ -402,8 +402,8 @@ class MemcachedDriver(coordination._RunWatchersMixin,
         actual_group_members = {}
         for m, v in six.iteritems(group_members):
             # Never kick self from the group, we know we're alive
-            if (m == self._member_id
-               or self.client.get(self._encode_member_id(m))):
+            if (m == self._member_id or
+               self.client.get(self._encode_member_id(m))):
                 actual_group_members[m] = v
         if group_members != actual_group_members:
             # There are some dead members, update the group

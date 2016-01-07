@@ -230,9 +230,9 @@ class RedisDriver(coordination._RunWatchersMixin,
 
     #: Client arguments that are expected to be int convertible.
     CLIENT_INT_ARGS = frozenset([
-         'db',
-         'socket_keepalive',
-         'socket_timeout',
+        'db',
+        'socket_keepalive',
+        'socket_timeout',
     ])
 
     #: Default socket timeout to use when none is provided.
@@ -337,7 +337,7 @@ return 1
             raise TypeError("Version check expects a string/version type")
         try:
             redis_version = version.LooseVersion(
-                    self._server_info['redis_version'])
+                self._server_info['redis_version'])
         except KeyError:
             return (not_existent, None)
         else:

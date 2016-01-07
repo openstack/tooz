@@ -81,8 +81,8 @@ class CoordinationDriver(object):
         self._group_members = collections.defaultdict(set)
 
     def _has_hooks_for_group(self, group_id):
-        return (len(self._hooks_join_group[group_id])
-                + len(self._hooks_leave_group[group_id]))
+        return (len(self._hooks_join_group[group_id]) +
+                len(self._hooks_leave_group[group_id]))
 
     @staticmethod
     def run_watchers(timeout=None):
@@ -120,8 +120,8 @@ class CoordinationDriver(object):
                          this group
         """
         self._hooks_join_group[group_id].remove(callback)
-        if (not self._has_hooks_for_group(group_id)
-           and group_id in self._group_members):
+        if (not self._has_hooks_for_group(group_id) and
+           group_id in self._group_members):
             del self._group_members[group_id]
 
     @abc.abstractmethod
@@ -147,8 +147,8 @@ class CoordinationDriver(object):
                          this group
         """
         self._hooks_leave_group[group_id].remove(callback)
-        if (not self._has_hooks_for_group(group_id)
-           and group_id in self._group_members):
+        if (not self._has_hooks_for_group(group_id) and
+           group_id in self._group_members):
             del self._group_members[group_id]
 
     @abc.abstractmethod
@@ -279,8 +279,7 @@ class CoordinationDriver(object):
 
     @staticmethod
     def get_members(group_id):
-        """Return the list of all members ids of the specified group
-        asynchronously.
+        """Return the list of all members ids of the specified group.
 
         :returns: list of all created group ids
         :rtype: CoordAsyncResult
@@ -315,8 +314,7 @@ class CoordinationDriver(object):
 
     @staticmethod
     def update_capabilities(group_id, capabilities):
-        """Update capabilities of the caller in the specified group
-        asynchronously.
+        """Update member capabilities in the specified group.
 
         :param group_id: the id of the group of the current member
         :type group_id: str
@@ -352,9 +350,10 @@ class CoordinationDriver(object):
 
     @staticmethod
     def heartbeat():
-        """Method to run once in a while to be sure that the member is not dead
-        and is still an active member of a group.
+        """Update member status to indicate it is still alive.
 
+        Method to run once in a while to be sure that the member is not dead
+        and is still an active member of a group.
 
         """
         pass
@@ -362,14 +361,17 @@ class CoordinationDriver(object):
 
 @six.add_metaclass(abc.ABCMeta)
 class CoordAsyncResult(object):
-    """Representation of an asynchronous task, every call API
-    returns an CoordAsyncResult object on which the result or
+    """Representation of an asynchronous task.
+
+    Every call API returns an CoordAsyncResult object on which the result or
     the status of the task can be requested.
+
     """
 
     @abc.abstractmethod
     def get(self, timeout=10):
         """Retrieve the result of the corresponding asynchronous call.
+
         :param timeout: block until the timeout expire.
         :type timeout: float
         """
@@ -442,13 +444,15 @@ def get_coordinator(backend_url, member_id, **kwargs):
 
 
 class ToozError(Exception):
-    """Exception raised when an internal error occurs, for instance in
-    case of server internal error.
+    """Exception raised when an internal error occurs.
+
+    Raised for instance in case of server internal error.
 
     :ivar cause: the cause of the exception being raised, when not none this
                  will itself be an exception instance, this is useful for
                  creating a chain of exceptions for versions of python where
                  this is not yet implemented/supported natively.
+
     """
 
     def __init__(self, message, cause=None):
@@ -457,9 +461,7 @@ class ToozError(Exception):
 
 
 class ToozConnectionError(ToozError):
-    """Exception raised when the client cannot manage to connect to the
-    server.
-    """
+    """Exception raised when the client cannot connect to the server."""
 
 
 class OperationTimedOut(ToozError):
@@ -471,9 +473,7 @@ class LockAcquireFailed(ToozError):
 
 
 class GroupNotCreated(ToozError):
-    """Exception raised when the caller request a group which does
-    not exist.
-    """
+    """Exception raised when the caller request an nonexistent group."""
     def __init__(self, group_id):
         self.group_id = group_id
         super(GroupNotCreated, self).__init__(
@@ -481,9 +481,7 @@ class GroupNotCreated(ToozError):
 
 
 class GroupAlreadyExist(ToozError):
-    """Exception raised when the caller try to create a group which already
-    exist.
-    """
+    """Exception raised trying to create an already existing group."""
     def __init__(self, group_id):
         self.group_id = group_id
         super(GroupAlreadyExist, self).__init__(
@@ -491,9 +489,7 @@ class GroupAlreadyExist(ToozError):
 
 
 class MemberAlreadyExist(ToozError):
-    """Exception raised when the caller try to join a group but a member
-    with the same identifier belongs to that group.
-    """
+    """Exception raised trying to join a group already joined."""
     def __init__(self, group_id, member_id):
         self.group_id = group_id
         self.member_id = member_id
@@ -503,9 +499,7 @@ class MemberAlreadyExist(ToozError):
 
 
 class MemberNotJoined(ToozError):
-    """Exception raised when the caller try to access a member which does not
-    belongs to the specified group.
-    """
+    """Exception raised trying to access a member not in a group."""
     def __init__(self, group_id, member_id):
         self.group_id = group_id
         self.member_id = member_id

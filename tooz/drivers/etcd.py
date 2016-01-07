@@ -116,8 +116,8 @@ class EtcdLock(locking.Lock):
             # Ok, so let's wait a bit (or forever!)
             try:
                 reply = self.client.get(
-                    self._lock_url
-                    + "?wait=true&waitIndex=%d" % reply['index'],
+                    self._lock_url +
+                    "?wait=true&waitIndex=%d" % reply['index'],
                     timeout=watch.leftover() if watch else None)
             except requests.exceptions.RequestException:
                 if watch and watch.expired():

@@ -16,6 +16,7 @@
 
 import datetime
 import errno
+import operator
 import os
 
 import futurist
@@ -128,7 +129,7 @@ def ensure_tree(path):
         return True
 
 
-def collapse(config, exclude=None, item_selector=None):
+def collapse(config, exclude=None, item_selector=operator.itemgetter(-1)):
     """Collapses config with keys and **list/tuple** values.
 
     NOTE(harlowja): The last item/index from the list/tuple value is selected
@@ -142,8 +143,6 @@ def collapse(config, exclude=None, item_selector=None):
         return {}
     if exclude is None:
         exclude = set()
-    if item_selector is None:
-        item_selector = lambda items: items[-1]
     collapsed = {}
     for (k, v) in six.iteritems(config):
         if isinstance(v, (tuple, list)):
