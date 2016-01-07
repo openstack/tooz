@@ -35,8 +35,7 @@ else
     esac
     TARBALL_NAME=etcd-v${ETCD_VERSION}-$OS-$MACHINE
     test ! -d "$TARBALL_NAME" && curl -L https://github.com/coreos/etcd/releases/download/v${ETCD_VERSION}/${TARBALL_NAME}.${SUFFIX} | tar xz
-    cd "$TARBALL_NAME"
-    ./etcd &
+    $TARBALL_NAME/etcd &
 fi
 
 export TOOZ_TEST_ETCD_URL="etcd://localhost:4001"
