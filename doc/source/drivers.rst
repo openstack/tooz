@@ -4,12 +4,16 @@ Drivers
 
 Tooz is provided with several drivers implementing the provided coordination
 API. While all drivers provides the same set of features with respect to the
-API, some of them have different properties.
+API, some of them have different characteristics:
 
 Zookeeper
 ---------
 
 **Driver:** :py:class:`tooz.drivers.zookeeper.KazooDriver`
+
+**Characteristics:**
+
+:py:attr:`tooz.drivers.zookeeper.KazooDriver.CHARACTERISTICS`
 
 **Entrypoint name:** ``zookeeper`` or ``kazoo``
 
@@ -20,6 +24,10 @@ features as it's possible to build a cluster of zookeeper servers that is
 resilient towards network partitions for example.
 
 **Test driver:** :py:class:`tooz.drivers.zake.ZakeDriver`
+
+**Characteristics:**
+
+:py:attr:`tooz.drivers.zake.ZakeDriver.CHARACTERISTICS`
 
 **Test driver entrypoint name:** ``zake``
 
@@ -34,6 +42,10 @@ Memcached
 ---------
 
 **Driver:** :py:class:`tooz.drivers.memcached.MemcachedDriver`
+
+**Characteristics:**
+
+:py:attr:`tooz.drivers.memcached.MemcachedDriver.CHARACTERISTICS`
 
 **Entrypoint name:** ``memcached``
 
@@ -58,6 +70,10 @@ Redis
 
 **Driver:** :py:class:`tooz.drivers.redis.RedisDriver`
 
+**Characteristics:**
+
+:py:attr:`tooz.drivers.redis.RedisDriver.CHARACTERISTICS`
+
 **Entrypoint name:** ``redis``
 
 **Summary:**
@@ -79,6 +95,8 @@ IPC
 
 **Driver:** :py:class:`tooz.drivers.ipc.IPCDriver`
 
+**Characteristics:** :py:attr:`tooz.drivers.ipc.IPCDriver.CHARACTERISTICS`
+
 **Entrypoint name:** ``ipc``
 
 **Summary:**
@@ -97,6 +115,8 @@ File
 ----
 
 **Driver:** :py:class:`tooz.drivers.file.FileDriver`
+
+**Characteristics:** :py:attr:`tooz.drivers.file.FileDriver.CHARACTERISTICS`
 
 **Entrypoint name:** ``file``
 
@@ -117,6 +137,10 @@ PostgreSQL
 ----------
 
 **Driver:** :py:class:`tooz.drivers.pgsql.PostgresDriver`
+
+**Characteristics:**
+
+:py:attr:`tooz.drivers.pgsql.PostgresDriver.CHARACTERISTICS`
 
 **Entrypoint name:** ``postgresql``
 
@@ -140,6 +164,8 @@ MySQL
 
 **Driver:**  :py:class:`tooz.drivers.mysql.MySQLDriver`
 
+**Characteristics:** :py:attr:`tooz.drivers.mysql.MySQLDriver.CHARACTERISTICS`
+
 **Entrypoint name:** ``mysql``
 
 **Summary:**
@@ -156,6 +182,11 @@ Considerations
 - Does **not** work correctly on some MySQL versions.
 - Does **not** work when MySQL replicates from one server to another (locks
   are local to the server that they were created from).
+
+Characteristics
+---------------
+
+.. autoclass:: tooz.coordination.Characteristics
 
 .. _advisory locks: http://www.postgresql.org/docs/8.2/interactive/\
                     explicit-locking.html#ADVISORY-LOCKS

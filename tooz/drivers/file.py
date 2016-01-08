@@ -194,6 +194,15 @@ class FileDriver(coordination._RunWatchersMixin,
       account when applying this driver in there app).
     """
 
+    CHARACTERISTICS = (
+        coordination.Characteristics.DISTRIBUTED_ACROSS_THREADS,
+        coordination.Characteristics.DISTRIBUTED_ACROSS_PROCESSES,
+    )
+    """
+    Tuple of :py:class:`~tooz.coordination.Characteristics` introspectable
+    enum member(s) that can be used to interogate how this driver works.
+    """
+
     HASH_ROUTINE = 'sha1'
     """This routine is used to hash a member (or group) id into a filesystem
        safe name that can be used for member lookup and group joining."""

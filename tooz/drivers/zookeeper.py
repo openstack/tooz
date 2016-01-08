@@ -414,6 +414,20 @@ class KazooDriver(BaseZooKeeperDriver):
     this option is one of the keys in this dictionary).
     """
 
+    CHARACTERISTICS = (
+        coordination.Characteristics.DISTRIBUTED_ACROSS_THREADS,
+        coordination.Characteristics.DISTRIBUTED_ACROSS_PROCESSES,
+        coordination.Characteristics.DISTRIBUTED_ACROSS_HOSTS,
+        # Writes *always* go through a single leader process, but it may
+        # take a while for those writes to propagate to followers (and =
+        # during this time clients can read older values)...
+        coordination.Characteristics.SEQUENTIAL,
+    )
+    """
+    Tuple of :py:class:`~tooz.coordination.Characteristics` introspectable
+    enum member(s) that can be used to interogate how this driver works.
+    """
+
     def __init__(self, member_id, parsed_url, options):
         super(KazooDriver, self).__init__(member_id, parsed_url, options)
         self._coord = self._make_client(parsed_url, self._options)

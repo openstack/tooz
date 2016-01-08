@@ -104,6 +104,16 @@ class MySQLDriver(coordination.CoordinationDriver):
     .. _MySQL: http://dev.mysql.com/
     """
 
+    CHARACTERISTICS = (
+        coordination.Characteristics.DISTRIBUTED_ACROSS_THREADS,
+        coordination.Characteristics.DISTRIBUTED_ACROSS_PROCESSES,
+        coordination.Characteristics.DISTRIBUTED_ACROSS_HOSTS,
+    )
+    """
+    Tuple of :py:class:`~tooz.coordination.Characteristics` introspectable
+    enum member(s) that can be used to interogate how this driver works.
+    """
+
     def __init__(self, member_id, parsed_url, options):
         """Initialize the MySQL driver."""
         super(MySQLDriver, self).__init__()

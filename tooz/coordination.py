@@ -16,6 +16,7 @@
 
 import abc
 import collections
+import enum
 
 from oslo_utils import excutils
 from oslo_utils import netutils
@@ -26,6 +27,74 @@ from stevedore import driver
 import tooz
 
 TOOZ_BACKENDS_NAMESPACE = "tooz.backends"
+
+
+class Characteristics(enum.Enum):
+    """Attempts to describe the characteristic that a driver supports."""
+
+    DISTRIBUTED_ACROSS_THREADS = 'DISTRIBUTED_ACROSS_THREADS'
+    """Coordinator components when used by multiple **threads** work
+       the same as if those components were only used by a single thread."""
+
+    DISTRIBUTED_ACROSS_PROCESSES = 'DISTRIBUTED_ACROSS_PROCESSES'
+    """Coordinator components when used by multiple **processes** work
+       the same as if those components were only used by a single thread."""
+
+    DISTRIBUTED_ACROSS_HOSTS = 'DISTRIBUTED_ACROSS_HOSTS'
+    """Coordinator components when used by multiple **hosts** work
+       the same as if those components were only used by a single thread."""
+
+    LINEARIZABLE = 'LINEARIZABLE'
+    """The driver has the following properties:
+
+    * Ensures each operation must take place before its
+      completion time.
+    * Any operation invoked subsequently must take place
+      after the invocation and by extension, after the original operation
+      itself.
+    """
+
+    SEQUENTIAL = 'SEQUENTIAL'
+    """The driver has the following properties:
+
+    * Operations can take effect before or after completion – but all
+      operations retain the constraint that operations from any given process
+      must take place in that processes order.
+    """
+
+    CAUSAL = 'CAUSAL'
+    """The driver has the following properties:
+
+    * Does **not** have to enforce the order of every
+      operation from a process, perhaps, only causally related operations
+      must occur in order.
+    """
+
+    SERIALIZABLE = 'SERIALIZABLE'
+    """The driver has the following properties:
+
+    * The history of **all** operations is equivalent to
+      one that took place in some single atomic order but with unknown
+      invocation and completion times - it places no bounds on
+      time or order.
+    """
+
+    SAME_VIEW_UNDER_PARTITIONS = 'SAME_VIEW_UNDER_PARTITIONS'
+    """When a client is connected to a server and that server is partitioned
+    from a group of other servers it will (somehow) have the same view of
+    data as a client connected to a server on the other side of the
+    partition (typically this is accomplished by write availability being
+    lost and therefore nothing can change).
+    """
+
+    SAME_VIEW_ACROSS_CLIENTS = 'SAME_VIEW_ACROSS_CLIENTS'
+    """A client connected to one server will *always* have the same view
+    every other client will have (no matter what server those other
+    clients are connected to). Typically this is a sacrifice in
+    write availability because before a write can be acknowledged it must
+    be acknowledged by *all* servers in a cluster (so that all clients
+    that are connected to those servers read the exact *same* thing).
+    """
 
 
 class Hooks(list):
@@ -70,6 +139,12 @@ class CoordinationDriver(object):
     be called periodically (at a given rate) to avoid locks, sessions and
     other from being automatically closed/discarded by the coordinators
     backing store.
+    """
+
+    CHARACTERISTICS = ()
+    """
+    Tuple of :py:class:`~tooz.coordination.Characteristics` introspectable
+    enum member(s) that can be used to interogate how this driver works.
     """
 
     def __init__(self):
