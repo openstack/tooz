@@ -27,10 +27,10 @@ import weakref
 from concurrent import futures
 
 import fasteners
-import jsonschema
 from oslo_utils import encodeutils
 from oslo_utils import timeutils
 import six
+import voluptuous
 
 import tooz
 from tooz import coordination
@@ -50,50 +50,29 @@ class _Barrier(object):
 def _translate_failures():
     try:
         yield
-    except (EnvironmentError, jsonschema.ValidationError) as e:
+    except (EnvironmentError, voluptuous.Invalid) as e:
         coordination.raise_with_cause(coordination.ToozError,
                                       encodeutils.exception_to_unicode(e),
                                       cause=e)
 
 
-_SCHEMA_TYPES = {
-    'array': (list, tuple),
-    'string': six.string_types + (six.binary_type,),
-}
 _SCHEMAS = {
-    'group': {
-        "type": "object",
-        "properties": {
-            "group_id": {
-                "type": "string"
-            },
-        },
-        "required": [
-            "group_id",
-        ],
-        "additionalProperties": True,
-    },
-    'member': {
-        "type": "object",
-        "properties": {
-            "member_id": {
-                "type": "string"
-            },
-            # For now joined_on and capabilities are left out as
-            # capabilities can be nearly arbitrary and joined_on is a date
-            # type (that is a python custom type).
-        },
-        "required": [
-            "member_id",
-        ],
-        "additionalProperties": True,
-    },
+    'group': voluptuous.Schema({
+        voluptuous.Required('group_id'): voluptuous.Any(six.text_type,
+                                                        six.binary_type),
+    }),
+    'member': voluptuous.Schema({
+        voluptuous.Required('member_id'): voluptuous.Any(six.text_type,
+                                                         six.binary_type),
+        voluptuous.Required('joined_on'): datetime.datetime,
+    }, extra=voluptuous.ALLOW_EXTRA),
 }
 
 
-def _validate(data, schema_key):
+def _load_and_validate(blob, schema_key):
+    data = utils.loads(blob)
     schema = _SCHEMAS[schema_key]
-    jsonschema.validate(data, schema, types=_SCHEMA_TYPES)
+    schema(data)
     return data
 
 
@@ -332,8 +311,7 @@ class FileDriver(coordination._RunWatchersMixin,
 
         def _read_member_id(path):
             with open(path, 'rb') as fh:
-                contents = fh.read()
-                details = _validate(utils.loads(contents), 'member')
+                details = _load_and_validate(fh.read(), 'member')
                 return details['member_id']
 
         @_lock_me(self._driver_lock)
@@ -385,7 +363,7 @@ class FileDriver(coordination._RunWatchersMixin,
                 else:
                     raise
             else:
-                details = _validate(utils.loads(contents), 'member')
+                details = _load_and_validate(contents, 'member')
                 return details.get("capabilities")
 
         fut = self._executor.submit(_do_get_member_capabilities)
@@ -421,8 +399,7 @@ class FileDriver(coordination._RunWatchersMixin,
 
         def _read_group_id(path):
             with open(path, 'rb') as fh:
-                contents = fh.read()
-                details = _validate(utils.loads(contents), 'group')
+                details = _load_and_validate(fh.read(), 'group')
                 return details['group_id']
 
         @_lock_me(self._driver_lock)
