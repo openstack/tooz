@@ -214,6 +214,24 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
                                           encodeutils.exception_to_unicode(e),
                                           cause=e)
 
+    def heartbeat(self):
+        # Just fetch the base path (and do nothing with it); this will
+        # force any waiting heartbeat responses to be flushed, and also
+        # ensures that the connection still works as expected...
+        base_path = self._paths_join("/", self._namespace)
+        try:
+            self._coord.get(base_path)
+        except self._timeout_exception as e:
+            coordination.raise_with_cause(coordination.OperationTimedOut,
+                                          encodeutils.exception_to_unicode(e),
+                                          cause=e)
+        except exceptions.NoNodeError:
+            pass
+        except exceptions.ZookeeperError as e:
+            coordination.raise_with_cause(coordination.ToozError,
+                                          encodeutils.exception_to_unicode(e),
+                                          cause=e)
+
     def leave_group(self, group_id):
         member_path = self._path_member(group_id, self._member_id)
         async_result = self._coord.delete_async(member_path)
