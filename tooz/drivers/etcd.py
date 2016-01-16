@@ -58,13 +58,19 @@ class _Client(object):
         return self.base_url + '/v2/' + path.lstrip("/")
 
     def get(self, url, **kwargs):
-        return self.session.get(self.get_url(url), **kwargs).json()
+        if kwargs.pop('make_url', True):
+            url = self.get_url(url)
+        return self.session.get(url, **kwargs).json()
 
     def put(self, url, **kwargs):
-        return self.session.put(self.get_url(url), **kwargs).json()
+        if kwargs.pop('make_url', True):
+            url = self.get_url(url)
+        return self.session.put(url, **kwargs).json()
 
     def delete(self, url, **kwargs):
-        return self.session.delete(self.get_url(url), **kwargs).json()
+        if kwargs.pop('make_url', True):
+            url = self.get_url(url)
+        return self.session.delete(url, **kwargs).json()
 
     def self_stats(self):
         return self.session.get(self.get_url("/stats/self"))
@@ -74,16 +80,13 @@ class EtcdLock(locking.Lock):
 
     _TOOZ_LOCK_PREFIX = "tooz_locks"
 
-    def __init__(self, name, coord, client, ttl=60):
+    def __init__(self, lock_url, name, coord, client, ttl=60):
         super(EtcdLock, self).__init__(name)
         self.client = client
         self.coord = coord
         self.lock = None
         self.ttl = ttl
-        # NOTE(jd) sha1 of the name to be sure it works with any string?
-        self._lock_url = (
-            "/keys/" + self._TOOZ_LOCK_PREFIX + "/" + name.decode('ascii')
-        )
+        self._lock_url = lock_url
 
     def acquire(self, blocking=True):
         blocking, timeout = utils.convert_blocking(blocking)
@@ -97,6 +100,7 @@ class EtcdLock(locking.Lock):
             try:
                 reply = self.client.put(
                     self._lock_url,
+                    make_url=False,
                     timeout=watch.leftover() if watch else None,
                     data={"ttl": self.ttl,
                           "prevExist": "false"})
@@ -118,6 +122,7 @@ class EtcdLock(locking.Lock):
                 reply = self.client.get(
                     self._lock_url +
                     "?wait=true&waitIndex=%d" % reply['index'],
+                    make_url=False,
                     timeout=watch.leftover() if watch else None)
             except requests.exceptions.RequestException:
                 if watch and watch.expired():
@@ -126,7 +131,7 @@ class EtcdLock(locking.Lock):
     @_translate_failures
     def release(self):
         if self in self.coord._acquired_locks:
-            reply = self.client.delete(self._lock_url)
+            reply = self.client.delete(self._lock_url, make_url=False)
             if reply.get("errorCode") is None:
                 self.coord._acquired_locks.remove(self)
                 return True
@@ -137,7 +142,7 @@ class EtcdLock(locking.Lock):
         """Keep the lock alive."""
         poked = self.client.put(self._lock_url,
                                 data={"ttl": self.ttl,
-                                      "prevExist": "true"})
+                                      "prevExist": "true"}, make_url=False)
         errorcode = poked.get("errorCode")
         if errorcode:
             LOG.warn("Unable to heartbeat by updating key '%s' with extended"
@@ -161,6 +166,9 @@ class EtcdDriver(coordination.CoordinationDriver):
     #: Default port used if none provided (4001 or 2379 are the common ones).
     DEFAULT_PORT = 2379
 
+    #: Class that will be used to encode lock names into a valid etcd url.
+    lock_encoder_cls = utils.Base64LockEncoder
+
     def __init__(self, member_id, parsed_url, options):
         super(EtcdDriver, self).__init__()
         host = parsed_url.hostname or self.DEFAULT_HOST
@@ -169,8 +177,8 @@ class EtcdDriver(coordination.CoordinationDriver):
         self.client = _Client(host=host, port=port,
                               protocol=options.get('protocol', 'http'))
         default_timeout = options.get('timeout', self.DEFAULT_TIMEOUT)
-        self.lock_timeout = int(options.get(
-            'lock_timeout', default_timeout))
+        self.lock_encoder = self.lock_encoder_cls(self.client.get_url("keys"))
+        self.lock_timeout = int(options.get('lock_timeout', default_timeout))
         self._acquired_locks = []
 
     def _start(self):
@@ -181,7 +189,8 @@ class EtcdDriver(coordination.CoordinationDriver):
                 encodeutils.exception_to_unicode(e))
 
     def get_lock(self, name):
-        return EtcdLock(name, self, self.client, self.lock_timeout)
+        return EtcdLock(self.lock_encoder.check_and_encode(name), name,
+                        self, self.client, self.lock_timeout)
 
     def heartbeat(self):
         for lock in self._acquired_locks:
