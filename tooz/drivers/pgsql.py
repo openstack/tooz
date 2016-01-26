@@ -212,9 +212,9 @@ class PostgresDriver(coordination.CoordinationDriver):
 
     @staticmethod
     def get_connection(parsed_url, options):
-        host = options.get("host")
-        port = parsed_url.port or options.get("port")
-        dbname = parsed_url.path[1:] or options.get("dbname")
+        host = options.get("host") or parsed_url.hostname
+        port = options.get("port") or parsed_url.port
+        dbname = options.get("dbname") or parsed_url.path[1:]
         username = parsed_url.username
         password = parsed_url.password
 
