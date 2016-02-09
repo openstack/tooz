@@ -74,6 +74,10 @@ class RedisLock(locking.Lock):
             owner_tok = self._client.get(self.name)
             return owner_tok == lock_tok
 
+    def break_(self):
+        with _translate_failures():
+            return bool(self._client.delete(self.name))
+
     def acquire(self, blocking=True):
         blocking, timeout = utils.convert_blocking(blocking)
         with _translate_failures():

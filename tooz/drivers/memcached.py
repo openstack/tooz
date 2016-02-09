@@ -104,6 +104,10 @@ class MemcachedLock(locking.Lock):
         return gotten
 
     @_translate_failures
+    def break_(self):
+        return bool(self.coord.client.delete(self.name, noreply=False))
+
+    @_translate_failures
     def release(self):
         if not self.acquired:
             return False
@@ -133,11 +137,19 @@ class MemcachedLock(locking.Lock):
         # id and then do the delete and bail out if the session id is not
         # as expected but memcache doesn't seem to have any equivalent
         # capability.
-        if (self in self.coord._acquired_locks and
-           self.coord.client.delete(self.name, noreply=False)):
-            self.coord._acquired_locks.remove(self)
-            return True
-        return False
+        if self not in self.coord._acquired_locks:
+            return False
+        # Do a ghetto test to see what the value is... (see above note),
+        # and how this really can't be done safely with memcache due to
+        # it being done in the client side (non-atomic).
+        value = self.coord.client.get(self.name)
+        if value != self.coord._member_id:
+            return False
+        else:
+            was_deleted = self.coord.client.delete(self.name, noreply=False)
+            if was_deleted:
+                self.coord._acquired_locks.remove(self)
+            return was_deleted
 
     @_translate_failures
     def heartbeat(self):

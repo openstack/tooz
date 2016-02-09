@@ -105,6 +105,27 @@ class TestAPI(testscenarios.TestWithScenarios,
         all_group_ids = self._coord.get_groups().get()
         self.assertTrue(self.group_id in all_group_ids)
 
+    def test_get_lock_release_broken(self):
+        name = self._get_random_uuid()
+        memberid2 = self._get_random_uuid()
+        coord2 = tooz.coordination.get_coordinator(self.url,
+                                                   memberid2)
+        coord2.start()
+        lock1 = self._coord.get_lock(name)
+        lock2 = coord2.get_lock(name)
+        self.assertTrue(lock1.acquire(blocking=False))
+        self.assertFalse(lock2.acquire(blocking=False))
+        self.assertTrue(lock2.break_())
+        self.assertTrue(lock2.acquire(blocking=False))
+        self.assertFalse(lock1.release())
+        # Assert lock is not accidentally broken now
+        memberid3 = self._get_random_uuid()
+        coord3 = tooz.coordination.get_coordinator(self.url,
+                                                   memberid3)
+        coord3.start()
+        lock3 = coord3.get_lock(name)
+        self.assertFalse(lock3.acquire(blocking=False))
+
     def test_create_group_already_exist(self):
         self._coord.create_group(self.group_id).get()
         create_group = self._coord.create_group(self.group_id)
