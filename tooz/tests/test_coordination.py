@@ -886,6 +886,13 @@ class TestAPI(testscenarios.TestWithScenarios,
     def _get_random_uuid():
         return str(uuid.uuid4()).encode('ascii')
 
+    def test_acquire_twice_no_deadlock_releasing(self):
+        name = self._get_random_uuid()
+        lock = self._coord.get_lock(name)
+        self.assertTrue(lock.acquire(blocking=False))
+        self.assertFalse(lock.acquire(blocking=False))
+        self.assertTrue(lock.release())
+
 
 class TestHook(testcase.TestCase):
     def setUp(self):

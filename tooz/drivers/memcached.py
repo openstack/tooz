@@ -73,7 +73,6 @@ class MemcachedLock(locking.Lock):
         super(MemcachedLock, self).__init__(self._LOCK_PREFIX + name)
         self.coord = coord
         self.timeout = timeout
-        self.acquired = False
 
     def is_still_owner(self):
         if not self.acquired:
@@ -100,8 +99,7 @@ class MemcachedLock(locking.Lock):
                 return False
             raise _retry.Retry
 
-        self.acquired = gotten = _acquire()
-        return gotten
+        return _acquire()
 
     @_translate_failures
     def break_(self):
@@ -166,6 +164,10 @@ class MemcachedLock(locking.Lock):
     @_translate_failures
     def get_owner(self):
         return self.coord.client.get(self.name)
+
+    @property
+    def acquired(self):
+        return self in self.coord._acquired_locks
 
 
 class MemcachedDriver(coordination._RunWatchersMixin,

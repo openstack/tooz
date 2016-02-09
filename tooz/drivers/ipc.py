@@ -85,21 +85,23 @@ class IPCLock(locking.Lock):
         elif blocking and timeout is not None:
             start_time = time.time()
         while True:
+            tmplock = None
             try:
-                self._lock = sysv_ipc.Semaphore(self.key,
-                                                flags=sysv_ipc.IPC_CREX,
-                                                initial_value=1)
-                self._lock.undo = True
+                tmplock = sysv_ipc.Semaphore(self.key,
+                                             flags=sysv_ipc.IPC_CREX,
+                                             initial_value=1)
+                tmplock.undo = True
             except sysv_ipc.ExistentialError:
                 # We failed to create it because it already exists, then try to
                 # grab the existing one.
                 try:
-                    self._lock = sysv_ipc.Semaphore(self.key)
-                    self._lock.undo = True
+                    tmplock = sysv_ipc.Semaphore(self.key)
+                    tmplock.undo = True
                 except sysv_ipc.ExistentialError:
                     # Semaphore has been deleted in the mean time, retry from
                     # the beginning!
                     continue
+
             if start_time is not None:
                 elapsed = max(0.0, time.time() - start_time)
                 if elapsed >= timeout:
@@ -109,24 +111,24 @@ class IPCLock(locking.Lock):
             else:
                 adjusted_timeout = timeout
             try:
-                self._lock.acquire(timeout=adjusted_timeout)
+                tmplock.acquire(timeout=adjusted_timeout)
             except sysv_ipc.BusyError:
-                self._lock = None
+                tmplock = None
                 return False
             except sysv_ipc.ExistentialError:
                 # Likely the lock has been deleted in the meantime, retry
                 continue
             else:
+                self._lock = tmplock
                 return True
 
     def release(self):
         if self._lock is not None:
             try:
                 self._lock.remove()
+                self._lock = None
             except sysv_ipc.ExistentialError:
                 return False
-            finally:
-                self._lock = None
             return True
         return False
 
