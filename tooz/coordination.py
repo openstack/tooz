@@ -194,7 +194,11 @@ class CoordinationDriver(object):
         :param callback: The function that was executed when a member joined
                          this group
         """
-        self._hooks_join_group[group_id].remove(callback)
+        try:
+            self._hooks_join_group[group_id].remove(callback)
+        except ValueError:
+            raise WatchCallbackNotFound(group_id, callback)
+
         if (not self._has_hooks_for_group(group_id) and
            group_id in self._group_members):
             del self._group_members[group_id]
@@ -221,7 +225,11 @@ class CoordinationDriver(object):
         :param callback: The function that was executed when a member left
                          this group
         """
-        self._hooks_leave_group[group_id].remove(callback)
+        try:
+            self._hooks_leave_group[group_id].remove(callback)
+        except ValueError:
+            raise WatchCallbackNotFound(group_id, callback)
+
         if (not self._has_hooks_for_group(group_id) and
            group_id in self._group_members):
             del self._group_members[group_id]
@@ -252,7 +260,11 @@ class CoordinationDriver(object):
                          group
 
         """
-        self._hooks_elected_leader[group_id].remove(callback)
+        try:
+            self._hooks_elected_leader[group_id].remove(callback)
+        except ValueError:
+            raise WatchCallbackNotFound(group_id, callback)
+
         if not self._hooks_elected_leader[group_id]:
             del self._hooks_elected_leader[group_id]
 
@@ -609,6 +621,21 @@ class GroupNotEmpty(ToozError):
     def __init__(self, group_id):
         self.group_id = group_id
         super(GroupNotEmpty, self).__init__("Group %s is not empty" % group_id)
+
+
+class WatchCallbackNotFound(ToozError):
+    """Exception raised when unwatching a group.
+
+    Raised when the caller tries to unwatch a group with a callback that
+    does not exist.
+
+    """
+    def __init__(self, group_id, callback):
+        self.group_id = group_id
+        self.callback = callback
+        super(WatchCallbackNotFound, self).__init__(
+            'Callback %s is not registered on group %s' %
+            (callback.__name__, group_id))
 
 
 class SerializationError(ToozError):

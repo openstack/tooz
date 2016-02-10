@@ -671,6 +671,24 @@ class TestAPI(testscenarios.TestWithScenarios,
         self._coord.unwatch_elected_as_leader(self.group_id, self._set_event)
         self.assertEqual(0, len(self._coord._hooks_elected_leader))
 
+    def test_unwatch_elected_as_leader_callback_not_found(self):
+        self._coord.create_group(self.group_id).get()
+        self.assertRaises(tooz.coordination.WatchCallbackNotFound,
+                          self._coord.unwatch_elected_as_leader,
+                          self.group_id, lambda x: None)
+
+    def test_unwatch_join_group_callback_not_found(self):
+        self._coord.create_group(self.group_id).get()
+        self.assertRaises(tooz.coordination.WatchCallbackNotFound,
+                          self._coord.unwatch_join_group,
+                          self.group_id, lambda x: None)
+
+    def test_unwatch_leave_group_callback_not_found(self):
+        self._coord.create_group(self.group_id).get()
+        self.assertRaises(tooz.coordination.WatchCallbackNotFound,
+                          self._coord.unwatch_leave_group,
+                          self.group_id, lambda x: None)
+
     def test_get_lock(self):
         lock = self._coord.get_lock(self._get_random_uuid())
         self.assertTrue(lock.acquire())
