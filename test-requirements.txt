@@ -26,4 +26,4 @@ pymemcache!=1.3.0,>=1.2.9 # Apache 2.0 License
 redis>=2.10.0 # MIT
 
 # Ensure that the eventlet executor continues to operate...
-eventlet!=0.18.0,>=0.17.4 # MIT
+eventlet>=0.18.2 # MIT
