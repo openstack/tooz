@@ -154,6 +154,9 @@ class CoordinationDriver(object):
         self._hooks_elected_leader = collections.defaultdict(Hooks)
         # A cache for group members
         self._group_members = collections.defaultdict(set)
+        self.requires_beating = (
+            CoordinationDriver.heartbeat != self.__class__.heartbeat
+        )
 
     def _has_hooks_for_group(self, group_id):
         return (len(self._hooks_join_group[group_id]) +

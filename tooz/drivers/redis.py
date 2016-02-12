@@ -314,9 +314,6 @@ return 1
     .. _Lua: http://www.lua.org
     """
 
-    #: This driver requires constant periodic (heart) beatings.
-    requires_beating = True
-
     def __init__(self, member_id, parsed_url, options):
         super(RedisDriver, self).__init__()
         options = utils.collapse(options, exclude=self.CLIENT_LIST_ARGS)
