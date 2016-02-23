@@ -37,7 +37,6 @@ class ZooKeeperLock(locking.Lock):
         super(ZooKeeperLock, self).__init__(name)
         self._lock = lock
         self._client = lock.client
-        self.acquired = False
 
     def is_still_owner(self):
         if not self.acquired:
@@ -58,17 +57,19 @@ class ZooKeeperLock(locking.Lock):
 
     def acquire(self, blocking=True):
         blocking, timeout = utils.convert_blocking(blocking)
-        self.acquired = self._lock.acquire(blocking=blocking,
-                                           timeout=timeout)
-        return self.acquired
+        return self._lock.acquire(blocking=blocking,
+                                  timeout=timeout)
 
     def release(self):
         if self.acquired:
             self._lock.release()
-            self.acquired = False
             return True
         else:
             return False
+
+    @property
+    def acquired(self):
+        return self._lock.is_acquired
 
 
 class BaseZooKeeperDriver(coordination.CoordinationDriver):

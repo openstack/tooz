@@ -64,7 +64,6 @@ class RedisLock(locking.Lock):
                                          thread_local=False)
         self._coord = coord
         self._client = client
-        self.acquired = False
 
     def is_still_owner(self):
         with _translate_failures():
@@ -81,11 +80,11 @@ class RedisLock(locking.Lock):
     def acquire(self, blocking=True):
         blocking, timeout = utils.convert_blocking(blocking)
         with _translate_failures():
-            self.acquired = self._lock.acquire(
+            acquired = self._lock.acquire(
                 blocking=blocking, blocking_timeout=timeout)
-            if self.acquired:
+            if acquired:
                 self._coord._acquired_locks.add(self)
-            return self.acquired
+            return acquired
 
     def release(self):
         if not self.acquired:
@@ -96,13 +95,16 @@ class RedisLock(locking.Lock):
             except exceptions.LockError:
                 return False
             self._coord._acquired_locks.discard(self)
-            self.acquired = False
             return True
 
     def heartbeat(self):
         if self.acquired:
             with _translate_failures():
                 self._lock.extend(self._lock.timeout)
+
+    @property
+    def acquired(self):
+        return self in self._coord._acquired_locks
 
 
 class RedisDriver(coordination._RunWatchersMixin,
