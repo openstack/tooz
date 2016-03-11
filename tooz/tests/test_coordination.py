@@ -138,7 +138,7 @@ class TestAPI(testscenarios.TestWithScenarios,
             self._coord.create_group(group_id).get()
         created_groups = self._coord.get_groups().get()
         for group_id in groups_ids:
-            self.assertTrue(group_id in created_groups)
+            self.assertIn(group_id, created_groups)
 
     def test_delete_group(self):
         self._coord.create_group(self.group_id).get()
