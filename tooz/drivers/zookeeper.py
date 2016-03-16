@@ -232,6 +232,7 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
             coordination.raise_with_cause(coordination.ToozError,
                                           encodeutils.exception_to_unicode(e),
                                           cause=e)
+        return self.timeout
 
     def leave_group(self, group_id):
         member_path = self._path_member(group_id, self._member_id)

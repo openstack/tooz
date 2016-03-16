@@ -214,6 +214,7 @@ class EtcdDriver(coordination.CoordinationDriver):
     def heartbeat(self):
         for lock in self._acquired_locks:
             lock.heartbeat()
+        return self.lock_timeout
 
     @staticmethod
     def watch_join_group(group_id, callback):
