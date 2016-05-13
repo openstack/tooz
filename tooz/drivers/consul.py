@@ -16,7 +16,6 @@
 
 from __future__ import absolute_import
 
-from concurrent import futures
 import consul
 from oslo_utils import encodeutils
 
@@ -185,21 +184,3 @@ class ConsulDriver(coordination.CoordinationDriver):
     @staticmethod
     def unwatch_elected_as_leader(group_id, callback):
         raise tooz.NotImplemented
-
-
-class ConsulFutureResult(coordination.CoordAsyncResult):
-    """Consul asynchronous result that references a future."""
-    def __init__(self, fut):
-        self._fut = fut
-
-    def get(self, timeout=10):
-        try:
-            return self._fut.result(timeout=timeout)
-        except futures.TimeoutError as e:
-            coordination.raise_with_cause(
-                coordination.OperationTimedOut,
-                encodeutils.exception_to_unicode(e),
-                cause=e)
-
-    def done(self):
-        return self._fut.done()
