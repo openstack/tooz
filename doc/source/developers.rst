@@ -9,7 +9,7 @@ Interfaces
    :members:
 
 Etcd
-~~~
+~~~~
 
 .. autoclass:: tooz.drivers.etcd.EtcdDriver
    :members:
