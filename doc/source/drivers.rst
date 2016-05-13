@@ -198,12 +198,32 @@ The etcd driver is a driver providing only distributed locks (for now)
 and is based on the `etcd server`_ supported key/value storage and
 associated primitives.
 
+Consul
+------
+
+**Driver:**  :py:class:`tooz.drivers.consul.ConsulDriver`
+
+**Characteristics:**
+
+:py:attr:`tooz.drivers.consul.ConsulDriver.CHARACTERISTICS`
+
+**Entrypoint name:** ``consul``
+
+**Summary:**
+
+The `consul`_ driver is a driver providing only distributed locks (for now)
+and is based on the consul server key/value storage and/or
+primitives. When a lock is acquired it will release either when explicitly
+released or automatically when the consul session ends (for example if
+the program using the lock crashes).
+
 Characteristics
 ---------------
 
 .. autoclass:: tooz.coordination.Characteristics
 
 .. _etcd server: https://coreos.com/etcd/
+.. _consul: https://www.consul.io/
 .. _advisory locks: http://www.postgresql.org/docs/8.2/interactive/\
                     explicit-locking.html#ADVISORY-LOCKS
 .. _get_lock: http://dev.mysql.com/doc/refman/5.5/en/\

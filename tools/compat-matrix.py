@@ -33,6 +33,7 @@ def print_methods(methods):
 
 driver_tpl = ":py:class:`~tooz.drivers.%s`"
 driver_class_names = [
+    "consul.ConsulDriver",
     "etcd.EtcdDriver",
     "file.FileDriver",
     "ipc.IPCDriver",
@@ -72,6 +73,7 @@ print_header("Driver support", delim="-")
 print("")
 grouping_table = [
     [
+        "No",  # Consul
         "No",  # Etcd
         "Yes",  # File
         "No",  # IPC
@@ -103,6 +105,7 @@ print_header("Driver support", delim="-")
 print("")
 leader_table = [
     [
+        "No",  # Consul
         "No",  # Etcd
         "No",  # File
         "No",  # IPC
@@ -131,6 +134,7 @@ print_header("Driver support", delim="-")
 print("")
 lock_table = [
     [
+        "Yes",  # Consul
         "Yes",  # Etcd
         "Yes",  # File
         "Yes",  # IPC
