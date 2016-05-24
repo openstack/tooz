@@ -14,7 +14,7 @@ capabilities.
 If a driver does not support a feature, it will raise a
 :class:`~tooz.NotImplemented` exception.
 
-This example program loads a basic coordinataor using the ZooKeeper based
+This example program loads a basic coordinator using the ZooKeeper based
 driver.
 
 .. literalinclude:: ../../../examples/coordinator.py
