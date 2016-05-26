@@ -105,6 +105,7 @@ class MySQLDriver(coordination.CoordinationDriver):
     """
 
     CHARACTERISTICS = (
+        coordination.Characteristics.NON_TIMEOUT_BASED,
         coordination.Characteristics.DISTRIBUTED_ACROSS_THREADS,
         coordination.Characteristics.DISTRIBUTED_ACROSS_PROCESSES,
         coordination.Characteristics.DISTRIBUTED_ACROSS_HOSTS,

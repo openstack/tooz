@@ -205,6 +205,7 @@ class FileDriver(coordination._RunWatchersMixin,
     """
 
     CHARACTERISTICS = (
+        coordination.Characteristics.NON_TIMEOUT_BASED,
         coordination.Characteristics.DISTRIBUTED_ACROSS_THREADS,
         coordination.Characteristics.DISTRIBUTED_ACROSS_PROCESSES,
     )

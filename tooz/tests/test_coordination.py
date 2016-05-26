@@ -47,13 +47,11 @@ class TestAPI(testscenarios.TestWithScenarios,
                    'bad_url': 'kazoo://localhost:1'}),
         ('zake', {'url': 'zake://?timeout=5'}),
         ('memcached', {'url': os.getenv("TOOZ_TEST_MEMCACHED_URL"),
-                       'bad_url': 'memcached://localhost:1',
-                       'timeout_capable': True}),
+                       'bad_url': 'memcached://localhost:1'}),
         ('ipc', {'url': 'ipc://'}),
         ('file', {'url': 'file:///tmp'}),
         ('redis', {'url': os.getenv("TOOZ_TEST_REDIS_URL"),
-                   'bad_url': 'redis://localhost:1',
-                   'timeout_capable': True}),
+                   'bad_url': 'redis://localhost:1'}),
         ('postgresql', {'url': os.getenv("TOOZ_TEST_POSTGRESQL_URL"),
                         'bad_url': 'postgresql://localhost:1'}),
         ('mysql', {'url': os.getenv("TOOZ_TEST_MYSQL_URL"),
@@ -377,8 +375,9 @@ class TestAPI(testscenarios.TestWithScenarios,
         self.assertTrue(member_id_test2 not in members_ids)
 
     def test_timeout(self):
-        if not getattr(self, "timeout_capable", False):
-            self.skipTest("This test only works with timeout capable drivers")
+        if (tooz.coordination.Characteristics.NON_TIMEOUT_BASED
+           in self._coord.CHARACTERISTICS):
+            self.skipTest("This driver is not based on timeout")
         self._coord.stop()
         if "?" in self.url:
             sep = "&"
