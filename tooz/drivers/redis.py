@@ -508,6 +508,7 @@ return 1
             except coordination.ToozError:
                 LOG.warning("Unable to heartbeat lock '%s'", lock,
                             exc_info=True)
+        return min(self.lock_timeout, self.membership_timeout)
 
     def _stop(self):
         while self._acquired_locks:

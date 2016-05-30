@@ -338,7 +338,27 @@ class TestAPI(testscenarios.TestWithScenarios,
                              update_cap.get)
 
     def test_heartbeat(self):
+        if not self._coord.requires_beating:
+            raise testcase.TestSkipped("Test not applicable (heartbeating"
+                                       " not required)")
         self._coord.heartbeat()
+
+    def test_heartbeat_loop(self):
+        if not self._coord.requires_beating:
+            raise testcase.TestSkipped("Test not applicable (heartbeating"
+                                       " not required)")
+
+        heart = self._coord.heart
+        self.assertFalse(heart.is_alive())
+        heart.start()
+
+        # This will timeout if nothing ever is done...
+        try:
+            while not heart.beats:
+                time.sleep(1)
+        finally:
+            heart.stop()
+            heart.wait()
 
     def test_disconnect_leave_group(self):
         member_id_test2 = self._get_random_uuid()
