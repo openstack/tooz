@@ -60,17 +60,48 @@ _SCHEMAS = {
     'group': voluptuous.Schema({
         voluptuous.Required('group_id'): voluptuous.Any(six.text_type,
                                                         six.binary_type),
+        # NOTE(sileht): tooz <1.36 was creating file without this
+        voluptuous.Optional('encoded'): bool,
     }),
     'member': voluptuous.Schema({
         voluptuous.Required('member_id'): voluptuous.Any(six.text_type,
                                                          six.binary_type),
         voluptuous.Required('joined_on'): datetime.datetime,
+        # NOTE(sileht): tooz <1.36 was creating file without this
+        voluptuous.Optional('encoded'): bool,
     }, extra=voluptuous.ALLOW_EXTRA),
 }
 
 
+def _convert_from_old_format(data):
+    # NOTE(sileht): previous version of the driver was storing str as-is
+    # making impossible to read from python3 something written with python2
+    # version of the lib.
+    # Now everything is stored with explicit type bytes or unicode. This
+    # convert the old format to the new one to maintain compat of already
+    # deployed file.
+    # example of potential old python2 payload:
+    # {b"member_id": b"member"}
+    # {b"member_id": u"member"}
+    # example of potential old python3 payload:
+    # {u"member_id": b"member"}
+    # {u"member_id": u"member"}
+    if six.PY3 and b"member_id" in data or b"group_id" in data:
+        data = dict((k.decode("utf8"), v) for k, v in data.items())
+        # About member_id and group_id valuse if the file have been written
+        # with python2 and in the old format, we can't known with python3
+        # if we need to decode the value or not. Python3 see bytes blob
+        # We keep it as-is and pray, this have a good change to break if
+        # the application was using str in python2 and unicode in python3
+        # The member file is often overriden so it's should be fine
+        # But the group file can be very old, so we
+        # now have to update it each time create_group is called
+    return data
+
+
 def _load_and_validate(blob, schema_key):
     data = utils.loads(blob)
+    data = _convert_from_old_format(data)
     schema = _SCHEMAS[schema_key]
     schema(data)
     return data
@@ -224,6 +255,7 @@ class FileDriver(coordination._RunWatchersMixin,
 
     @classmethod
     def _make_filesystem_safe(cls, item):
+        item = utils.to_binary(item, encoding="utf8")
         return hashlib.new(cls.HASH_ROUTINE, item).hexdigest()
 
     def _start(self):
@@ -236,6 +268,15 @@ class FileDriver(coordination._RunWatchersMixin,
             self.leave_group(self._joined_groups.pop())
         self._executor.stop()
 
+    def _update_group_metadata(self, path, group_id):
+        details = {
+            u'group_id': utils.to_binary(group_id, encoding="utf8")
+        }
+        details[u'encoded'] = details[u"group_id"] != group_id
+        details_blob = utils.dumps(details)
+        with open(path, "wb") as fh:
+            fh.write(details_blob)
+
     def create_group(self, group_id):
         safe_group_id = self._make_filesystem_safe(group_id)
         group_dir = os.path.join(self._group_dir, safe_group_id)
@@ -244,16 +285,15 @@ class FileDriver(coordination._RunWatchersMixin,
         @_lock_me(self._driver_lock)
         def _do_create_group():
             if os.path.isdir(group_dir):
+                # NOTE(sileht): We update the group metadata even
+                # they are already good, so ensure dict key are convert
+                # to unicode in case of the file have been written with
+                # tooz < 1.36
+                self._update_group_metadata(group_meta_path, group_id)
                 raise coordination.GroupAlreadyExist(group_id)
             else:
-                details = {
-                    'group_id': group_id,
-                }
-                details_blob = utils.dumps(details)
                 utils.ensure_tree(group_dir)
-                with open(group_meta_path, "wb") as fh:
-                    fh.write(details_blob)
-
+                self._update_group_metadata(group_meta_path, group_id)
         fut = self._executor.submit(_do_create_group)
         return FileFutureResult(fut)
 
@@ -270,10 +310,12 @@ class FileDriver(coordination._RunWatchersMixin,
                 raise coordination.MemberAlreadyExist(group_id,
                                                       self._member_id)
             details = {
-                'capabilities': capabilities,
-                'joined_on': datetime.datetime.now(),
-                'member_id': self._member_id,
+                u'capabilities': capabilities,
+                u'joined_on': datetime.datetime.now(),
+                u'member_id': utils.to_binary(self._member_id,
+                                              encoding="utf-8")
             }
+            details[u'encoded'] = details[u"member_id"] != self._member_id
             details_blob = utils.dumps(details)
             with open(me_path, "wb") as fh:
                 fh.write(details_blob)
@@ -312,7 +354,10 @@ class FileDriver(coordination._RunWatchersMixin,
         def _read_member_id(path):
             with open(path, 'rb') as fh:
                 details = _load_and_validate(fh.read(), 'member')
-                return details['member_id']
+                if details.get("encoded"):
+                    return details[u'member_id'].decode("utf-8")
+                else:
+                    return details[u'member_id']
 
         @_lock_me(self._driver_lock)
         def _do_get_members():
@@ -364,7 +409,7 @@ class FileDriver(coordination._RunWatchersMixin,
                     raise
             else:
                 details = _load_and_validate(contents, 'member')
-                return details.get("capabilities")
+                return details.get(u"capabilities")
 
         fut = self._executor.submit(_do_get_member_capabilities)
         return FileFutureResult(fut)
@@ -400,7 +445,10 @@ class FileDriver(coordination._RunWatchersMixin,
         def _read_group_id(path):
             with open(path, 'rb') as fh:
                 details = _load_and_validate(fh.read(), 'group')
-                return details['group_id']
+                if details.get("encoded"):
+                    return details[u'group_id'].decode("utf-8")
+                else:
+                    return details[u'group_id']
 
         @_lock_me(self._driver_lock)
         def _do_get_groups():
