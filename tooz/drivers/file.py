@@ -503,7 +503,7 @@ class FileFutureResult(coordination.CoordAsyncResult):
     def __init__(self, fut):
         self._fut = fut
 
-    def get(self, timeout=10):
+    def get(self, timeout=None):
         try:
             # Late translate the common failures since the file driver
             # may throw things that we can not catch in the callbacks where
