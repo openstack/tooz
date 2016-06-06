@@ -90,7 +90,7 @@ class MySQLLock(locking.Lock):
 
     def __del__(self):
         if self.acquired:
-            LOG.warn("unreleased lock %s garbage collected" % self.name)
+            LOG.warning("unreleased lock %s garbage collected", self.name)
 
 
 class MySQLDriver(coordination.CoordinationDriver):

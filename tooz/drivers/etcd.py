@@ -152,8 +152,8 @@ class EtcdLock(locking.Lock):
                 self._node = None
                 return True
             else:
-                LOG.warn("Unable to release '%s' due to %d, %s",
-                         self.name, errorcode, reply.get('message'))
+                LOG.warning("Unable to release '%s' due to %d, %s",
+                            self.name, errorcode, reply.get('message'))
         return False
 
     @_translate_failures
@@ -164,9 +164,9 @@ class EtcdLock(locking.Lock):
                                       "prevExist": "true"}, make_url=False)
         errorcode = poked.get("errorCode")
         if errorcode:
-            LOG.warn("Unable to heartbeat by updating key '%s' with extended"
-                     " expiry of %s seconds: %d, %s", self.name, self.ttl,
-                     errorcode, poked.get("message"))
+            LOG.warning("Unable to heartbeat by updating key '%s' with "
+                        "extended expiry of %s seconds: %d, %s", self.name,
+                        self.ttl, errorcode, poked.get("message"))
 
 
 class EtcdDriver(coordination.CoordinationDriver):

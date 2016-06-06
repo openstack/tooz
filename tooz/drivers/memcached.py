@@ -157,9 +157,9 @@ class MemcachedLock(locking.Lock):
                                             expire=self.timeout,
                                             noreply=False)
             if not poked:
-                LOG.warn("Unable to heartbeat by updating key '%s' with"
-                         " extended expiry of %s seconds", self.name,
-                         self.timeout)
+                LOG.warning("Unable to heartbeat by updating key '%s' with "
+                            "extended expiry of %s seconds", self.name,
+                            self.timeout)
 
     @_translate_failures
     def get_owner(self):

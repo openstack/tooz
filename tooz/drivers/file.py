@@ -181,7 +181,7 @@ class FileLock(locking.Lock):
 
     def __del__(self):
         if self.acquired:
-            LOG.warn("Unreleased lock %s garbage collected", self.name)
+            LOG.warning("Unreleased lock %s garbage collected", self.name)
 
 
 class FileDriver(coordination._RunWatchersMixin,
