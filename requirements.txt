@@ -13,7 +13,7 @@ fasteners>=0.7 # Apache-2.0
 retrying!=1.3.0,>=1.2.3 # Apache-2.0
 futures>=3.0;python_version=='2.7' or python_version=='2.6' # BSD
 futurist>=0.11.0 # Apache-2.0
-oslo.utils>=3.9.0 # Apache-2.0
+oslo.utils>=3.11.0 # Apache-2.0
 oslo.serialization>=1.10.0 # Apache-2.0
 requests>=2.10.0 # Apache-2.0
 python-consul>=0.4.7 # MIT License
