@@ -15,21 +15,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import os
 import uuid
 
 from oslo_utils import encodeutils
-import testtools
 from testtools import testcase
 
 from tooz import coordination
 
 
-@testtools.skipUnless(os.getenv("TOOZ_TEST_MYSQL_URL"),
-                      "TOOZ_TEST_MYSQL_URL env variable is not set")
-class TestMYSQLDriver(testcase.TestCase):
-
-    MYSQL_URL = os.getenv("TOOZ_TEST_MYSQL_URL")
+class TestMySQLDriver(testcase.TestCase):
 
     def _create_coordinator(self, url):
 
@@ -48,25 +42,13 @@ class TestMYSQLDriver(testcase.TestCase):
         return coord
 
     def test_connect_failure_invalid_hostname_provided(self):
-        url = self.MYSQL_URL.replace('localhost', 'invalidhost')
-        c = self._create_coordinator(url)
+        c = self._create_coordinator("mysql://invalidhost/test")
         self.assertRaises(coordination.ToozConnectionError, c.start)
 
     def test_connect_failure_invalid_port_provided(self):
-        url = self.MYSQL_URL.replace('localhost:13', 'localhost:54')
-        c = self._create_coordinator(url)
+        c = self._create_coordinator("mysql://localhost:54/test")
         self.assertRaises(coordination.ToozConnectionError, c.start)
 
     def test_connect_failure_invalid_hostname_and_port_provided(self):
-        url = self.MYSQL_URL.replace('localhost:13', 'invalidhost:54')
-        c = self._create_coordinator(url)
+        c = self._create_coordinator("mysql://invalidhost:54/test")
         self.assertRaises(coordination.ToozConnectionError, c.start)
-
-    def test_connect_failure_invalid_db_name_provided(self):
-        url = self.MYSQL_URL.replace('test', 'invalid')
-        c = self._create_coordinator(url)
-        self.assertRaises(coordination.ToozConnectionError, c.start)
-
-    def test_connect_success(self):
-        c = self._create_coordinator(self.MYSQL_URL)
-        c.start()

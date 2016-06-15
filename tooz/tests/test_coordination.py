@@ -54,7 +54,7 @@ class TestAPI(testscenarios.TestWithScenarios,
         ('redis', {'url': os.getenv("TOOZ_TEST_REDIS_URL"),
                    'bad_url': 'redis://localhost:1',
                    'timeout_capable': True}),
-        ('postgresql', {'url': os.getenv("TOOZ_TEST_PGSQL_URL"),
+        ('postgresql', {'url': os.getenv("TOOZ_TEST_POSTGRESQL_URL"),
                         'bad_url': 'postgresql://localhost:1'}),
         ('mysql', {'url': os.getenv("TOOZ_TEST_MYSQL_URL"),
                    'bad_url': 'mysql://localhost:1'}),
@@ -379,9 +379,17 @@ class TestAPI(testscenarios.TestWithScenarios,
     def test_timeout(self):
         if not getattr(self, "timeout_capable", False):
             self.skipTest("This test only works with timeout capable drivers")
+        self._coord.stop()
+        if "?" in self.url:
+            sep = "&"
+        else:
+            sep = "?"
+        url = self.url + sep + "timeout=5"
+        self._coord = tooz.coordination.get_coordinator(url, self.member_id)
+        self._coord.start()
+
         member_id_test2 = self._get_random_uuid()
-        client2 = tooz.coordination.get_coordinator(self.url,
-                                                    member_id_test2)
+        client2 = tooz.coordination.get_coordinator(url, member_id_test2)
         client2.start()
         self._coord.create_group(self.group_id).get()
         self._coord.join_group(self.group_id).get()

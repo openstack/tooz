@@ -1,16 +1,6 @@
 #!/bin/bash
 set -eux
-
-clean_exit() {
-    local error_code="$?"
-    kill $(jobs -p)
-    return $error_code
-}
-
-trap clean_exit EXIT
-if [ -n "$(which etcd)" ]; then
-    etcd &
-else
+if [ -z "$(which etcd)" ]; then
     ETCD_VERSION=2.2.2
     case `uname -s` in
         Darwin)
@@ -35,9 +25,7 @@ else
     esac
     TARBALL_NAME=etcd-v${ETCD_VERSION}-$OS-$MACHINE
     test ! -d "$TARBALL_NAME" && curl -L https://github.com/coreos/etcd/releases/download/v${ETCD_VERSION}/${TARBALL_NAME}.${SUFFIX} | tar xz
-    $TARBALL_NAME/etcd &
+    export PATH=$PATH:$TARBALL_NAME
 fi
 
-export TOOZ_TEST_ETCD_URL="etcd://localhost:4001"
-# Yield execution to venv command
 $*
