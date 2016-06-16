@@ -33,6 +33,7 @@ class ZakeDriver(zookeeper.KazooDriver):
     """
 
     CHARACTERISTICS = (
+        coordination.Characteristics.NON_TIMEOUT_BASED,
         coordination.Characteristics.DISTRIBUTED_ACROSS_THREADS,
     )
     """

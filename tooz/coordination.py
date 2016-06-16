@@ -50,6 +50,13 @@ class Characteristics(enum.Enum):
     """Coordinator components when used by multiple **hosts** work
        the same as if those components were only used by a single thread."""
 
+    NON_TIMEOUT_BASED = 'NON_TIMEOUT_BASED'
+    """The driver has the following property:
+
+    * Its operations are not based on the timeout of other clients, but on some
+    other more robust mechanisms.
+    """
+
     LINEARIZABLE = 'LINEARIZABLE'
     """The driver has the following properties:
 
