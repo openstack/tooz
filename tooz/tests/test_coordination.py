@@ -22,6 +22,7 @@ import uuid
 from concurrent import futures
 import fixtures
 import mock
+from six.moves.urllib import parse
 import testscenarios
 from testtools import matchers
 from testtools import testcase
@@ -43,23 +44,16 @@ class TestAPI(testscenarios.TestWithScenarios,
               tests.TestCaseSkipNotImplemented):
 
     scenarios = [
-        ('kazoo', {'url': os.getenv("TOOZ_TEST_ZOOKEEPER_URL"),
-                   'bad_url': 'kazoo://localhost:1'}),
+        ('kazoo', {'url': os.getenv("TOOZ_TEST_ZOOKEEPER_URL")}),
         ('zake', {'url': 'zake://?timeout=5'}),
-        ('memcached', {'url': os.getenv("TOOZ_TEST_MEMCACHED_URL"),
-                       'bad_url': 'memcached://localhost:1'}),
+        ('memcached', {'url': os.getenv("TOOZ_TEST_MEMCACHED_URL")}),
         ('ipc', {'url': 'ipc://'}),
         ('file', {'url': 'file:///tmp'}),
-        ('redis', {'url': os.getenv("TOOZ_TEST_REDIS_URL"),
-                   'bad_url': 'redis://localhost:1'}),
-        ('postgresql', {'url': os.getenv("TOOZ_TEST_POSTGRESQL_URL"),
-                        'bad_url': 'postgresql://localhost:1'}),
-        ('mysql', {'url': os.getenv("TOOZ_TEST_MYSQL_URL"),
-                   'bad_url': 'mysql://localhost:1'}),
-        ('zookeeper', {'url': os.getenv("TOOZ_TEST_ZOOKEEPER_URL"),
-                       'bad_url': 'zookeeper://localhost:1'}),
-        ('etcd', {'url': os.getenv("TOOZ_TEST_ETCD_URL"),
-                  'bad_url': 'etcd://localhost:1'}),
+        ('redis', {'url': os.getenv("TOOZ_TEST_REDIS_URL")}),
+        ('postgresql', {'url': os.getenv("TOOZ_TEST_POSTGRESQL_URL")}),
+        ('mysql', {'url': os.getenv("TOOZ_TEST_MYSQL_URL")}),
+        ('zookeeper', {'url': os.getenv("TOOZ_TEST_ZOOKEEPER_URL")}),
+        ('etcd', {'url': os.getenv("TOOZ_TEST_ETCD_URL")}),
         ('consul', {'url': os.getenv("TOOZ_TEST_CONSUL_URL")}),
     ]
 
@@ -85,11 +79,14 @@ class TestAPI(testscenarios.TestWithScenarios,
         self._coord.stop()
         super(TestAPI, self).tearDown()
 
-    def test_connection_error(self):
-        if not hasattr(self, "bad_url"):
-            raise testcase.TestSkipped("No bad URL provided")
-        coord = tooz.coordination.get_coordinator(self.bad_url,
-                                                  self.member_id)
+    def test_connection_error_bad_host(self):
+        if (tooz.coordination.Characteristics.DISTRIBUTED_ACROSS_HOSTS
+           not in self._coord.CHARACTERISTICS):
+            self.skipTest("This driver is not distributed across hosts")
+        scheme = parse.urlparse(self.url).scheme
+        coord = tooz.coordination.get_coordinator(
+            "%s://localhost:1/f00" % scheme,
+            self.member_id)
         self.assertRaises(tooz.coordination.ToozConnectionError,
                           coord.start)
 

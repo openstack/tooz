@@ -261,7 +261,10 @@ class FileDriver(coordination._RunWatchersMixin,
 
     def _start(self):
         for a_dir in self._reserved_dirs:
-            utils.ensure_tree(a_dir)
+            try:
+                utils.ensure_tree(a_dir)
+            except OSError as e:
+                raise coordination.ToozConnectionError(e)
         self._executor.start()
 
     def _stop(self):
