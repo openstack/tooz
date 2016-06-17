@@ -19,7 +19,10 @@ import copy
 
 from kazoo import client
 from kazoo import exceptions
-from kazoo.handlers import eventlet as eventlet_handler
+try:
+    from kazoo.handlers import eventlet as eventlet_handler
+except ImportError:
+    eventlet_handler = None
 from kazoo.handlers import threading as threading_handler
 from kazoo.protocol import paths
 from oslo_utils import encodeutils
@@ -425,9 +428,12 @@ class KazooDriver(BaseZooKeeperDriver):
     """
 
     HANDLERS = {
-        'eventlet': eventlet_handler.SequentialEventletHandler,
         'threading': threading_handler.SequentialThreadingHandler,
     }
+
+    if eventlet_handler:
+        HANDLERS['eventlet'] = eventlet_handler.SequentialEventletHandler
+
     """
     Restricted immutable dict of handler 'kinds' -> handler classes that
     this driver can accept via 'handler' option key (the expected value for
