@@ -26,7 +26,6 @@ from oslo_utils import encodeutils
 from oslo_utils import strutils
 import redis
 from redis import exceptions
-from redis import lock as redis_locks
 from redis import sentinel
 import six
 from six.moves import map as compat_map
@@ -59,9 +58,9 @@ class RedisLock(locking.Lock):
     def __init__(self, coord, client, name, timeout):
         name = "%s_%s_lock" % (coord.namespace, six.text_type(name))
         super(RedisLock, self).__init__(name)
-        self._lock = redis_locks.LuaLock(client, name,
-                                         timeout=timeout,
-                                         thread_local=False)
+        self._lock = client.lock(name,
+                                 timeout=timeout,
+                                 thread_local=False)
         self._coord = coord
         self._client = client
 
