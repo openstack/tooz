@@ -23,7 +23,6 @@ from concurrent import futures
 import fixtures
 import mock
 from six.moves.urllib import parse
-import testscenarios
 from testtools import matchers
 from testtools import testcase
 
@@ -40,22 +39,9 @@ def try_to_lock_job(name, coord, url, member_id):
     return lock2.acquire(blocking=False)
 
 
-class TestAPI(testscenarios.TestWithScenarios,
-              tests.TestCaseSkipNotImplemented):
+class TestAPI(tests.TestCaseSkipNotImplemented):
 
-    scenarios = [
-        ('kazoo', {'url': os.getenv("TOOZ_TEST_ZOOKEEPER_URL")}),
-        ('zake', {'url': 'zake://?timeout=5'}),
-        ('memcached', {'url': os.getenv("TOOZ_TEST_MEMCACHED_URL")}),
-        ('ipc', {'url': 'ipc://'}),
-        ('file', {'url': 'file:///tmp'}),
-        ('redis', {'url': os.getenv("TOOZ_TEST_REDIS_URL")}),
-        ('postgresql', {'url': os.getenv("TOOZ_TEST_POSTGRESQL_URL")}),
-        ('mysql', {'url': os.getenv("TOOZ_TEST_MYSQL_URL")}),
-        ('zookeeper', {'url': os.getenv("TOOZ_TEST_ZOOKEEPER_URL")}),
-        ('etcd', {'url': os.getenv("TOOZ_TEST_ETCD_URL")}),
-        ('consul', {'url': os.getenv("TOOZ_TEST_CONSUL_URL")}),
-    ]
+    url = os.getenv("TOOZ_TEST_URL")
 
     def assertRaisesAny(self, exc_classes, callable_obj, *args, **kwargs):
         checkers = [matchers.MatchesException(exc_class)
@@ -66,9 +52,9 @@ class TestAPI(testscenarios.TestWithScenarios,
 
     def setUp(self):
         super(TestAPI, self).setUp()
-        self.useFixture(fixtures.NestedTempfile())
         if self.url is None:
             self.skipTest("No URL set for this driver")
+        self.useFixture(fixtures.NestedTempfile())
         self.group_id = self._get_random_uuid()
         self.member_id = self._get_random_uuid()
         self._coord = tooz.coordination.get_coordinator(self.url,
@@ -917,6 +903,18 @@ class TestAPI(testscenarios.TestWithScenarios,
         self.assertTrue(lock.acquire(blocking=False))
         self.assertFalse(lock.acquire(blocking=False))
         self.assertTrue(lock.release())
+
+
+class ZakeTestAPI(TestAPI):
+    url = "zake://"
+
+
+class IPCTestAPI(TestAPI):
+    url = "ipc://"
+
+
+class FileTestAPI(TestAPI):
+    url = "file:///tmp"
 
 
 class TestHook(testcase.TestCase):
