@@ -133,7 +133,7 @@ class EtcdLock(locking.Lock):
             try:
                 reply = self.client.get(
                     self._lock_url +
-                    "?wait=true&waitIndex=%d" % reply['index'],
+                    "?wait=true&waitIndex=%d" % (reply['index'] + 1),
                     make_url=False,
                     timeout=watch.leftover() if watch else None)
             except requests.exceptions.RequestException:
