@@ -676,7 +676,8 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self._coord.watch_elected_as_leader(self.group_id, self._set_event)
 
         # Ensure exactly one leader election hook exists
-        self.assertEqual(1, len(self._coord._hooks_elected_leader))
+        self.assertEqual(1,
+                         len(self._coord._hooks_elected_leader[self.group_id]))
 
         # Unwatch, and ensure no leader election hooks exist
         self._coord.unwatch_elected_as_leader(self.group_id, self._set_event)
