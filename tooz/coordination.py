@@ -322,6 +322,9 @@ class CoordinationDriver(object):
            group_id in self._group_members):
             del self._group_members[group_id]
 
+        if not self._hooks_leave_group[group_id]:
+            del self._hooks_leave_group[group_id]
+
     @abc.abstractmethod
     def watch_elected_as_leader(self, group_id, callback):
         """Call a function when member gets elected as leader.
