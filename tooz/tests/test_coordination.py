@@ -695,6 +695,19 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
                           self._coord.unwatch_join_group,
                           self.group_id, lambda x: None)
 
+    def test_unwatch_leave_group(self):
+        # Create a group and add a leave_group callback
+        self._coord.create_group(self.group_id).get()
+        self.assertEqual(0, len(self._coord._hooks_leave_group))
+        self._coord.watch_leave_group(self.group_id, self._set_event)
+
+        # Ensure exactly one leave group hook exists
+        self.assertEqual(1, len(self._coord._hooks_leave_group[self.group_id]))
+
+        # Unwatch, and ensure no leave group hooks exist
+        self._coord.unwatch_leave_group(self.group_id, self._set_event)
+        self.assertEqual(0, len(self._coord._hooks_leave_group))
+
     def test_unwatch_leave_group_callback_not_found(self):
         self._coord.create_group(self.group_id).get()
         self.assertRaises(tooz.coordination.WatchCallbackNotFound,
