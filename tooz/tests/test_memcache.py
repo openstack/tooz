@@ -16,7 +16,6 @@
 #    under the License.
 
 import socket
-import uuid
 
 try:
     from unittest import mock
@@ -26,6 +25,7 @@ except ImportError:
 from testtools import testcase
 
 from tooz import coordination
+from tooz import tests
 
 
 class TestMemcacheDriverFailures(testcase.TestCase):
@@ -34,7 +34,7 @@ class TestMemcacheDriverFailures(testcase.TestCase):
     @mock.patch('pymemcache.client.PooledClient')
     def test_client_failure_start(self, mock_client_cls):
         mock_client_cls.side_effect = socket.timeout('timed-out')
-        member_id = str(uuid.uuid4()).encode('ascii')
+        member_id = tests.get_random_uuid()
         coord = coordination.get_coordinator(self.FAKE_URL, member_id)
         self.assertRaises(coordination.ToozConnectionError, coord.start)
 
@@ -42,29 +42,29 @@ class TestMemcacheDriverFailures(testcase.TestCase):
     def test_client_failure_join(self, mock_client_cls):
         mock_client = mock.MagicMock()
         mock_client_cls.return_value = mock_client
-        member_id = str(uuid.uuid4()).encode('ascii')
+        member_id = tests.get_random_uuid()
         coord = coordination.get_coordinator(self.FAKE_URL, member_id)
         coord.start()
         mock_client.gets.side_effect = socket.timeout('timed-out')
-        fut = coord.join_group(str(uuid.uuid4()).encode('ascii'))
+        fut = coord.join_group(tests.get_random_uuid())
         self.assertRaises(coordination.ToozConnectionError, fut.get)
 
     @mock.patch('pymemcache.client.PooledClient')
     def test_client_failure_leave(self, mock_client_cls):
         mock_client = mock.MagicMock()
         mock_client_cls.return_value = mock_client
-        member_id = str(uuid.uuid4()).encode('ascii')
+        member_id = tests.get_random_uuid()
         coord = coordination.get_coordinator(self.FAKE_URL, member_id)
         coord.start()
         mock_client.gets.side_effect = socket.timeout('timed-out')
-        fut = coord.leave_group(str(uuid.uuid4()).encode('ascii'))
+        fut = coord.leave_group(tests.get_random_uuid())
         self.assertRaises(coordination.ToozConnectionError, fut.get)
 
     @mock.patch('pymemcache.client.PooledClient')
     def test_client_failure_heartbeat(self, mock_client_cls):
         mock_client = mock.MagicMock()
         mock_client_cls.return_value = mock_client
-        member_id = str(uuid.uuid4()).encode('ascii')
+        member_id = tests.get_random_uuid()
         coord = coordination.get_coordinator(self.FAKE_URL, member_id)
         coord.start()
         mock_client.set.side_effect = socket.timeout('timed-out')
@@ -77,7 +77,7 @@ class TestMemcacheDriverFailures(testcase.TestCase):
                                        mock_run_watchers):
         mock_client = mock.MagicMock()
         mock_client_cls.return_value = mock_client
-        member_id = str(uuid.uuid4()).encode('ascii')
+        member_id = tests.get_random_uuid()
         coord = coordination.get_coordinator(self.FAKE_URL, member_id)
         coord.start()
         coord.run_watchers()

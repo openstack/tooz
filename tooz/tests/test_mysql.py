@@ -15,12 +15,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import uuid
-
 from oslo_utils import encodeutils
 from testtools import testcase
 
 from tooz import coordination
+from tooz import tests
 
 
 class TestMySQLDriver(testcase.TestCase):
@@ -37,7 +36,7 @@ class TestMySQLDriver(testcase.TestCase):
                     raise
 
         coord = coordination.get_coordinator(url,
-                                             str(uuid.uuid4()).encode('ascii'))
+                                             tests.get_random_uuid())
         self.addCleanup(_safe_stop, coord)
         return coord
 

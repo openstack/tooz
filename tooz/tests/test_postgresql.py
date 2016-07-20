@@ -14,8 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import uuid
-
 try:
     # Added in python 3.3+
     from unittest import mock
@@ -27,6 +25,7 @@ import testtools
 from testtools import testcase
 
 from tooz import coordination
+from tooz import tests
 
 # Handle the case gracefully where the driver is not installed.
 try:
@@ -57,7 +56,7 @@ class TestPostgreSQLFailures(testcase.TestCase):
                     raise
 
         coord = coordination.get_coordinator(self.FAKE_URL,
-                                             str(uuid.uuid4()).encode('ascii'))
+                                             tests.get_random_uuid())
         self.addCleanup(_safe_stop, coord)
         return coord
 

@@ -15,16 +15,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import uuid
-
 import mock
 from testtools import testcase
 
 from tooz import coordination
+from tooz import tests
 
 
 class TestFileDriver(testcase.TestCase):
-    _FAKE_MEMBER_ID = str(uuid.uuid4()).encode('ascii')
+    _FAKE_MEMBER_ID = tests.get_random_uuid()
 
     def test_base_dir(self):
         file_path = '/fake/file/path'
