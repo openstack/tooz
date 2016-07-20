@@ -17,7 +17,6 @@
 import os
 import threading
 import time
-import uuid
 
 from concurrent import futures
 import fixtures
@@ -55,8 +54,8 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         if self.url is None:
             self.skipTest("No URL set for this driver")
         self.useFixture(fixtures.NestedTempfile())
-        self.group_id = self._get_random_uuid()
-        self.member_id = self._get_random_uuid()
+        self.group_id = tests.get_random_uuid()
+        self.member_id = tests.get_random_uuid()
         self._coord = tooz.coordination.get_coordinator(self.url,
                                                         self.member_id)
         self._coord.start()
@@ -88,8 +87,8 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self.assertTrue(self.group_id in all_group_ids)
 
     def test_get_lock_release_broken(self):
-        name = self._get_random_uuid()
-        memberid2 = self._get_random_uuid()
+        name = tests.get_random_uuid()
+        memberid2 = tests.get_random_uuid()
         coord2 = tooz.coordination.get_coordinator(self.url,
                                                    memberid2)
         coord2.start()
@@ -101,7 +100,7 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self.assertTrue(lock2.acquire(blocking=False))
         self.assertFalse(lock1.release())
         # Assert lock is not accidentally broken now
-        memberid3 = self._get_random_uuid()
+        memberid3 = tests.get_random_uuid()
         coord3 = tooz.coordination.get_coordinator(self.url,
                                                    memberid3)
         coord3.start()
@@ -115,7 +114,7 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
                           create_group.get)
 
     def test_get_groups(self):
-        groups_ids = [self._get_random_uuid() for _ in range(0, 5)]
+        groups_ids = [tests.get_random_uuid() for _ in range(0, 5)]
         for group_id in groups_ids:
             self._coord.create_group(group_id).get()
         created_groups = self._coord.get_groups().get()
@@ -200,7 +199,7 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
                           leave_group.get)
 
     def test_get_lock_twice_locked_one_released_two(self):
-        name = self._get_random_uuid()
+        name = tests.get_random_uuid()
         lock1 = self._coord.get_lock(name)
         lock2 = self._coord.get_lock(name)
         self.assertTrue(lock1.acquire())
@@ -210,8 +209,8 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self.assertFalse(lock2.release())
 
     def test_get_members(self):
-        group_id_test2 = self._get_random_uuid()
-        member_id_test2 = self._get_random_uuid()
+        group_id_test2 = tests.get_random_uuid()
+        member_id_test2 = tests.get_random_uuid()
         client2 = tooz.coordination.get_coordinator(self.url,
                                                     member_id_test2)
         client2.start()
@@ -290,7 +289,7 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
 
     def test_get_member_info_nonjoined_member(self):
         self._coord.create_group(self.group_id).get()
-        member_id = self._get_random_uuid()
+        member_id = tests.get_random_uuid()
         member_info = self._coord.get_member_info(self.group_id,
                                                   member_id)
         self.assertRaises(tooz.coordination.MemberNotJoined,
@@ -342,7 +341,7 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
             heart.wait()
 
     def test_disconnect_leave_group(self):
-        member_id_test2 = self._get_random_uuid()
+        member_id_test2 = tests.get_random_uuid()
         client2 = tooz.coordination.get_coordinator(self.url,
                                                     member_id_test2)
         client2.start()
@@ -370,7 +369,7 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self._coord = tooz.coordination.get_coordinator(url, self.member_id)
         self._coord.start()
 
-        member_id_test2 = self._get_random_uuid()
+        member_id_test2 = tests.get_random_uuid()
         client2 = tooz.coordination.get_coordinator(url, member_id_test2)
         client2.start()
         self._coord.create_group(self.group_id).get()
@@ -409,7 +408,7 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         return 42
 
     def test_watch_group_join(self):
-        member_id_test2 = self._get_random_uuid()
+        member_id_test2 = tests.get_random_uuid()
         client2 = tooz.coordination.get_coordinator(self.url,
                                                     member_id_test2)
         client2.start()
@@ -443,7 +442,7 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self.assertIsNone(self.event)
 
     def test_watch_leave_group(self):
-        member_id_test2 = self._get_random_uuid()
+        member_id_test2 = tests.get_random_uuid()
         client2 = tooz.coordination.get_coordinator(self.url,
                                                     member_id_test2)
         client2.start()
@@ -494,7 +493,7 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self._coord.watch_join_group(self.group_id, self._set_event)
         self._coord.watch_leave_group(self.group_id, self._set_event)
 
-        member_id_test2 = self._get_random_uuid()
+        member_id_test2 = tests.get_random_uuid()
         client2 = tooz.coordination.get_coordinator(self.url,
                                                     member_id_test2)
         client2.start()
@@ -530,7 +529,7 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self._coord.watch_join_group(self.group_id, self._set_event)
         self._coord.watch_leave_group(self.group_id, self._set_event)
 
-        member_id_test2 = self._get_random_uuid()
+        member_id_test2 = tests.get_random_uuid()
         client2 = tooz.coordination.get_coordinator(self.url,
                                                     member_id_test2)
         client2.start()
@@ -576,7 +575,7 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self._coord.watch_elected_as_leader(self.group_id, self._set_event)
         self._coord.run_watchers()
 
-        member_id_test2 = self._get_random_uuid()
+        member_id_test2 = tests.get_random_uuid()
         client2 = tooz.coordination.get_coordinator(self.url,
                                                     member_id_test2)
         client2.start()
@@ -632,7 +631,7 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self._coord.watch_elected_as_leader(self.group_id, self._set_event)
         self._coord.run_watchers()
 
-        member_id_test2 = self._get_random_uuid()
+        member_id_test2 = tests.get_random_uuid()
         client2 = tooz.coordination.get_coordinator(self.url,
                                                     member_id_test2)
         client2.start()
@@ -701,14 +700,14 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
                           self.group_id, lambda x: None)
 
     def test_get_lock(self):
-        lock = self._coord.get_lock(self._get_random_uuid())
+        lock = self._coord.get_lock(tests.get_random_uuid())
         self.assertTrue(lock.acquire())
         self.assertTrue(lock.release())
         with lock:
             pass
 
     def test_get_lock_concurrency_locking_same_lock(self):
-        lock = self._coord.get_lock(self._get_random_uuid())
+        lock = self._coord.get_lock(tests.get_random_uuid())
 
         graceful_ending = threading.Event()
 
@@ -729,13 +728,13 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
 
     def _do_test_get_lock_concurrency_locking_two_lock(self, executor,
                                                        use_same_coord):
-        name = self._get_random_uuid()
+        name = tests.get_random_uuid()
         lock1 = self._coord.get_lock(name)
         with lock1:
             with executor(max_workers=1) as e:
                 coord = self._coord if use_same_coord else None
                 f = e.submit(try_to_lock_job, name, coord, self.url,
-                             self._get_random_uuid())
+                             tests.get_random_uuid())
                 self.assertFalse(f.result())
 
     def test_get_lock_concurrency_locking_two_lock_process(self):
@@ -754,8 +753,8 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         # NOTE(sileht): some database based lock can have only
         # one lock per connection, this test ensures acquiring a
         # second lock doesn't release the first one.
-        lock1 = self._coord.get_lock(self._get_random_uuid())
-        lock2 = self._coord.get_lock(self._get_random_uuid())
+        lock1 = self._coord.get_lock(tests.get_random_uuid())
+        lock2 = self._coord.get_lock(tests.get_random_uuid())
 
         graceful_ending = threading.Event()
         thread_locked = threading.Event()
@@ -781,14 +780,14 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self.assertTrue(graceful_ending.is_set())
 
     def test_get_lock_twice_locked_twice(self):
-        name = self._get_random_uuid()
+        name = tests.get_random_uuid()
         lock1 = self._coord.get_lock(name)
         lock2 = self._coord.get_lock(name)
         with lock1:
             self.assertFalse(lock2.acquire(blocking=False))
 
     def test_get_lock_context_fails(self):
-        name = self._get_random_uuid()
+        name = tests.get_random_uuid()
         lock1 = self._coord.get_lock(name)
         lock2 = self._coord.get_lock(name)
         with mock.patch.object(lock2, 'acquire', return_value=False):
@@ -798,34 +797,34 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
                     lock2.__enter__)
 
     def test_get_lock_context_check_value(self):
-        name = self._get_random_uuid()
+        name = tests.get_random_uuid()
         lock = self._coord.get_lock(name)
         with lock as returned_lock:
             self.assertEqual(lock, returned_lock)
 
     def test_lock_context_manager_acquire_no_argument(self):
-        name = self._get_random_uuid()
+        name = tests.get_random_uuid()
         lock1 = self._coord.get_lock(name)
         lock2 = self._coord.get_lock(name)
         with lock1():
             self.assertFalse(lock2.acquire(blocking=False))
 
     def test_lock_context_manager_acquire_argument_return_value(self):
-        name = self._get_random_uuid()
+        name = tests.get_random_uuid()
         blocking_value = 10.12
         lock = self._coord.get_lock(name)
         with lock(blocking_value) as returned_lock:
             self.assertEqual(lock, returned_lock)
 
     def test_lock_context_manager_acquire_argument_release_within(self):
-        name = self._get_random_uuid()
+        name = tests.get_random_uuid()
         blocking_value = 10.12
         lock = self._coord.get_lock(name)
         with lock(blocking_value) as returned_lock:
             self.assertTrue(returned_lock.release())
 
     def test_lock_context_manager_acquire_argument(self):
-        name = self._get_random_uuid()
+        name = tests.get_random_uuid()
         blocking_value = 10.12
         lock = self._coord.get_lock(name)
         with mock.patch.object(lock, 'acquire', wraps=True, autospec=True) as \
@@ -834,7 +833,7 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
                 mock_acquire.assert_called_once_with(blocking_value)
 
     def test_lock_context_manager_acquire_argument_timeout(self):
-        name = self._get_random_uuid()
+        name = tests.get_random_uuid()
         lock1 = self._coord.get_lock(name)
         lock2 = self._coord.get_lock(name)
         with lock1:
@@ -845,13 +844,13 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
                 pass
 
     def test_get_lock_locked_twice(self):
-        name = self._get_random_uuid()
+        name = tests.get_random_uuid()
         lock = self._coord.get_lock(name)
         with lock:
             self.assertFalse(lock.acquire(blocking=False))
 
     def test_get_multiple_locks_with_same_coord(self):
-        name = self._get_random_uuid()
+        name = tests.get_random_uuid()
         lock1 = self._coord.get_lock(name)
         lock2 = self._coord.get_lock(name)
         self.assertTrue(lock1.acquire())
@@ -860,19 +859,19 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self.assertTrue(lock1.release())
 
     def test_ensure_acquire_release_return(self):
-        name = self._get_random_uuid()
+        name = tests.get_random_uuid()
         lock1 = self._coord.get_lock(name)
         self.assertTrue(lock1.acquire())
         self.assertTrue(lock1.release())
         self.assertFalse(lock1.release())
 
     def test_get_lock_multiple_coords(self):
-        member_id2 = self._get_random_uuid()
+        member_id2 = tests.get_random_uuid()
         client2 = tooz.coordination.get_coordinator(self.url,
                                                     member_id2)
         client2.start()
 
-        lock_name = self._get_random_uuid()
+        lock_name = tests.get_random_uuid()
         lock = self._coord.get_lock(lock_name)
         self.assertTrue(lock.acquire())
 
@@ -889,16 +888,12 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self._coord.start()
 
     def do_test_name_property(self):
-        name = self._get_random_uuid()
+        name = tests.get_random_uuid()
         lock = self._coord.get_lock(name)
         self.assertEqual(name, lock.name)
 
-    @staticmethod
-    def _get_random_uuid():
-        return str(uuid.uuid4()).encode('ascii')
-
     def test_acquire_twice_no_deadlock_releasing(self):
-        name = self._get_random_uuid()
+        name = tests.get_random_uuid()
         lock = self._coord.get_lock(name)
         self.assertTrue(lock.acquire(blocking=False))
         self.assertFalse(lock.acquire(blocking=False))

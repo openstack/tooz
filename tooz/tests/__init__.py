@@ -15,11 +15,16 @@
 #    under the License.
 
 import functools
+import uuid
 
 import six
 from testtools import testcase
 
 import tooz
+
+
+def get_random_uuid():
+    return str(uuid.uuid4()).encode('ascii')
 
 
 def _skip_decorator(func):
