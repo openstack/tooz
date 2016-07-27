@@ -15,6 +15,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os
+
+import fixtures
 import mock
 from testtools import testcase
 
@@ -31,6 +34,26 @@ class TestFileDriver(testcase.TestCase):
 
         coord = coordination.get_coordinator(url, self._FAKE_MEMBER_ID)
         self.assertEqual(file_path, coord._dir)
+
+    def test_leftover_file(self):
+        fixture = self.useFixture(fixtures.TempDir())
+
+        file_path = fixture.path
+        url = 'file://%s' % file_path
+
+        coord = coordination.get_coordinator(url, self._FAKE_MEMBER_ID)
+        coord.start()
+        self.addCleanup(coord.stop)
+
+        coord.create_group(b"my_group").get()
+        safe_group_id = coord._make_filesystem_safe(b"my_group")
+        with open(os.path.join(file_path, 'groups',
+                  safe_group_id, "junk.txt"), "wb"):
+            pass
+        os.unlink(os.path.join(file_path, 'groups',
+                               safe_group_id, '.metadata'))
+        self.assertRaises(coordination.ToozError,
+                          coord.delete_group(b"my_group").get)
 
     @mock.patch('os.path.normpath', lambda x: x.replace('/', '\\'))
     @mock.patch('sys.platform', 'win32')

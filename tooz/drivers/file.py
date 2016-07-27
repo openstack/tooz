@@ -449,6 +449,11 @@ class FileDriver(coordination._RunWatchersMixin,
             else:
                 if len(entries) > 1:
                     raise coordination.GroupNotEmpty(group_id)
+                elif len(entries) == 1 and entries != ['.metadata']:
+                    raise coordination.ToozError(
+                        "Unexpected path '%s' found in"
+                        " group directory '%s' (expected to only find"
+                        " a '.metadata' path)" % (entries[0], group_dir))
                 else:
                     try:
                         shutil.rmtree(group_dir)
