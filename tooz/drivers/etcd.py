@@ -13,7 +13,9 @@
 # under the License.
 
 import logging
+import threading
 
+import fasteners
 from oslo_utils import encodeutils
 from oslo_utils import timeutils
 import requests
@@ -94,11 +96,18 @@ class EtcdLock(locking.Lock):
         self._lock_url = lock_url
         self._node = None
 
+        # NOTE(jschwarz): this lock is mainly used to prevent concurrent runs
+        # of hearthbeat() with another function. For more details, see
+        # https://bugs.launchpad.net/python-tooz/+bug/1603005.
+        self._lock = threading.Lock()
+
     @_translate_failures
+    @fasteners.locked
     def break_(self):
         reply = self.client.delete(self._lock_url, make_url=False)
         return reply.get('errorCode') is None
 
+    @fasteners.locked
     def acquire(self, blocking=True):
         blocking, timeout = utils.convert_blocking(blocking)
         if timeout is not None:
@@ -141,6 +150,7 @@ class EtcdLock(locking.Lock):
                     return False
 
     @_translate_failures
+    @fasteners.locked
     def release(self):
         if self in self.coord._acquired_locks:
             lock_url = self._lock_url
@@ -157,6 +167,7 @@ class EtcdLock(locking.Lock):
         return False
 
     @_translate_failures
+    @fasteners.locked
     def heartbeat(self):
         """Keep the lock alive."""
         poked = self.client.put(self._lock_url,
@@ -167,6 +178,7 @@ class EtcdLock(locking.Lock):
             LOG.warning("Unable to heartbeat by updating key '%s' with "
                         "extended expiry of %s seconds: %d, %s", self.name,
                         self.ttl, errorcode, poked.get("message"))
+        self._node = poked['node']
 
 
 class EtcdDriver(coordination.CoordinationDriver):
