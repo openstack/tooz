@@ -95,7 +95,7 @@ def _convert_from_old_format(data):
         # if we need to decode the value or not. Python3 see bytes blob
         # We keep it as-is and pray, this have a good change to break if
         # the application was using str in python2 and unicode in python3
-        # The member file is often overriden so it's should be fine
+        # The member file is often overridden so it's should be fine
         # But the group file can be very old, so we
         # now have to update it each time create_group is called
     return data
