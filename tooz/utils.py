@@ -16,7 +16,6 @@
 
 import base64
 import datetime
-import errno
 import operator
 import os
 
@@ -137,21 +136,6 @@ def convert_blocking(blocking):
         timeout = float(blocking)
         blocking = True
     return blocking, timeout
-
-
-def ensure_tree(path):
-    """Create a directory (and any ancestor directories required).
-
-    :param path: Directory to create
-    """
-    try:
-        os.makedirs(path)
-    except OSError as e:
-        if e.errno != errno.EEXIST or not os.path.isdir(path):
-            raise
-        return False
-    else:
-        return True
 
 
 def collapse(config, exclude=None, item_selector=operator.itemgetter(-1)):

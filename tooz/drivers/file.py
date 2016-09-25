@@ -30,6 +30,7 @@ from concurrent import futures
 
 import fasteners
 from oslo_utils import encodeutils
+from oslo_utils import fileutils
 from oslo_utils import timeutils
 import six
 import voluptuous
@@ -277,7 +278,7 @@ class FileDriver(coordination._RunWatchersMixin,
     def _start(self):
         for a_dir in self._reserved_dirs:
             try:
-                utils.ensure_tree(a_dir)
+                fileutils.ensure_tree(a_dir)
             except OSError as e:
                 raise coordination.ToozConnectionError(e)
         self._executor.start()
@@ -311,7 +312,7 @@ class FileDriver(coordination._RunWatchersMixin,
                 self._update_group_metadata(group_meta_path, group_id)
                 raise coordination.GroupAlreadyExist(group_id)
             else:
-                utils.ensure_tree(group_dir)
+                fileutils.ensure_tree(group_dir)
                 self._update_group_metadata(group_meta_path, group_id)
         fut = self._executor.submit(_do_create_group)
         return FileFutureResult(fut)
