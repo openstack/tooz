@@ -367,17 +367,17 @@ class FileDriver(coordination._RunWatchersMixin,
         fut = self._executor.submit(_do_leave_group)
         return FileFutureResult(fut)
 
+    @staticmethod
+    def _read_member_id(path):
+        with open(path, 'rb') as fh:
+            details = _load_and_validate(fh.read(), 'member')
+            if details.get("encoded"):
+                return details[u'member_id'].decode("utf-8")
+            return details[u'member_id']
+
     def get_members(self, group_id):
         safe_group_id = self._make_filesystem_safe(group_id)
         group_dir = os.path.join(self._group_dir, safe_group_id)
-
-        def _read_member_id(path):
-            with open(path, 'rb') as fh:
-                details = _load_and_validate(fh.read(), 'member')
-                if details.get("encoded"):
-                    return details[u'member_id'].decode("utf-8")
-                else:
-                    return details[u'member_id']
 
         @_lock_me(self._driver_lock)
         def _do_get_members():
@@ -396,7 +396,7 @@ class FileDriver(coordination._RunWatchersMixin,
                         continue
                     entry_path = os.path.join(group_dir, entry)
                     try:
-                        member_id = _read_member_id(entry_path)
+                        member_id = self._read_member_id(entry_path)
                     except EnvironmentError as e:
                         if e.errno != errno.ENOENT:
                             raise
@@ -460,15 +460,15 @@ class FileDriver(coordination._RunWatchersMixin,
         fut = self._executor.submit(_do_delete_group)
         return FileFutureResult(fut)
 
-    def get_groups(self):
+    @staticmethod
+    def _read_group_id(path):
+        with open(path, 'rb') as fh:
+            details = _load_and_validate(fh.read(), 'group')
+            if details.get("encoded"):
+                return details[u'group_id'].decode("utf-8")
+            return details[u'group_id']
 
-        def _read_group_id(path):
-            with open(path, 'rb') as fh:
-                details = _load_and_validate(fh.read(), 'group')
-                if details.get("encoded"):
-                    return details[u'group_id'].decode("utf-8")
-                else:
-                    return details[u'group_id']
+    def get_groups(self):
 
         @_lock_me(self._driver_lock)
         def _do_get_groups():
@@ -476,7 +476,7 @@ class FileDriver(coordination._RunWatchersMixin,
             for entry in os.listdir(self._group_dir):
                 path = os.path.join(self._group_dir, entry, '.metadata')
                 try:
-                    groups.append(_read_group_id(path))
+                    groups.append(self._read_group_id(path))
                 except EnvironmentError as e:
                     if e.errno != errno.ENOENT:
                         raise
