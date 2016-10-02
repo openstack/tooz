@@ -362,8 +362,7 @@ class FileDriver(coordination._RunWatchersMixin,
         data = utils.loads(blob)
         data = _convert_from_old_format(data)
         schema = self._SCHEMAS[schema_key]
-        schema(data)
-        return data
+        return schema(data)
 
     def _read_member_id(self, path):
         with open(path, 'rb') as fh:
