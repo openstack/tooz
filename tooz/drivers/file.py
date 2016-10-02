@@ -59,23 +59,6 @@ def _translate_failures():
                                       cause=e)
 
 
-_SCHEMAS = {
-    'group': voluptuous.Schema({
-        voluptuous.Required('group_id'): voluptuous.Any(six.text_type,
-                                                        six.binary_type),
-        # NOTE(sileht): tooz <1.36 was creating file without this
-        voluptuous.Optional('encoded'): bool,
-    }),
-    'member': voluptuous.Schema({
-        voluptuous.Required('member_id'): voluptuous.Any(six.text_type,
-                                                         six.binary_type),
-        voluptuous.Required('joined_on'): datetime.datetime,
-        # NOTE(sileht): tooz <1.36 was creating file without this
-        voluptuous.Optional('encoded'): bool,
-    }, extra=voluptuous.ALLOW_EXTRA),
-}
-
-
 def _convert_from_old_format(data):
     # NOTE(sileht): previous version of the driver was storing str as-is
     # making impossible to read from python3 something written with python2
@@ -99,14 +82,6 @@ def _convert_from_old_format(data):
         # The member file is often overridden so it's should be fine
         # But the group file can be very old, so we
         # now have to update it each time create_group is called
-    return data
-
-
-def _load_and_validate(blob, schema_key):
-    data = utils.loads(blob)
-    data = _convert_from_old_format(data)
-    schema = _SCHEMAS[schema_key]
-    schema(data)
     return data
 
 
@@ -367,10 +342,32 @@ class FileDriver(coordination._RunWatchersMixin,
         fut = self._executor.submit(_do_leave_group)
         return FileFutureResult(fut)
 
-    @staticmethod
-    def _read_member_id(path):
+    _SCHEMAS = {
+        'group': voluptuous.Schema({
+            voluptuous.Required('group_id'): voluptuous.Any(six.text_type,
+                                                            six.binary_type),
+            # NOTE(sileht): tooz <1.36 was creating file without this
+            voluptuous.Optional('encoded'): bool,
+        }),
+        'member': voluptuous.Schema({
+            voluptuous.Required('member_id'): voluptuous.Any(six.text_type,
+                                                             six.binary_type),
+            voluptuous.Required('joined_on'): datetime.datetime,
+            # NOTE(sileht): tooz <1.36 was creating file without this
+            voluptuous.Optional('encoded'): bool,
+        }, extra=voluptuous.ALLOW_EXTRA),
+    }
+
+    def _load_and_validate(self, blob, schema_key):
+        data = utils.loads(blob)
+        data = _convert_from_old_format(data)
+        schema = self._SCHEMAS[schema_key]
+        schema(data)
+        return data
+
+    def _read_member_id(self, path):
         with open(path, 'rb') as fh:
-            details = _load_and_validate(fh.read(), 'member')
+            details = self._load_and_validate(fh.read(), 'member')
             if details.get("encoded"):
                 return details[u'member_id'].decode("utf-8")
             return details[u'member_id']
@@ -428,7 +425,7 @@ class FileDriver(coordination._RunWatchersMixin,
                 else:
                     raise
             else:
-                details = _load_and_validate(contents, 'member')
+                details = self._load_and_validate(contents, 'member')
                 return details.get(u"capabilities")
 
         fut = self._executor.submit(_do_get_member_capabilities)
@@ -460,10 +457,9 @@ class FileDriver(coordination._RunWatchersMixin,
         fut = self._executor.submit(_do_delete_group)
         return FileFutureResult(fut)
 
-    @staticmethod
-    def _read_group_id(path):
+    def _read_group_id(self, path):
         with open(path, 'rb') as fh:
-            details = _load_and_validate(fh.read(), 'group')
+            details = self._load_and_validate(fh.read(), 'group')
             if details.get("encoded"):
                 return details[u'group_id'].decode("utf-8")
             return details[u'group_id']
