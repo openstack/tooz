@@ -23,6 +23,7 @@ import os
 import re
 import shutil
 import sys
+import tempfile
 import threading
 import weakref
 
@@ -210,10 +211,11 @@ class FileDriver(coordination._RunWatchersMixin,
         self._dir = self._normalize_path(parsed_url.path)
         self._executor = utils.ProxyExecutor.build("File", options)
         self._group_dir = os.path.join(self._dir, 'groups')
+        self._tmpdir = os.path.join(self._dir, 'tmp')
         self._driver_lock_path = os.path.join(self._dir, '.driver_lock')
         self._driver_lock = self._get_raw_lock(self._driver_lock_path,
                                                self._member_id)
-        self._reserved_dirs = [self._dir, self._group_dir]
+        self._reserved_dirs = [self._dir, self._group_dir, self._tmpdir]
         self._reserved_paths = list(self._reserved_dirs)
         self._reserved_paths.append(self._driver_lock_path)
         self._joined_groups = set()
@@ -269,17 +271,18 @@ class FileDriver(coordination._RunWatchersMixin,
         }
         details[u'encoded'] = details[u"group_id"] != group_id
         details_blob = utils.dumps(details)
-        with open(path, "wb") as fh:
+        fd, name = tempfile.mkstemp("tooz", dir=self._tmpdir)
+        with os.fdopen(fd, "wb") as fh:
             fh.write(details_blob)
+        os.rename(name, path)
 
     def create_group(self, group_id):
         safe_group_id = self._make_filesystem_safe(group_id)
         group_dir = os.path.join(self._group_dir, safe_group_id)
         group_meta_path = os.path.join(group_dir, '.metadata')
 
-        @_lock_me(self._driver_lock)
         def _do_create_group():
-            if os.path.isdir(group_dir):
+            if os.path.exists(os.path.join(group_dir, ".metadata")):
                 # NOTE(sileht): We update the group metadata even
                 # they are already good, so ensure dict key are convert
                 # to unicode in case of the file have been written with
@@ -299,7 +302,7 @@ class FileDriver(coordination._RunWatchersMixin,
 
         @_lock_me(self._driver_lock)
         def _do_join_group():
-            if not os.path.isdir(group_dir):
+            if not os.path.exists(os.path.join(group_dir, ".metadata")):
                 raise coordination.GroupNotCreated(group_id)
             if os.path.isfile(me_path):
                 raise coordination.MemberAlreadyExist(group_id,
@@ -326,7 +329,7 @@ class FileDriver(coordination._RunWatchersMixin,
 
         @_lock_me(self._driver_lock)
         def _do_leave_group():
-            if not os.path.isdir(group_dir):
+            if not os.path.exists(os.path.join(group_dir, ".metadata")):
                 raise coordination.GroupNotCreated(group_id)
             try:
                 os.unlink(me_path)
@@ -465,7 +468,6 @@ class FileDriver(coordination._RunWatchersMixin,
 
     def get_groups(self):
 
-        @_lock_me(self._driver_lock)
         def _do_get_groups():
             groups = []
             for entry in os.listdir(self._group_dir):
