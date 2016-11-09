@@ -12,3 +12,4 @@ use tooz in your application.
    group_membership
    leader_election
    lock
+   hashring
