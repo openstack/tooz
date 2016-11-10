@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2014 eNovance
+# Copyright © 2016 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -13,30 +13,19 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-import retrying
+import tenacity
+from tenacity import stop
+from tenacity import wait
 
 
-class Retry(Exception):
-    """Exception raised if we need to retry."""
+_default_wait = wait.wait_exponential(max=1)
 
 
-def retry_if_retry_raised(exception):
-    return isinstance(exception, Retry)
+def retry(stop_max_delay=None, **kwargs):
+    k = {"wait": _default_wait, "retry": lambda x: False}
+    if stop_max_delay not in (True, False, None):
+        k['stop'] = stop.stop_after_delay(stop_max_delay)
+    return tenacity.retry(**k)
 
 
-RETRYING_KWARGS = dict(
-    retry_on_exception=retry_if_retry_raised,
-    wait='exponential_sleep',
-    wait_exponential_max=1,
-)
-
-
-def retry(**kwargs):
-    delay = kwargs.get('stop_max_delay', None)
-    kwargs['stop_max_delay'] = delay if delay not in (True, False) else None
-    k = RETRYING_KWARGS.copy()
-    k.update(kwargs)
-    return retrying.retry(**k)
-
-
-Retrying = retrying.Retrying
+TryAgain = tenacity.TryAgain

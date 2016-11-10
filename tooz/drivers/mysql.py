@@ -52,7 +52,7 @@ class MySQLLock(locking.Lock):
             # So, we track locally the lock status with self.acquired
             if self.acquired is True:
                 if blocking:
-                    raise _retry.Retry
+                    raise _retry.TryAgain
                 return False
 
             try:
@@ -69,7 +69,7 @@ class MySQLLock(locking.Lock):
                     cause=e)
 
             if blocking:
-                raise _retry.Retry
+                raise _retry.TryAgain
             return False
 
         return _lock()

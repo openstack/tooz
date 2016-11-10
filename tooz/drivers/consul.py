@@ -48,7 +48,7 @@ class ConsulLock(locking.Lock):
                 if blocking is False:
                     return False
                 else:
-                    raise _retry.Retry
+                    raise _retry.TryAgain
             else:
                 # The value can be anything.
                 gotten = self._client.kv.put(key=self._name,
@@ -60,7 +60,7 @@ class ConsulLock(locking.Lock):
                 if blocking is False:
                     return False
                 else:
-                    raise _retry.Retry
+                    raise _retry.TryAgain
 
         return _acquire()
 
