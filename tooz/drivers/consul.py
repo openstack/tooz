@@ -20,8 +20,8 @@ import consul
 from oslo_utils import encodeutils
 
 import tooz
+from tooz import _retry
 from tooz import coordination
-from tooz.drivers import _retry
 from tooz import locking
 from tooz import utils
 

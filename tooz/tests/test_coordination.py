@@ -157,6 +157,11 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self.assertRaises(tooz.coordination.GroupNotCreated,
                           join_group.get)
 
+    def test_join_group_create(self):
+        self._coord.join_group_create(self.group_id)
+        member_list = self._coord.get_members(self.group_id).get()
+        self.assertTrue(self.member_id in member_list)
+
     def test_join_group_with_member_id_already_exists(self):
         self._coord.create_group(self.group_id).get()
         self._coord.join_group(self.group_id).get()

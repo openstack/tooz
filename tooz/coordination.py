@@ -28,6 +28,7 @@ import six
 from stevedore import driver
 
 import tooz
+from tooz import _retry
 
 LOG = logging.getLogger(__name__)
 
@@ -437,6 +438,33 @@ class CoordinationDriver(object):
         :rtype: CoordAsyncResult
         """
         raise tooz.NotImplemented
+
+    @_retry.retry()
+    def join_group_create(self, group_id):
+        """Join a group and create it if necessary.
+
+        If the group cannot be joined because it does not exist, it is created
+        before being joined.
+
+        This function will keep retrying until it can create the group and join
+        it. Since nothing is transactional, it may have to retry several times
+        if another member is creating/deleting the group at the same time.
+
+        :param group_id: Identifier of the group to join and create
+
+        """
+        req = self.join_group(group_id)
+        try:
+            req.get()
+        except GroupNotCreated:
+            req = self.create_group(group_id)
+            try:
+                req.get()
+            except GroupAlreadyExist:
+                # The group might have been created in the meantime, ignore
+                pass
+            # Now retry to join the group
+            raise _retry.TryAgain
 
     @staticmethod
     def leave_group(group_id):

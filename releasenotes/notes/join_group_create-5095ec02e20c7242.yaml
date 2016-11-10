@@ -1,0 +1,4 @@
+---
+features:
+  - Coordination drivers now have a method `join_group_create` that is able to
+    create a group before joining it if it does not exist yet.

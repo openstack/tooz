@@ -24,8 +24,8 @@ from oslo_utils import encodeutils
 from pymemcache import client as pymemcache_client
 import six
 
+from tooz import _retry
 from tooz import coordination
-from tooz.drivers import _retry
 from tooz import locking
 from tooz import utils
 

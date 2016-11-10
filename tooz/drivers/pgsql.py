@@ -23,8 +23,8 @@ import psycopg2
 import six
 
 import tooz
+from tooz import _retry
 from tooz import coordination
-from tooz.drivers import _retry
 from tooz import locking
 from tooz import utils
 
