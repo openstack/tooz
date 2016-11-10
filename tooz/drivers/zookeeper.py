@@ -75,22 +75,73 @@ class ZooKeeperLock(locking.Lock):
         return self._lock.is_acquired
 
 
-class BaseZooKeeperDriver(coordination.CoordinationDriver):
-    """Initialize the zookeeper driver.
+class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
+    """This driver uses the `kazoo`_ client against real `zookeeper`_ servers.
 
-    :param timeout: connection timeout to wait when first connecting to the
-                    zookeeper server
+    It **is** fully functional and implements all of the coordination
+    driver API(s). It stores data into `zookeeper`_ using znodes
+    and `msgpack`_ encoded values.
+
+    To configure the client to your liking a subset of the options defined at
+    http://kazoo.readthedocs.org/en/latest/api/client.html
+    will be extracted from the coordinator url (or any provided options),
+    so that a specific coordinator can be created that will work for you.
+
+    Currently the following options will be proxied to the contained client:
+
+    ================  ===============================  ====================
+    Name              Source                           Default
+    ================  ===============================  ====================
+    hosts             url netloc + 'hosts' option key  localhost:2181
+    timeout           'timeout' options key            10.0 (kazoo default)
+    connection_retry  'connection_retry' options key   None
+    command_retry     'command_retry' options key      None
+    randomize_hosts   'randomize_hosts' options key    True
+    ================  ===============================  ====================
+
+    .. _kazoo: http://kazoo.readthedocs.org/
+    .. _zookeeper: http://zookeeper.apache.org/
+    .. _msgpack: http://msgpack.org/
     """
     #: Default namespace when none is provided.
     TOOZ_NAMESPACE = b"tooz"
 
+    HANDLERS = {
+        'threading': threading_handler.SequentialThreadingHandler,
+    }
+
+    if eventlet_handler:
+        HANDLERS['eventlet'] = eventlet_handler.SequentialEventletHandler
+
+    """
+    Restricted immutable dict of handler 'kinds' -> handler classes that
+    this driver can accept via 'handler' option key (the expected value for
+    this option is one of the keys in this dictionary).
+    """
+
+    CHARACTERISTICS = (
+        coordination.Characteristics.NON_TIMEOUT_BASED,
+        coordination.Characteristics.DISTRIBUTED_ACROSS_THREADS,
+        coordination.Characteristics.DISTRIBUTED_ACROSS_PROCESSES,
+        coordination.Characteristics.DISTRIBUTED_ACROSS_HOSTS,
+        # Writes *always* go through a single leader process, but it may
+        # take a while for those writes to propagate to followers (and =
+        # during this time clients can read older values)...
+        coordination.Characteristics.SEQUENTIAL,
+    )
+    """
+    Tuple of :py:class:`~tooz.coordination.Characteristics` introspectable
+    enum member(s) that can be used to interogate how this driver works.
+    """
+
     def __init__(self, member_id, parsed_url, options):
-        super(BaseZooKeeperDriver, self).__init__()
+        super(KazooDriver, self).__init__()
         options = utils.collapse(options, exclude=['hosts'])
-        self._options = options
         self._member_id = member_id
         self.timeout = int(options.get('timeout', '10'))
         self._namespace = options.get('namespace', self.TOOZ_NAMESPACE)
+        self._coord = self._make_client(parsed_url, options)
+        self._timeout_exception = self._coord.handler.timeout_exception
 
     def _start(self):
         try:
@@ -107,7 +158,6 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
             coordination.raise_with_cause(coordination.ToozError,
                                           "Operational error: %s" % e_msg,
                                           cause=e)
-        self._group_members = collections.defaultdict(set)
         self._watchers = collections.deque()
         self._leader_locks = {}
 
@@ -397,70 +447,6 @@ class BaseZooKeeperDriver(coordination.CoordinationDriver):
                 cleaned_args.append(arg)
         return paths.join(*cleaned_args)
 
-
-class KazooDriver(BaseZooKeeperDriver):
-    """This driver uses the `kazoo`_ client against real `zookeeper`_ servers.
-
-    It **is** fully functional and implements all of the coordination
-    driver API(s). It stores data into `zookeeper`_ using znodes
-    and `msgpack`_ encoded values.
-
-    To configure the client to your liking a subset of the options defined at
-    http://kazoo.readthedocs.org/en/latest/api/client.html
-    will be extracted from the coordinator url (or any provided options),
-    so that a specific coordinator can be created that will work for you.
-
-    Currently the following options will be proxied to the contained client:
-
-    ================  ===============================  ====================
-    Name              Source                           Default
-    ================  ===============================  ====================
-    hosts             url netloc + 'hosts' option key  localhost:2181
-    timeout           'timeout' options key            10.0 (kazoo default)
-    connection_retry  'connection_retry' options key   None
-    command_retry     'command_retry' options key      None
-    randomize_hosts   'randomize_hosts' options key    True
-    ================  ===============================  ====================
-
-    .. _kazoo: http://kazoo.readthedocs.org/
-    .. _zookeeper: http://zookeeper.apache.org/
-    .. _msgpack: http://msgpack.org/
-    """
-
-    HANDLERS = {
-        'threading': threading_handler.SequentialThreadingHandler,
-    }
-
-    if eventlet_handler:
-        HANDLERS['eventlet'] = eventlet_handler.SequentialEventletHandler
-
-    """
-    Restricted immutable dict of handler 'kinds' -> handler classes that
-    this driver can accept via 'handler' option key (the expected value for
-    this option is one of the keys in this dictionary).
-    """
-
-    CHARACTERISTICS = (
-        coordination.Characteristics.NON_TIMEOUT_BASED,
-        coordination.Characteristics.DISTRIBUTED_ACROSS_THREADS,
-        coordination.Characteristics.DISTRIBUTED_ACROSS_PROCESSES,
-        coordination.Characteristics.DISTRIBUTED_ACROSS_HOSTS,
-        # Writes *always* go through a single leader process, but it may
-        # take a while for those writes to propagate to followers (and =
-        # during this time clients can read older values)...
-        coordination.Characteristics.SEQUENTIAL,
-    )
-    """
-    Tuple of :py:class:`~tooz.coordination.Characteristics` introspectable
-    enum member(s) that can be used to interogate how this driver works.
-    """
-
-    def __init__(self, member_id, parsed_url, options):
-        super(KazooDriver, self).__init__(member_id, parsed_url, options)
-        self._coord = self._make_client(parsed_url, self._options)
-        self._member_id = member_id
-        self._timeout_exception = self._coord.handler.timeout_exception
-
     def _make_client(self, parsed_url, options):
         # Creates a kazoo client,
         # See: https://github.com/python-zk/kazoo/blob/2.2.1/kazoo/client.py
@@ -537,8 +523,7 @@ class KazooDriver(BaseZooKeeperDriver):
 
         # Add the hook before starting watching to avoid race conditions
         # as the watching executor can be in a thread
-        super(BaseZooKeeperDriver, self).watch_join_group(
-            group_id, callback)
+        super(KazooDriver, self).watch_join_group(group_id, callback)
 
         if not already_being_watched:
             try:
@@ -548,10 +533,6 @@ class KazooDriver(BaseZooKeeperDriver):
                 self.unwatch_join_group(group_id, callback)
                 raise
 
-    def unwatch_join_group(self, group_id, callback):
-        return super(BaseZooKeeperDriver, self).unwatch_join_group(
-            group_id, callback)
-
     def watch_leave_group(self, group_id, callback):
         # Check if we already have hooks for this group_id, if not, start
         # watching it.
@@ -559,8 +540,7 @@ class KazooDriver(BaseZooKeeperDriver):
 
         # Add the hook before starting watching to avoid race conditions
         # as the watching executor can be in a thread
-        super(BaseZooKeeperDriver, self).watch_leave_group(
-            group_id, callback)
+        super(KazooDriver, self).watch_leave_group(group_id, callback)
 
         if not already_being_watched:
             try:
@@ -569,18 +549,6 @@ class KazooDriver(BaseZooKeeperDriver):
                 # Rollback and unregister the hook
                 self.unwatch_leave_group(group_id, callback)
                 raise
-
-    def unwatch_leave_group(self, group_id, callback):
-        return super(BaseZooKeeperDriver, self).unwatch_leave_group(
-            group_id, callback)
-
-    def watch_elected_as_leader(self, group_id, callback):
-        return super(BaseZooKeeperDriver, self).watch_elected_as_leader(
-            group_id, callback)
-
-    def unwatch_elected_as_leader(self, group_id, callback):
-        return super(BaseZooKeeperDriver, self).unwatch_elected_as_leader(
-            group_id, callback)
 
     def stand_down_group_leader(self, group_id):
         if group_id in self._leader_locks:

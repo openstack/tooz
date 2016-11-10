@@ -222,6 +222,16 @@ class IPCDriver(coordination.CoordinationDriver):
 
         return IPCFutureResult(self._executor.submit(_delete_group))
 
+    def watch_join_group(self, group_id, callback):
+        # Check the group exist
+        self.get_members(group_id).get()
+        super(IPCDriver, self).watch_join_group(group_id, callback)
+
+    def watch_leave_group(self, group_id, callback):
+        # Check the group exist
+        self.get_members(group_id).get()
+        super(IPCDriver, self).watch_leave_group(group_id, callback)
+
     def _get_groups_handler(self):
         with self._lock:
             return self._read_group_list()
@@ -233,30 +243,6 @@ class IPCDriver(coordination.CoordinationDriver):
     @staticmethod
     def get_lock(name):
         return IPCLock(name)
-
-    @staticmethod
-    def watch_join_group(group_id, callback):
-        raise tooz.NotImplemented
-
-    @staticmethod
-    def unwatch_join_group(group_id, callback):
-        raise tooz.NotImplemented
-
-    @staticmethod
-    def watch_leave_group(group_id, callback):
-        raise tooz.NotImplemented
-
-    @staticmethod
-    def unwatch_leave_group(group_id, callback):
-        raise tooz.NotImplemented
-
-    @staticmethod
-    def watch_elected_as_leader(group_id, callback):
-        raise tooz.NotImplemented
-
-    @staticmethod
-    def unwatch_elected_as_leader(group_id, callback):
-        raise tooz.NotImplemented
 
 
 class IPCFutureResult(coordination.CoordAsyncResult):

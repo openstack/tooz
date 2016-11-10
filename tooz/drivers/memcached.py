@@ -14,7 +14,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import collections
 import errno
 import logging
 import socket
@@ -170,8 +169,7 @@ class MemcachedLock(locking.Lock):
         return self in self.coord._acquired_locks
 
 
-class MemcachedDriver(coordination._RunWatchersMixin,
-                      coordination.CoordinationDriver):
+class MemcachedDriver(coordination.CoordinationDriverCachedRunWatchers):
     """A `memcached`_ based driver.
 
     This driver users `memcached`_ concepts to provide the coordination driver
@@ -222,7 +220,6 @@ class MemcachedDriver(coordination._RunWatchersMixin,
         options = utils.collapse(options)
         self._options = options
         self._member_id = member_id
-        self._joined_groups = set()
         self._executor = utils.ProxyExecutor.build("Memcached", options)
         self.host = (parsed_url.hostname or "localhost",
                      parsed_url.port or 11211)
@@ -268,7 +265,6 @@ class MemcachedDriver(coordination._RunWatchersMixin,
         # Run heartbeat here because pymemcache use a lazy connection
         # method and only connect once you do an operation.
         self.heartbeat()
-        self._group_members = collections.defaultdict(set)
         self._executor.start()
 
     @_translate_failures
@@ -495,25 +491,9 @@ class MemcachedDriver(coordination._RunWatchersMixin,
         return super(MemcachedDriver, self).watch_join_group(
             group_id, callback)
 
-    def unwatch_join_group(self, group_id, callback):
-        return super(MemcachedDriver, self).unwatch_join_group(
-            group_id, callback)
-
     def watch_leave_group(self, group_id, callback):
         self._init_watch_group(group_id)
         return super(MemcachedDriver, self).watch_leave_group(
-            group_id, callback)
-
-    def unwatch_leave_group(self, group_id, callback):
-        return super(MemcachedDriver, self).unwatch_leave_group(
-            group_id, callback)
-
-    def watch_elected_as_leader(self, group_id, callback):
-        return super(MemcachedDriver, self).watch_elected_as_leader(
-            group_id, callback)
-
-    def unwatch_elected_as_leader(self, group_id, callback):
-        return super(MemcachedDriver, self).unwatch_elected_as_leader(
             group_id, callback)
 
     def get_lock(self, name):

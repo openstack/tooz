@@ -552,7 +552,7 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         # client now no longer believes its part of the group.
         if (hasattr(self._coord, '_joined_groups')
            and (self._coord.run_watchers
-                == tooz.coordination._RunWatchersMixin.run_watchers)):
+                == tooz.coordination.CoordinationDriverCachedRunWatchers.run_watchers)):  # noqa
             self.assertIn(self.group_id, self._coord._joined_groups)
             self._coord.run_watchers()
             self.assertNotIn(self.group_id, self._coord._joined_groups)

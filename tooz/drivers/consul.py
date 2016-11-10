@@ -19,7 +19,6 @@ from __future__ import absolute_import
 import consul
 from oslo_utils import encodeutils
 
-import tooz
 from tooz import _retry
 from tooz import coordination
 from tooz import locking
@@ -160,27 +159,3 @@ class ConsulDriver(coordination.CoordinationDriver):
         for arg in args:
             pieces.append(encodeutils.safe_decode(arg))
         return u"/".join(pieces)
-
-    @staticmethod
-    def watch_join_group(group_id, callback):
-        raise tooz.NotImplemented
-
-    @staticmethod
-    def unwatch_join_group(group_id, callback):
-        raise tooz.NotImplemented
-
-    @staticmethod
-    def watch_leave_group(group_id, callback):
-        raise tooz.NotImplemented
-
-    @staticmethod
-    def unwatch_leave_group(group_id, callback):
-        raise tooz.NotImplemented
-
-    @staticmethod
-    def watch_elected_as_leader(group_id, callback):
-        raise tooz.NotImplemented
-
-    @staticmethod
-    def unwatch_elected_as_leader(group_id, callback):
-        raise tooz.NotImplemented

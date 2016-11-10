@@ -106,8 +106,7 @@ class RedisLock(locking.Lock):
         return self in self._coord._acquired_locks
 
 
-class RedisDriver(coordination._RunWatchersMixin,
-                  coordination.CoordinationDriver):
+class RedisDriver(coordination.CoordinationDriverCachedRunWatchers):
     """Redis provides a few nice benefits that act as a poormans zookeeper.
 
     It **is** fully functional and implements all of the coordination
@@ -730,23 +729,9 @@ return 1
         self._init_watch_group(group_id)
         return super(RedisDriver, self).watch_join_group(group_id, callback)
 
-    def unwatch_join_group(self, group_id, callback):
-        return super(RedisDriver, self).unwatch_join_group(group_id, callback)
-
     def watch_leave_group(self, group_id, callback):
         self._init_watch_group(group_id)
         return super(RedisDriver, self).watch_leave_group(group_id, callback)
-
-    def unwatch_leave_group(self, group_id, callback):
-        return super(RedisDriver, self).unwatch_leave_group(group_id, callback)
-
-    def watch_elected_as_leader(self, group_id, callback):
-        return super(RedisDriver, self).watch_elected_as_leader(
-            group_id, callback)
-
-    def unwatch_elected_as_leader(self, group_id, callback):
-        return super(RedisDriver, self).unwatch_elected_as_leader(
-            group_id, callback)
 
     def _get_leader_lock(self, group_id):
         name = self._encode_group_leader(group_id)

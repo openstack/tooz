@@ -163,8 +163,7 @@ class FileLock(locking.Lock):
             LOG.warning("Unreleased lock %s garbage collected", self.name)
 
 
-class FileDriver(coordination._RunWatchersMixin,
-                 coordination.CoordinationDriver):
+class FileDriver(coordination.CoordinationDriverCachedRunWatchers):
     """A file based driver.
 
     This driver uses files and directories (and associated file locks) to
@@ -493,15 +492,9 @@ class FileDriver(coordination._RunWatchersMixin,
         self._init_watch_group(group_id)
         return super(FileDriver, self).watch_join_group(group_id, callback)
 
-    def unwatch_join_group(self, group_id, callback):
-        return super(FileDriver, self).unwatch_join_group(group_id, callback)
-
     def watch_leave_group(self, group_id, callback):
         self._init_watch_group(group_id)
         return super(FileDriver, self).watch_leave_group(group_id, callback)
-
-    def unwatch_leave_group(self, group_id, callback):
-        return super(FileDriver, self).unwatch_leave_group(group_id, callback)
 
     @staticmethod
     def watch_elected_as_leader(group_id, callback):

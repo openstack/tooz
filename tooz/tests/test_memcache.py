@@ -70,8 +70,9 @@ class TestMemcacheDriverFailures(testcase.TestCase):
         mock_client.set.side_effect = socket.timeout('timed-out')
         self.assertRaises(coordination.ToozConnectionError, coord.heartbeat)
 
-    @mock.patch('tooz.coordination._RunWatchersMixin.run_watchers',
-                autospec=True)
+    @mock.patch(
+        'tooz.coordination.CoordinationDriverCachedRunWatchers.run_watchers',
+        autospec=True)
     @mock.patch('pymemcache.client.PooledClient')
     def test_client_run_watchers_mixin(self, mock_client_cls,
                                        mock_run_watchers):
