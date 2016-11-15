@@ -400,15 +400,17 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self.assertIn(self.member_id, members_ids)
         self.assertNotIn(member_id_test2, members_ids)
         # Check that the event has been triggered
-        self.assertIsInstance(self.event,
-                              tooz.coordination.MemberLeftGroup)
-        self.assertEqual(member_id_test2,
-                         self.event.member_id)
-        self.assertEqual(self.group_id,
-                         self.event.group_id)
+        self.assertEqual(1, len(self.events))
+        event = self.events[0]
+        self.assertIsInstance(event, tooz.coordination.MemberLeftGroup)
+        self.assertEqual(member_id_test2, event.member_id)
+        self.assertEqual(self.group_id, event.group_id)
 
     def _set_event(self, event):
-        self.event = event
+        if not hasattr(self, "events"):
+            self.events = [event]
+        else:
+            self.events.append(event)
         return 42
 
     def test_watch_group_join(self):
@@ -428,22 +430,21 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         while True:
             if self._coord.run_watchers():
                 break
-        self.assertIsInstance(self.event,
-                              tooz.coordination.MemberJoinedGroup)
-        self.assertEqual(member_id_test2,
-                         self.event.member_id)
-        self.assertEqual(self.group_id,
-                         self.event.group_id)
+        self.assertEqual(1, len(self.events))
+        event = self.events[0]
+        self.assertIsInstance(event, tooz.coordination.MemberJoinedGroup)
+        self.assertEqual(member_id_test2, event.member_id)
+        self.assertEqual(self.group_id, event.group_id)
 
         # Stop watching
         self._coord.unwatch_join_group(self.group_id, self._set_event)
-        self.event = None
+        self.events = []
 
         # Leave and rejoin group
         client2.leave_group(self.group_id).get()
         client2.join_group(self.group_id).get()
         self._coord.run_watchers()
-        self.assertIsNone(self.event)
+        self.assertEqual([], self.events)
 
     def test_watch_leave_group(self):
         member_id_test2 = tests.get_random_uuid()
@@ -471,22 +472,21 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
             if self._coord.run_watchers():
                 break
 
-        self.assertIsInstance(self.event,
-                              tooz.coordination.MemberLeftGroup)
-        self.assertEqual(member_id_test2,
-                         self.event.member_id)
-        self.assertEqual(self.group_id,
-                         self.event.group_id)
+        self.assertEqual(1, len(self.events))
+        event = self.events[0]
+        self.assertIsInstance(event, tooz.coordination.MemberLeftGroup)
+        self.assertEqual(member_id_test2, event.member_id)
+        self.assertEqual(self.group_id, event.group_id)
 
         # Stop watching
         self._coord.unwatch_leave_group(self.group_id, self._set_event)
-        self.event = None
+        self.events = []
 
         # Rejoin and releave group
         client2.join_group(self.group_id).get()
         client2.leave_group(self.group_id).get()
         self._coord.run_watchers()
-        self.assertIsNone(self.event)
+        self.assertEqual([], self.events)
 
     def test_watch_join_group_disappear(self):
         if not hasattr(self._coord, '_destroy_group'):
@@ -506,9 +506,10 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         while True:
             if self._coord.run_watchers():
                 break
-        self.assertIsInstance(self.event,
-                              tooz.coordination.MemberJoinedGroup)
-        self.event = None
+        self.assertEqual(1, len(self.events))
+        event = self.events[0]
+        self.assertIsInstance(event, tooz.coordination.MemberJoinedGroup)
+        self.events = []
 
         # Force the group to disappear...
         self._coord._destroy_group(self.group_id)
@@ -517,8 +518,9 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
             if self._coord.run_watchers():
                 break
 
-        self.assertIsInstance(self.event,
-                              tooz.coordination.MemberLeftGroup)
+        self.assertEqual(1, len(self.events))
+        event = self.events[0]
+        self.assertIsInstance(event, tooz.coordination.MemberLeftGroup)
 
     def test_watch_join_group_non_existent(self):
         self.assertRaises(tooz.coordination.GroupNotCreated,
@@ -569,12 +571,11 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self._coord.watch_elected_as_leader(self.group_id, self._set_event)
         self._coord.run_watchers()
 
-        self.assertIsInstance(self.event,
-                              tooz.coordination.LeaderElected)
-        self.assertEqual(self.member_id,
-                         self.event.member_id)
-        self.assertEqual(self.group_id,
-                         self.event.group_id)
+        self.assertEqual(1, len(self.events))
+        event = self.events[0]
+        self.assertIsInstance(event, tooz.coordination.LeaderElected)
+        self.assertEqual(self.member_id, event.member_id)
+        self.assertEqual(self.group_id, event.group_id)
 
     def test_run_for_election_multiple_clients(self):
         self._coord.create_group(self.group_id).get()
@@ -588,26 +589,26 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         client2.watch_elected_as_leader(self.group_id, self._set_event)
         client2.run_watchers()
 
-        self.assertIsInstance(self.event,
-                              tooz.coordination.LeaderElected)
-        self.assertEqual(self.member_id,
-                         self.event.member_id)
-        self.assertEqual(self.group_id,
-                         self.event.group_id)
+        self.assertEqual(1, len(self.events))
+        event = self.events[0]
+        self.assertIsInstance(event, tooz.coordination.LeaderElected)
+        self.assertEqual(self.member_id, event.member_id)
+        self.assertEqual(self.group_id, event.group_id)
         self.assertEqual(self._coord.get_leader(self.group_id).get(),
                          self.member_id)
 
-        self.event = None
+        self.events = []
 
         self._coord.stop()
         client2.run_watchers()
 
-        self.assertIsInstance(self.event,
-                              tooz.coordination.LeaderElected)
+        self.assertEqual(1, len(self.events))
+        event = self.events[0]
+
+        self.assertIsInstance(event, tooz.coordination.LeaderElected)
         self.assertEqual(member_id_test2,
-                         self.event.member_id)
-        self.assertEqual(self.group_id,
-                         self.event.group_id)
+                         event.member_id)
+        self.assertEqual(self.group_id, event.group_id)
         self.assertEqual(client2.get_leader(self.group_id).get(),
                          member_id_test2)
 
@@ -644,36 +645,36 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         client2.watch_elected_as_leader(self.group_id, self._set_event)
         client2.run_watchers()
 
-        self.assertIsInstance(self.event,
-                              tooz.coordination.LeaderElected)
-        self.assertEqual(self.member_id,
-                         self.event.member_id)
-        self.assertEqual(self.group_id,
-                         self.event.group_id)
+        self.assertEqual(1, len(self.events))
+        event = self.events[0]
 
-        self.event = None
+        self.assertIsInstance(event, tooz.coordination.LeaderElected)
+        self.assertEqual(self.member_id, event.member_id)
+        self.assertEqual(self.group_id, event.group_id)
+
+        self.events = []
 
         self._coord.stand_down_group_leader(self.group_id)
         client2.run_watchers()
 
-        self.assertIsInstance(self.event,
-                              tooz.coordination.LeaderElected)
-        self.assertEqual(member_id_test2,
-                         self.event.member_id)
-        self.assertEqual(self.group_id,
-                         self.event.group_id)
+        self.assertEqual(1, len(self.events))
+        event = self.events[0]
 
-        self.event = None
+        self.assertIsInstance(event, tooz.coordination.LeaderElected)
+        self.assertEqual(member_id_test2, event.member_id)
+        self.assertEqual(self.group_id, event.group_id)
+
+        self.events = []
 
         client2.stand_down_group_leader(self.group_id)
         self._coord.run_watchers()
 
-        self.assertIsInstance(self.event,
-                              tooz.coordination.LeaderElected)
-        self.assertEqual(self.member_id,
-                         self.event.member_id)
-        self.assertEqual(self.group_id,
-                         self.event.group_id)
+        self.assertEqual(1, len(self.events))
+        event = self.events[0]
+
+        self.assertIsInstance(event, tooz.coordination.LeaderElected)
+        self.assertEqual(self.member_id, event.member_id)
+        self.assertEqual(self.group_id, event.group_id)
 
     def test_unwatch_elected_as_leader(self):
         # Create a group and add a elected_as_leader callback
