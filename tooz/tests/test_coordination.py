@@ -14,12 +14,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import os
 import threading
 import time
 
 from concurrent import futures
-import fixtures
 import mock
 from six.moves.urllib import parse
 from testtools import matchers
@@ -39,31 +37,13 @@ def try_to_lock_job(name, coord, url, member_id):
     return lock2.acquire(blocking=False)
 
 
-class TestAPI(tests.TestCaseSkipNotImplemented):
-
-    url = os.getenv("TOOZ_TEST_URL")
-
+class TestAPI(tests.TestWithCoordinator):
     def assertRaisesAny(self, exc_classes, callable_obj, *args, **kwargs):
         checkers = [matchers.MatchesException(exc_class)
                     for exc_class in exc_classes]
         matcher = matchers.Raises(matchers.MatchesAny(*checkers))
         callable_obj = testcase.Nullary(callable_obj, *args, **kwargs)
         self.assertThat(callable_obj, matcher)
-
-    def setUp(self):
-        super(TestAPI, self).setUp()
-        if self.url is None:
-            self.skipTest("No URL set for this driver")
-        self.useFixture(fixtures.NestedTempfile())
-        self.group_id = tests.get_random_uuid()
-        self.member_id = tests.get_random_uuid()
-        self._coord = tooz.coordination.get_coordinator(self.url,
-                                                        self.member_id)
-        self._coord.start()
-
-    def tearDown(self):
-        self._coord.stop()
-        super(TestAPI, self).tearDown()
 
     def test_connection_error_bad_host(self):
         if (tooz.coordination.Characteristics.DISTRIBUTED_ACROSS_HOSTS

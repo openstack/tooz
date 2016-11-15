@@ -15,7 +15,9 @@
 #    under the License.
 
 import functools
+import os
 
+import fixtures
 from oslo_utils import uuidutils
 import six
 from testtools import testcase
@@ -48,5 +50,20 @@ class SkipNotImplementedMeta(type):
 
 
 @six.add_metaclass(SkipNotImplementedMeta)
-class TestCaseSkipNotImplemented(testcase.TestCase):
-    pass
+class TestWithCoordinator(testcase.TestCase):
+    url = os.getenv("TOOZ_TEST_URL")
+
+    def setUp(self):
+        super(TestWithCoordinator, self).setUp()
+        if self.url is None:
+            self.skipTest("No URL set for this driver")
+        self.useFixture(fixtures.NestedTempfile())
+        self.group_id = get_random_uuid()
+        self.member_id = get_random_uuid()
+        self._coord = tooz.coordination.get_coordinator(self.url,
+                                                        self.member_id)
+        self._coord.start()
+
+    def tearDown(self):
+        self._coord.stop()
+        super(TestWithCoordinator, self).tearDown()

@@ -29,6 +29,7 @@ from stevedore import driver
 
 import tooz
 from tooz import _retry
+from tooz import partitioner
 from tooz import utils
 
 LOG = logging.getLogger(__name__)
@@ -257,6 +258,40 @@ class CoordinationDriver(object):
     def _has_hooks_for_group(self, group_id):
         return (group_id in self._hooks_join_group or
                 group_id in self._hooks_leave_group)
+
+    def join_partitioned_group(
+            self, group_id,
+            weight=1,
+            partitions=partitioner.Partitioner.DEFAULT_PARTITION_NUMBER):
+        """Join a group and get a partitioner.
+
+        A partitioner allows to distribute a bunch of objects across several
+        members using a consistent hash ring. Each object gets assigned (at
+        least) one member responsible for it. It's then possible to check which
+        object is owned by any member of the group.
+
+        This method also creates if necessary, and joins the group with the
+        selected weight.
+
+        :param group_id: The group to create a partitioner for.
+        :param weight: The weight to use in the hashring for this node.
+        :param partitions: The number of partitions to create.
+        :return: A :py:class:`~tooz.partitioner.Partitioner` object.
+
+        """
+        self.join_group_create(
+            group_id, capabilities=utils.dumps({'weight': weight}))
+        return partitioner.Partitioner(self, group_id)
+
+    def leave_partitioned_group(self, partitioner):
+        """Leave a partitioned group.
+
+        This leaves the partitioned group and stop the partitioner.
+        :param group_id: The group to create a partitioner for.
+        """
+        leave = self.leave_group(partitioner.group_id)
+        partitioner.stop()
+        return leave.get()
 
     @staticmethod
     def run_watchers(timeout=None):

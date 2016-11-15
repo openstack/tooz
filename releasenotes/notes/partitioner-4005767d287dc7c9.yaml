@@ -1,0 +1,6 @@
+---
+features:
+  - >-
+    Introduce a new partitioner object. This object is synchronized within a
+    group of nodes and exposes a way to distribute object management across
+    several nodes.

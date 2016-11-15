@@ -31,7 +31,9 @@ class UnknownNode(tooz.ToozError):
 class HashRing(object):
     """Map objects onto nodes based on their consistent hash."""
 
-    def __init__(self, nodes, partitions=2**5):
+    DEFAULT_PARTITION_NUMBER = 2**5
+
+    def __init__(self, nodes, partitions=DEFAULT_PARTITION_NUMBER):
         """Create a new hashring.
 
         :param nodes: List of nodes where objects will be mapped onto.
