@@ -127,6 +127,11 @@ class MemberJoinedGroup(Event):
         self.group_id = group_id
         self.member_id = member_id
 
+    def __repr__(self):
+        return "<%s: group %s: +member %s>" % (self.__class__.__name__,
+                                               self.member_id,
+                                               self.group_id)
+
 
 class MemberLeftGroup(Event):
     """A member left a group event."""
@@ -134,6 +139,11 @@ class MemberLeftGroup(Event):
     def __init__(self, group_id, member_id):
         self.group_id = group_id
         self.member_id = member_id
+
+    def __repr__(self):
+        return "<%s: group %s: -member %s>" % (self.__class__.__name__,
+                                               self.member_id,
+                                               self.group_id)
 
 
 class LeaderElected(Event):
