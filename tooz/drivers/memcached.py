@@ -216,10 +216,9 @@ class MemcachedDriver(coordination.CoordinationDriverCachedRunWatchers):
     STILL_ALIVE = b"It's alive!"
 
     def __init__(self, member_id, parsed_url, options):
-        super(MemcachedDriver, self).__init__()
+        super(MemcachedDriver, self).__init__(member_id)
         options = utils.collapse(options)
         self._options = options
-        self._member_id = member_id
         self._executor = utils.ProxyExecutor.build("Memcached", options)
         self.host = (parsed_url.hostname or "localhost",
                      parsed_url.port or 11211)

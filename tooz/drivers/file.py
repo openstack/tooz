@@ -205,8 +205,7 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers):
 
     def __init__(self, member_id, parsed_url, options):
         """Initialize the file driver."""
-        super(FileDriver, self).__init__()
-        self._member_id = member_id
+        super(FileDriver, self).__init__(member_id)
         self._dir = self._normalize_path(parsed_url.path)
         self._executor = utils.ProxyExecutor.build("File", options)
         self._group_dir = os.path.join(self._dir, 'groups')

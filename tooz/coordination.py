@@ -231,8 +231,9 @@ class CoordinationDriver(object):
     enum member(s) that can be used to interogate how this driver works.
     """
 
-    def __init__(self):
+    def __init__(self, member_id):
         super(CoordinationDriver, self).__init__()
+        self._member_id = member_id
         self._started = False
         self._hooks_join_group = collections.defaultdict(Hooks)
         self._hooks_leave_group = collections.defaultdict(Hooks)
@@ -610,8 +611,8 @@ class CoordinationDriverCachedRunWatchers(CoordinationDriver):
 
     """
 
-    def __init__(self):
-        super(CoordinationDriverCachedRunWatchers, self).__init__()
+    def __init__(self, member_id):
+        super(CoordinationDriverCachedRunWatchers, self).__init__(member_id)
         # A cache for group members
         self._group_members = collections.defaultdict(set)
         self._joined_groups = set()

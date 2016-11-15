@@ -117,7 +117,7 @@ class MySQLDriver(coordination.CoordinationDriver):
 
     def __init__(self, member_id, parsed_url, options):
         """Initialize the MySQL driver."""
-        super(MySQLDriver, self).__init__()
+        super(MySQLDriver, self).__init__(member_id)
         self._parsed_url = parsed_url
         self._options = utils.collapse(options)
 

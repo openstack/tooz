@@ -315,7 +315,7 @@ return 1
     """
 
     def __init__(self, member_id, parsed_url, options):
-        super(RedisDriver, self).__init__()
+        super(RedisDriver, self).__init__(member_id)
         options = utils.collapse(options, exclude=self.CLIENT_LIST_ARGS)
         self._parsed_url = parsed_url
         self._options = options
@@ -332,7 +332,6 @@ return 1
         self._beat_prefix = self._namespace + b"_beats"
         self._groups = self._namespace + b"_groups"
         self._client = None
-        self._member_id = utils.to_binary(member_id, encoding=self._encoding)
         self._acquired_locks = set()
         self._executor = utils.ProxyExecutor.build("Redis", options)
         self._started = False

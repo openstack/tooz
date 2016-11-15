@@ -166,7 +166,7 @@ class IPCDriver(coordination.CoordinationDriver):
 
     def __init__(self, member_id, parsed_url, options):
         """Initialize the IPC driver."""
-        super(IPCDriver, self).__init__()
+        super(IPCDriver, self).__init__(member_id)
         self._executor = utils.ProxyExecutor.build("IPC", options)
 
     def _start(self):
