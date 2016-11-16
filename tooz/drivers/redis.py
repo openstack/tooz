@@ -617,13 +617,13 @@ return 1
         def _get_members(p):
             if not p.exists(encoded_group):
                 raise coordination.GroupNotCreated(group_id)
-            potential_members = []
+            potential_members = set()
             for m in p.hkeys(encoded_group):
                 m = self._decode_member_id(m)
                 if m != self.GROUP_EXISTS:
-                    potential_members.append(m)
+                    potential_members.add(m)
             if not potential_members:
-                return []
+                return set()
             # Ok now we need to see which members have passed away...
             gone_members = set()
             member_values = p.mget(compat_map(self._encode_beat_id,
@@ -644,10 +644,9 @@ return 1
                                             for m in gone_members)
                 p.hdel(encoded_group, *encoded_gone_members)
                 p.execute()
-                return list(m for m in potential_members
-                            if m not in gone_members)
-            else:
-                return potential_members
+                return set(m for m in potential_members
+                           if m not in gone_members)
+            return potential_members
 
         return RedisFutureResult(self._submit(self._client.transaction,
                                               _get_members, encoded_group,

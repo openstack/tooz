@@ -382,7 +382,7 @@ class FileDriver(coordination._RunWatchersMixin,
         def _do_get_members():
             if not os.path.isdir(group_dir):
                 raise coordination.GroupNotCreated(group_id)
-            members = []
+            members = set()
             try:
                 entries = os.listdir(group_dir)
             except EnvironmentError as e:
@@ -400,7 +400,7 @@ class FileDriver(coordination._RunWatchersMixin,
                         if e.errno != errno.ENOENT:
                             raise
                     else:
-                        members.append(member_id)
+                        members.add(member_id)
             return members
 
         fut = self._executor.submit(_do_get_members)

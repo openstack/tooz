@@ -224,8 +224,7 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self._coord.join_group(group_id_test2).get()
         client2.join_group(group_id_test2).get()
         members_ids = self._coord.get_members(group_id_test2).get()
-        self.assertIn(self.member_id, members_ids)
-        self.assertIn(member_id_test2, members_ids)
+        self.assertEqual({self.member_id, member_id_test2}, members_ids)
 
     def test_get_member_capabilities(self):
         self._coord.create_group(self.group_id).get()

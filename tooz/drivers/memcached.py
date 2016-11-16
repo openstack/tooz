@@ -437,7 +437,7 @@ class MemcachedDriver(coordination._RunWatchersMixin,
     def get_members(self, group_id):
 
         def _get_members():
-            return self._get_members(group_id).keys()
+            return set(self._get_members(group_id).keys())
 
         return MemcachedFutureResult(self._executor.submit(_get_members))
 

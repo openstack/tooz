@@ -490,9 +490,9 @@ class CoordinationDriver(object):
 
     @staticmethod
     def get_members(group_id):
-        """Return the list of all members ids of the specified group.
+        """Return the set of all members ids of the specified group.
 
-        :returns: list of all created group ids
+        :returns: set of all created group ids
         :rtype: CoordAsyncResult
         """
         raise tooz.NotImplemented
@@ -608,8 +608,6 @@ class _RunWatchersMixin(object):
                         timeout=w.leftover(return_none=True))
                 except GroupNotCreated:
                     group_members = set()
-                else:
-                    group_members = set(group_members)
                 if (group_id in self._joined_groups and
                         self._member_id not in group_members):
                     self._joined_groups.discard(group_id)
