@@ -627,6 +627,16 @@ class CoordinationDriverCachedRunWatchers(CoordinationDriver):
         self._group_members = collections.defaultdict(set)
         self._joined_groups = set()
 
+    def _init_watch_group(self, group_id):
+        members = self.get_members(group_id).get()
+        if group_id not in self._group_members:
+            self._group_members[group_id] = members
+
+    def watch_join_group(self, group_id, callback):
+        self._init_watch_group(group_id)
+        super(CoordinationDriverCachedRunWatchers, self).watch_join_group(
+            group_id, callback)
+
     def unwatch_join_group(self, group_id, callback):
         super(CoordinationDriverCachedRunWatchers, self).unwatch_join_group(
             group_id, callback)
@@ -634,6 +644,11 @@ class CoordinationDriverCachedRunWatchers(CoordinationDriver):
         if (not self._has_hooks_for_group(group_id) and
            group_id in self._group_members):
             del self._group_members[group_id]
+
+    def watch_leave_group(self, group_id, callback):
+        self._init_watch_group(group_id)
+        super(CoordinationDriverCachedRunWatchers, self).watch_leave_group(
+            group_id, callback)
 
     def unwatch_leave_group(self, group_id, callback):
         super(CoordinationDriverCachedRunWatchers, self).unwatch_leave_group(

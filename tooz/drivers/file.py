@@ -482,19 +482,6 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers):
         fut = self._executor.submit(_do_get_groups)
         return FileFutureResult(fut)
 
-    def _init_watch_group(self, group_id):
-        group_members_fut = self.get_members(group_id)
-        group_members = group_members_fut.get(timeout=None)
-        self._group_members[group_id].update(group_members)
-
-    def watch_join_group(self, group_id, callback):
-        self._init_watch_group(group_id)
-        return super(FileDriver, self).watch_join_group(group_id, callback)
-
-    def watch_leave_group(self, group_id, callback):
-        self._init_watch_group(group_id)
-        return super(FileDriver, self).watch_leave_group(group_id, callback)
-
     @staticmethod
     def watch_elected_as_leader(group_id, callback):
         raise tooz.NotImplemented

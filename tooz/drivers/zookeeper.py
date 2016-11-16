@@ -475,7 +475,6 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         return client.KazooClient(**client_kwargs)
 
     def _watch_group(self, group_id):
-        get_members_req = self.get_members(group_id)
 
         def on_children_change(children):
             # If we don't have any hook, stop watching
@@ -505,9 +504,6 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
                             utils.to_binary(member_id))))
 
             self._group_members[group_id] = children
-
-        # Initialize the current member list
-        self._group_members[group_id] = get_members_req.get()
 
         try:
             self._coord.ChildrenWatch(self._path_group(group_id),

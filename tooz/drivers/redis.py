@@ -720,18 +720,6 @@ return 1
 
         return RedisFutureResult(self._submit(_get_groups))
 
-    def _init_watch_group(self, group_id):
-        members = self.get_members(group_id)
-        self._group_members[group_id].update(members.get(timeout=None))
-
-    def watch_join_group(self, group_id, callback):
-        self._init_watch_group(group_id)
-        return super(RedisDriver, self).watch_join_group(group_id, callback)
-
-    def watch_leave_group(self, group_id, callback):
-        self._init_watch_group(group_id)
-        return super(RedisDriver, self).watch_leave_group(group_id, callback)
-
     def _get_leader_lock(self, group_id):
         name = self._encode_group_leader(group_id)
         return self.get_lock(name)

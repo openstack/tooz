@@ -476,25 +476,6 @@ class MemcachedDriver(coordination.CoordinationDriverCachedRunWatchers):
                    self.leader_timeout,
                    self.lock_timeout)
 
-    @_translate_failures
-    def _init_watch_group(self, group_id):
-        members = self.client.get(self._encode_group_id(group_id))
-        if members is None:
-            raise coordination.GroupNotCreated(group_id)
-        # Initialize with the current group member list
-        if group_id not in self._group_members:
-            self._group_members[group_id] = set(members.keys())
-
-    def watch_join_group(self, group_id, callback):
-        self._init_watch_group(group_id)
-        return super(MemcachedDriver, self).watch_join_group(
-            group_id, callback)
-
-    def watch_leave_group(self, group_id, callback):
-        self._init_watch_group(group_id)
-        return super(MemcachedDriver, self).watch_leave_group(
-            group_id, callback)
-
     def get_lock(self, name):
         return MemcachedLock(self, name, self.lock_timeout)
 

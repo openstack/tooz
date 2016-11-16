@@ -387,6 +387,10 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         # we get an event.
         self._coord.watch_leave_group(self.group_id, self._set_event)
 
+        # Run watchers to be sure we initialize the member cache and we *know*
+        # client2 is a member now
+        self._coord.run_watchers()
+
         time.sleep(3)
         self._coord.heartbeat()
         time.sleep(3)
