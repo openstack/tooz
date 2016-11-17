@@ -550,7 +550,9 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         # Only works for clients that have access to the groups they are part
         # of, to ensure that after we got booted out by client3 that this
         # client now no longer believes its part of the group.
-        if hasattr(self._coord, '_joined_groups'):
+        if (hasattr(self._coord, '_joined_groups')
+           and (self._coord.run_watchers
+                == tooz.coordination._RunWatchersMixin.run_watchers)):
             self.assertIn(self.group_id, self._coord._joined_groups)
             self._coord.run_watchers()
             self.assertNotIn(self.group_id, self._coord._joined_groups)

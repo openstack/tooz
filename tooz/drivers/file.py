@@ -218,7 +218,6 @@ class FileDriver(coordination._RunWatchersMixin,
         self._reserved_dirs = [self._dir, self._group_dir, self._tmpdir]
         self._reserved_paths = list(self._reserved_dirs)
         self._reserved_paths.append(self._driver_lock_path)
-        self._joined_groups = set()
         self._safe_member_id = self._make_filesystem_safe(member_id)
 
     @staticmethod
@@ -261,8 +260,6 @@ class FileDriver(coordination._RunWatchersMixin,
         self._executor.start()
 
     def _stop(self):
-        while self._joined_groups:
-            self.leave_group(self._joined_groups.pop())
         self._executor.stop()
 
     def _update_group_metadata(self, path, group_id):

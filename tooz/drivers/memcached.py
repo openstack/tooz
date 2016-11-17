@@ -276,15 +276,6 @@ class MemcachedDriver(coordination._RunWatchersMixin,
         for lock in list(self._acquired_locks):
             lock.release()
         self.client.delete(self._encode_member_id(self._member_id))
-        for g in list(self._joined_groups):
-            try:
-                self.leave_group(g).get()
-            except (coordination.MemberNotJoined,
-                    coordination.GroupNotCreated):
-                # Guess we got booted out/never existed in the first place...
-                pass
-            except coordination.ToozError:
-                LOG.warning("Unable to leave group '%s'", g, exc_info=True)
         self._executor.stop()
         self.client.close()
 

@@ -385,6 +385,8 @@ class CoordinationDriver(object):
         if self.requires_beating and start_heart:
             self.heart.start()
         self._started = True
+        # Tracks which group are joined
+        self._joined_groups = set()
 
     def _start(self):
         pass
@@ -400,6 +402,17 @@ class CoordinationDriver(object):
         if self.heart.is_alive():
             self.heart.stop()
             self.heart.wait()
+        leaving = [self.leave_group(group)
+                   for group in self._joined_groups]
+        for leave in leaving:
+            try:
+                leave.get()
+            except ToozError:
+                # Whatever happens, ignore. Maybe we got booted out/never
+                # existed in the first place, or something is down, but we just
+                # want to call _stop after whatever happens to not leak any
+                # connection.
+                pass
         self._stop()
         self._started = False
 

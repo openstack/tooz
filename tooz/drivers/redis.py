@@ -335,7 +335,6 @@ return 1
         self._client = None
         self._member_id = utils.to_binary(member_id, encoding=self._encoding)
         self._acquired_locks = set()
-        self._joined_groups = set()
         self._executor = utils.ProxyExecutor.build("Redis", options)
         self._started = False
         self._server_info = {}
@@ -516,16 +515,6 @@ return 1
                 lock.release()
             except coordination.ToozError:
                 LOG.warning("Unable to release lock '%s'", lock, exc_info=True)
-        while self._joined_groups:
-            group_id = self._joined_groups.pop()
-            try:
-                self.leave_group(group_id).get()
-            except (coordination.MemberNotJoined,
-                    coordination.GroupNotCreated):
-                pass
-            except coordination.ToozError:
-                LOG.warning("Unable to leave group '%s'", group_id,
-                            exc_info=True)
         self._executor.stop()
         if self._client is not None:
             # Make sure we no longer exist...
