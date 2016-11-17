@@ -634,13 +634,12 @@ class CoordinationDriverCachedRunWatchers(CoordinationDriver):
 
     def run_watchers(self, timeout=None):
         with timeutils.StopWatch(duration=timeout) as w:
-            known_groups = self.get_groups().get(
-                timeout=w.leftover(return_none=True))
             result = []
-            for group_id in known_groups:
+            group_with_hooks = set(self._hooks_join_group.keys()).union(
+                set(self._hooks_leave_group.keys()))
+            for group_id in group_with_hooks:
                 try:
-                    group_members_fut = self.get_members(group_id)
-                    group_members = group_members_fut.get(
+                    group_members = self.get_members(group_id).get(
                         timeout=w.leftover(return_none=True))
                 except GroupNotCreated:
                     group_members = set()
