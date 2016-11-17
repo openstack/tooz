@@ -14,9 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import collections
-import copy
-
 from kazoo import client
 from kazoo import exceptions
 try:
@@ -158,7 +155,6 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
             coordination.raise_with_cause(tooz.ToozError,
                                           "Operational error: %s" % e_msg,
                                           cause=e)
-        self._watchers = collections.deque()
         self._leader_locks = {}
 
     def _stop(self):
@@ -475,77 +471,6 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
             client_kwargs['handler'] = handler_cls()
         return client.KazooClient(**client_kwargs)
 
-    def _watch_group(self, group_id):
-
-        def on_children_change(children):
-            # If we don't have any hook, stop watching
-            if not self._has_hooks_for_group(group_id):
-                return False
-            children = set(children)
-            last_children = self._group_members[group_id]
-
-            for member_id in (children - last_children):
-                # Copy function in case it's removed later from the
-                # hook list
-                hooks = copy.copy(self._hooks_join_group[group_id])
-                self._watchers.append(
-                    lambda: hooks.run(
-                        coordination.MemberJoinedGroup(
-                            group_id,
-                            utils.to_binary(member_id))))
-
-            for member_id in (last_children - children):
-                # Copy function in case it's removed later from the
-                # hook list
-                hooks = copy.copy(self._hooks_leave_group[group_id])
-                self._watchers.append(
-                    lambda: hooks.run(
-                        coordination.MemberLeftGroup(
-                            group_id,
-                            utils.to_binary(member_id))))
-
-            self._group_members[group_id] = children
-
-        try:
-            self._coord.ChildrenWatch(self._path_group(group_id),
-                                      on_children_change)
-        except exceptions.NoNodeError:
-            raise coordination.GroupNotCreated(group_id)
-
-    def watch_join_group(self, group_id, callback):
-        # Check if we already have hooks for this group_id, if not, start
-        # watching it.
-        already_being_watched = self._has_hooks_for_group(group_id)
-
-        # Add the hook before starting watching to avoid race conditions
-        # as the watching executor can be in a thread
-        super(KazooDriver, self).watch_join_group(group_id, callback)
-
-        if not already_being_watched:
-            try:
-                self._watch_group(group_id)
-            except Exception:
-                # Rollback and unregister the hook
-                self.unwatch_join_group(group_id, callback)
-                raise
-
-    def watch_leave_group(self, group_id, callback):
-        # Check if we already have hooks for this group_id, if not, start
-        # watching it.
-        already_being_watched = self._has_hooks_for_group(group_id)
-
-        # Add the hook before starting watching to avoid race conditions
-        # as the watching executor can be in a thread
-        super(KazooDriver, self).watch_leave_group(group_id, callback)
-
-        if not already_being_watched:
-            try:
-                self._watch_group(group_id)
-            except Exception:
-                # Rollback and unregister the hook
-                self.unwatch_leave_group(group_id, callback)
-                raise
-
     def stand_down_group_leader(self, group_id):
         if group_id in self._leader_locks:
             self._leader_locks[group_id].release()
@@ -587,10 +512,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
                         self._member_id))
 
     def run_watchers(self, timeout=None):
-        results = []
-        while self._watchers:
-            cb = self._watchers.popleft()
-            results.extend(cb())
+        results = super(KazooDriver, self).run_watchers(timeout)
         self.run_elect_coordinator()
         return results
 
