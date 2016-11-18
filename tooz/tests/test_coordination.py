@@ -84,7 +84,7 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
     def test_create_group(self):
         self._coord.create_group(self.group_id).get()
         all_group_ids = self._coord.get_groups().get()
-        self.assertTrue(self.group_id in all_group_ids)
+        self.assertIn(self.group_id, all_group_ids)
 
     def test_get_lock_release_broken(self):
         name = tests.get_random_uuid()
@@ -124,10 +124,10 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
     def test_delete_group(self):
         self._coord.create_group(self.group_id).get()
         all_group_ids = self._coord.get_groups().get()
-        self.assertTrue(self.group_id in all_group_ids)
+        self.assertIn(self.group_id, all_group_ids)
         self._coord.delete_group(self.group_id).get()
         all_group_ids = self._coord.get_groups().get()
-        self.assertFalse(self.group_id in all_group_ids)
+        self.assertNotIn(self.group_id, all_group_ids)
         join_group = self._coord.join_group(self.group_id)
         self.assertRaises(tooz.coordination.GroupNotCreated,
                           join_group.get)
@@ -150,7 +150,7 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self._coord.create_group(self.group_id).get()
         self._coord.join_group(self.group_id).get()
         member_list = self._coord.get_members(self.group_id).get()
-        self.assertTrue(self.member_id in member_list)
+        self.assertIn(self.member_id, member_list)
 
     def test_join_nonexistent_group(self):
         join_group = self._coord.join_group(self.group_id)
@@ -170,20 +170,20 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
     def test_leave_group(self):
         self._coord.create_group(self.group_id).get()
         all_group_ids = self._coord.get_groups().get()
-        self.assertTrue(self.group_id in all_group_ids)
+        self.assertIn(self.group_id, all_group_ids)
         self._coord.join_group(self.group_id).get()
         member_list = self._coord.get_members(self.group_id).get()
-        self.assertTrue(self.member_id in member_list)
+        self.assertIn(self.member_id, member_list)
         member_ids = self._coord.get_members(self.group_id).get()
-        self.assertTrue(self.member_id in member_ids)
+        self.assertIn(self.member_id, member_ids)
         self._coord.leave_group(self.group_id).get()
         new_member_objects = self._coord.get_members(self.group_id).get()
         new_member_list = [member.member_id for member in new_member_objects]
-        self.assertTrue(self.member_id not in new_member_list)
+        self.assertNotIn(self.member_id, new_member_list)
 
     def test_leave_nonexistent_group(self):
         all_group_ids = self._coord.get_groups().get()
-        self.assertTrue(self.group_id not in all_group_ids)
+        self.assertNotIn(self.group_id, all_group_ids)
         leave_group = self._coord.leave_group(self.group_id)
         # Drivers raise one of those depending on their capability
         self.assertRaisesAny([tooz.coordination.MemberNotJoined,
@@ -193,7 +193,7 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
     def test_leave_group_not_joined_by_member(self):
         self._coord.create_group(self.group_id).get()
         all_group_ids = self._coord.get_groups().get()
-        self.assertTrue(self.group_id in all_group_ids)
+        self.assertIn(self.group_id, all_group_ids)
         leave_group = self._coord.leave_group(self.group_id)
         self.assertRaises(tooz.coordination.MemberNotJoined,
                           leave_group.get)
@@ -219,8 +219,8 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self._coord.join_group(group_id_test2).get()
         client2.join_group(group_id_test2).get()
         members_ids = self._coord.get_members(group_id_test2).get()
-        self.assertTrue(self.member_id in members_ids)
-        self.assertTrue(member_id_test2 in members_ids)
+        self.assertIn(self.member_id, members_ids)
+        self.assertIn(member_id_test2, members_ids)
 
     def test_get_member_capabilities(self):
         self._coord.create_group(self.group_id).get()
@@ -349,12 +349,12 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self._coord.join_group(self.group_id).get()
         client2.join_group(self.group_id).get()
         members_ids = self._coord.get_members(self.group_id).get()
-        self.assertTrue(self.member_id in members_ids)
-        self.assertTrue(member_id_test2 in members_ids)
+        self.assertIn(self.member_id, members_ids)
+        self.assertIn(member_id_test2, members_ids)
         client2.stop()
         members_ids = self._coord.get_members(self.group_id).get()
-        self.assertTrue(self.member_id in members_ids)
-        self.assertTrue(member_id_test2 not in members_ids)
+        self.assertIn(self.member_id, members_ids)
+        self.assertNotIn(member_id_test2, members_ids)
 
     def test_timeout(self):
         if (tooz.coordination.Characteristics.NON_TIMEOUT_BASED
@@ -376,8 +376,8 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self._coord.join_group(self.group_id).get()
         client2.join_group(self.group_id).get()
         members_ids = self._coord.get_members(self.group_id).get()
-        self.assertTrue(self.member_id in members_ids)
-        self.assertTrue(member_id_test2 in members_ids)
+        self.assertIn(self.member_id, members_ids)
+        self.assertIn(member_id_test2, members_ids)
 
         # Watch the group, we want to be sure that when client2 is kicked out
         # we get an event.
@@ -393,8 +393,8 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         while True:
             if self._coord.run_watchers():
                 break
-        self.assertTrue(self.member_id in members_ids)
-        self.assertTrue(member_id_test2 not in members_ids)
+        self.assertIn(self.member_id, members_ids)
+        self.assertNotIn(member_id_test2, members_ids)
         # Check that the event has been triggered
         self.assertIsInstance(self.event,
                               tooz.coordination.MemberLeftGroup)
@@ -420,7 +420,7 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         # Join the group
         client2.join_group(self.group_id).get()
         members_ids = self._coord.get_members(self.group_id).get()
-        self.assertTrue(member_id_test2 in members_ids)
+        self.assertIn(member_id_test2, members_ids)
         while True:
             if self._coord.run_watchers():
                 break
