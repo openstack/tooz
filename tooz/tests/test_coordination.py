@@ -612,12 +612,12 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
         self._coord.create_group(self.group_id).get()
 
         leader = self._coord.get_leader(self.group_id).get()
-        self.assertEqual(leader, None)
+        self.assertIsNone(leader)
 
         self._coord.join_group(self.group_id).get()
 
         leader = self._coord.get_leader(self.group_id).get()
-        self.assertEqual(leader, None)
+        self.assertIsNone(leader)
 
         # Let's get elected
         self._coord.watch_elected_as_leader(self.group_id, self._set_event)
