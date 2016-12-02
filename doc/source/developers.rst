@@ -71,7 +71,7 @@ Zookeeper
 Exceptions
 ----------
 
-.. autoclass:: tooz.coordination.ToozError
+.. autoclass:: tooz.ToozError
 .. autoclass:: tooz.coordination.ToozConnectionError
 .. autoclass:: tooz.coordination.OperationTimedOut
 .. autoclass:: tooz.coordination.GroupNotCreated

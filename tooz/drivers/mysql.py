@@ -64,7 +64,7 @@ class MySQLLock(locking.Lock):
                         return True
             except pymysql.MySQLError as e:
                 coordination.raise_with_cause(
-                    coordination.ToozError,
+                    tooz.ToozError,
                     encodeutils.exception_to_unicode(e),
                     cause=e)
 
@@ -84,7 +84,7 @@ class MySQLLock(locking.Lock):
                 self.acquired = False
                 return True
         except pymysql.MySQLError as e:
-            coordination.raise_with_cause(coordination.ToozError,
+            coordination.raise_with_cause(tooz.ToozError,
                                           encodeutils.exception_to_unicode(e),
                                           cause=e)
 

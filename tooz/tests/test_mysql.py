@@ -18,6 +18,7 @@
 from oslo_utils import encodeutils
 from testtools import testcase
 
+import tooz
 from tooz import coordination
 from tooz import tests
 
@@ -29,7 +30,7 @@ class TestMySQLDriver(testcase.TestCase):
         def _safe_stop(coord):
             try:
                 coord.stop()
-            except coordination.ToozError as e:
+            except tooz.ToozError as e:
                 message = encodeutils.exception_to_unicode(e)
                 if (message != 'Can not stop a driver which has not'
                                ' been started'):

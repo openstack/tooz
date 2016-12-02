@@ -49,7 +49,7 @@ def _translate_failures():
                                       encodeutils.exception_to_unicode(e),
                                       cause=e)
     except exceptions.RedisError as e:
-        coordination.raise_with_cause(coordination.ToozError,
+        coordination.raise_with_cause(tooz.ToozError,
                                       encodeutils.exception_to_unicode(e),
                                       cause=e)
 
@@ -501,7 +501,7 @@ return 1
         for lock in self._acquired_locks.copy():
             try:
                 lock.heartbeat()
-            except coordination.ToozError:
+            except tooz.ToozError:
                 LOG.warning("Unable to heartbeat lock '%s'", lock,
                             exc_info=True)
         return min(self.lock_timeout, self.membership_timeout)
@@ -511,7 +511,7 @@ return 1
             lock = self._acquired_locks.pop()
             try:
                 lock.release()
-            except coordination.ToozError:
+            except tooz.ToozError:
                 LOG.warning("Unable to release lock '%s'", lock, exc_info=True)
         self._executor.stop()
         if self._client is not None:
@@ -522,7 +522,7 @@ return 1
                 # exist in the first place, which is fine/expected/desired...
                 with _translate_failures():
                     self._client.delete(beat_id)
-            except coordination.ToozError:
+            except tooz.ToozError:
                 LOG.warning("Unable to delete heartbeat key '%s'", beat_id,
                             exc_info=True)
             self._client = None
@@ -532,14 +532,14 @@ return 1
 
     def _submit(self, cb, *args, **kwargs):
         if not self._started:
-            raise coordination.ToozError("Redis driver has not been started")
+            raise tooz.ToozError("Redis driver has not been started")
         return self._executor.submit(cb, *args, **kwargs)
 
     def _get_script(self, script_key):
         try:
             return self._scripts[script_key]
         except KeyError:
-            raise coordination.ToozError("Redis driver has not been started")
+            raise tooz.ToozError("Redis driver has not been started")
 
     def create_group(self, group_id):
         script = self._get_script('create_group')
@@ -696,13 +696,13 @@ return 1
             if result == -3:
                 raise coordination.GroupNotEmpty(group_id)
             if result == -4:
-                raise coordination.ToozError("Unable to remove '%s' key"
-                                             " from set located at '%s'"
-                                             % (args[0], keys[-1]))
+                raise tooz.ToozError("Unable to remove '%s' key"
+                                     " from set located at '%s'"
+                                     % (args[0], keys[-1]))
             if result != 1:
-                raise coordination.ToozError("Internal error, unable"
-                                             " to complete group '%s' removal"
-                                             % (group_id))
+                raise tooz.ToozError("Internal error, unable"
+                                     " to complete group '%s' removal"
+                                     % (group_id))
 
         return RedisFutureResult(self._submit(_delete_group, script))
 

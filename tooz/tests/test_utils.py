@@ -22,7 +22,7 @@ import futurist
 import six
 from testtools import testcase
 
-from tooz import coordination
+import tooz
 from tooz import utils
 
 
@@ -54,13 +54,13 @@ class TestProxyExecutor(testcase.TestCase):
 
     def test_fetch_unknown_executor(self):
         options = {'executor': 'huh'}
-        self.assertRaises(coordination.ToozError,
+        self.assertRaises(tooz.ToozError,
                           utils.ProxyExecutor.build, 'test',
                           options)
 
     def test_no_submit_stopped(self):
         executor = utils.ProxyExecutor.build("test", {})
-        self.assertRaises(coordination.ToozError,
+        self.assertRaises(tooz.ToozError,
                           executor.submit, lambda: None)
 
 

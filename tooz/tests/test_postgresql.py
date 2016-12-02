@@ -24,6 +24,7 @@ from oslo_utils import encodeutils
 import testtools
 from testtools import testcase
 
+import tooz
 from tooz import coordination
 from tooz import tests
 
@@ -47,7 +48,7 @@ class TestPostgreSQLFailures(testcase.TestCase):
         def _safe_stop(coord):
             try:
                 coord.stop()
-            except coordination.ToozError as e:
+            except tooz.ToozError as e:
                 # TODO(harlowja): make this better, so that we don't have to
                 # do string checking...
                 message = encodeutils.exception_to_unicode(e)
@@ -88,7 +89,7 @@ class TestPostgreSQLFailures(testcase.TestCase):
         c = self._create_coordinator()
         c.start()
         test_lock = c.get_lock(b'test-lock')
-        self.assertRaises(coordination.ToozError, test_lock.acquire)
+        self.assertRaises(tooz.ToozError, test_lock.acquire)
 
     @mock.patch("tooz.drivers.pgsql.psycopg2.connect")
     def test_failure_release_lock(self, psycopg2_connector):
@@ -110,4 +111,4 @@ class TestPostgreSQLFailures(testcase.TestCase):
         c.start()
         test_lock = c.get_lock(b'test-lock')
         self.assertTrue(test_lock.acquire())
-        self.assertRaises(coordination.ToozError, test_lock.release)
+        self.assertRaises(tooz.ToozError, test_lock.release)

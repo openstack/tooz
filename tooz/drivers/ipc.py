@@ -196,7 +196,7 @@ class IPCDriver(coordination.CoordinationDriver):
     def _write_group_list(self, group_list):
         data = msgpack.dumps(list(group_list))
         if len(data) >= self._SEGMENT_SIZE - 2:
-            raise coordination.ToozError("Group list is too big")
+            raise tooz.ToozError("Group list is too big")
         self._group_list.write(struct.pack('H', len(data)))
         self._group_list.write(data, offset=2)
 

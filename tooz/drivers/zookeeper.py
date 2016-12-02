@@ -30,6 +30,7 @@ from oslo_utils import strutils
 import six
 from six.moves import filter as compat_filter
 
+import tooz
 from tooz import coordination
 from tooz import locking
 from tooz import utils
@@ -54,7 +55,7 @@ class ZooKeeperLock(locking.Lock):
                 exceptions.NoNodeError):
             return False
         except exceptions.KazooException as e:
-            coordination.raise_with_cause(coordination.ToozError,
+            coordination.raise_with_cause(tooz.ToozError,
                                           "operation error: %s" % (e),
                                           cause=e)
 
@@ -154,7 +155,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
             self._coord.ensure_path(self._paths_join("/", self._namespace))
         except exceptions.KazooException as e:
             e_msg = encodeutils.exception_to_unicode(e)
-            coordination.raise_with_cause(coordination.ToozError,
+            coordination.raise_with_cause(tooz.ToozError,
                                           "Operational error: %s" % e_msg,
                                           cause=e)
         self._watchers = collections.deque()
@@ -182,12 +183,12 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         except exceptions.NodeExistsError:
             raise coordination.GroupAlreadyExist(group_id)
         except exceptions.NoNodeError as e:
-            coordination.raise_with_cause(coordination.ToozError,
+            coordination.raise_with_cause(tooz.ToozError,
                                           "Tooz namespace '%s' has not"
                                           " been created" % self._namespace,
                                           cause=e)
         except exceptions.ZookeeperError as e:
-            coordination.raise_with_cause(coordination.ToozError,
+            coordination.raise_with_cause(tooz.ToozError,
                                           encodeutils.exception_to_unicode(e),
                                           cause=e)
 
@@ -212,7 +213,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         except exceptions.NotEmptyError:
             raise coordination.GroupNotEmpty(group_id)
         except exceptions.ZookeeperError as e:
-            coordination.raise_with_cause(coordination.ToozError,
+            coordination.raise_with_cause(tooz.ToozError,
                                           encodeutils.exception_to_unicode(e),
                                           cause=e)
 
@@ -237,7 +238,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         except exceptions.NoNodeError:
             raise coordination.GroupNotCreated(group_id)
         except exceptions.ZookeeperError as e:
-            coordination.raise_with_cause(coordination.ToozError,
+            coordination.raise_with_cause(tooz.ToozError,
                                           encodeutils.exception_to_unicode(e),
                                           cause=e)
 
@@ -263,7 +264,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         except exceptions.NoNodeError:
             raise coordination.MemberNotJoined(group_id, member_id)
         except exceptions.ZookeeperError as e:
-            coordination.raise_with_cause(coordination.ToozError,
+            coordination.raise_with_cause(tooz.ToozError,
                                           encodeutils.exception_to_unicode(e),
                                           cause=e)
 
@@ -281,7 +282,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         except exceptions.NoNodeError:
             pass
         except exceptions.ZookeeperError as e:
-            coordination.raise_with_cause(coordination.ToozError,
+            coordination.raise_with_cause(tooz.ToozError,
                                           encodeutils.exception_to_unicode(e),
                                           cause=e)
         return self.timeout
@@ -305,7 +306,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         except exceptions.NoNodeError:
             raise coordination.GroupNotCreated(group_id)
         except exceptions.ZookeeperError as e:
-            coordination.raise_with_cause(coordination.ToozError,
+            coordination.raise_with_cause(tooz.ToozError,
                                           encodeutils.exception_to_unicode(e),
                                           cause=e)
         else:
@@ -330,7 +331,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         except exceptions.NoNodeError:
             raise coordination.MemberNotJoined(group_id, member_id)
         except exceptions.ZookeeperError as e:
-            coordination.raise_with_cause(coordination.ToozError,
+            coordination.raise_with_cause(tooz.ToozError,
                                           encodeutils.exception_to_unicode(e),
                                           cause=e)
 
@@ -355,7 +356,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         except exceptions.NoNodeError:
             raise coordination.MemberNotJoined(group_id, member_id)
         except exceptions.ZookeeperError as e:
-            coordination.raise_with_cause(coordination.ToozError,
+            coordination.raise_with_cause(tooz.ToozError,
                                           encodeutils.exception_to_unicode(e),
                                           cause=e)
         else:
@@ -383,7 +384,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         except exceptions.NoNodeError:
             raise coordination.MemberNotJoined(group_id, member_id)
         except exceptions.ZookeeperError as e:
-            coordination.raise_with_cause(coordination.ToozError,
+            coordination.raise_with_cause(tooz.ToozError,
                                           encodeutils.exception_to_unicode(e),
                                           cause=e)
         else:
@@ -410,12 +411,12 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
                                           encodeutils.exception_to_unicode(e),
                                           cause=e)
         except exceptions.NoNodeError as e:
-            coordination.raise_with_cause(coordination.ToozError,
+            coordination.raise_with_cause(tooz.ToozError,
                                           "Tooz namespace '%s' has not"
                                           " been created" % self._namespace,
                                           cause=e)
         except exceptions.ZookeeperError as e:
-            coordination.raise_with_cause(coordination.ToozError,
+            coordination.raise_with_cause(tooz.ToozError,
                                           encodeutils.exception_to_unicode(e),
                                           cause=e)
         else:

@@ -21,6 +21,7 @@ import fixtures
 import mock
 from testtools import testcase
 
+import tooz
 from tooz import coordination
 from tooz import tests
 
@@ -52,7 +53,7 @@ class TestFileDriver(testcase.TestCase):
             pass
         os.unlink(os.path.join(file_path, 'groups',
                                safe_group_id, '.metadata'))
-        self.assertRaises(coordination.ToozError,
+        self.assertRaises(tooz.ToozError,
                           coord.delete_group(b"my_group").get)
 
     @mock.patch('os.path.normpath', lambda x: x.replace('/', '\\'))

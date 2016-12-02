@@ -25,6 +25,7 @@ from six.moves.urllib import parse
 from testtools import matchers
 from testtools import testcase
 
+import tooz
 import tooz.coordination
 from tooz import tests
 
@@ -78,7 +79,7 @@ class TestAPI(tests.TestCaseSkipNotImplemented):
     def test_stop_first(self):
         c = tooz.coordination.get_coordinator(self.url,
                                               self.member_id)
-        self.assertRaises(tooz.coordination.ToozError,
+        self.assertRaises(tooz.ToozError,
                           c.stop)
 
     def test_create_group(self):

@@ -55,7 +55,7 @@ def _translate_failures():
     try:
         yield
     except (EnvironmentError, voluptuous.Invalid) as e:
-        coordination.raise_with_cause(coordination.ToozError,
+        coordination.raise_with_cause(tooz.ToozError,
                                       encodeutils.exception_to_unicode(e),
                                       cause=e)
 
@@ -445,7 +445,7 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers):
                 if len(entries) > 1:
                     raise coordination.GroupNotEmpty(group_id)
                 elif len(entries) == 1 and entries != ['.metadata']:
-                    raise coordination.ToozError(
+                    raise tooz.ToozError(
                         "Unexpected path '%s' found in"
                         " group directory '%s' (expected to only find"
                         " a '.metadata' path)" % (entries[0], group_dir))

@@ -21,6 +21,7 @@ import enum
 import logging
 import threading
 
+from debtcollector import moves
 from oslo_utils import excutils
 from oslo_utils import netutils
 from oslo_utils import timeutils
@@ -385,7 +386,7 @@ class CoordinationDriver(object):
         is initiated.
         """
         if self._started:
-            raise ToozError(
+            raise tooz.ToozError(
                 "Can not start a driver which has not been stopped")
         self._start()
         if self.requires_beating and start_heart:
@@ -404,7 +405,8 @@ class CoordinationDriver(object):
         disappear from all joined groups.
         """
         if not self._started:
-            raise ToozError("Can not stop a driver which has not been started")
+            raise tooz.ToozError(
+                "Can not stop a driver which has not been started")
         if self.heart.is_alive():
             self.heart.stop()
             self.heart.wait()
@@ -415,7 +417,7 @@ class CoordinationDriver(object):
         for fut in leaving:
             try:
                 fut.get()
-            except ToozError:
+            except tooz.ToozError:
                 # Whatever happens, ignore. Maybe we got booted out/never
                 # existed in the first place, or something is down, but we just
                 # want to call _stop after whatever happens to not leak any
@@ -734,40 +736,28 @@ def get_coordinator(backend_url, member_id,
     return d
 
 
-class ToozError(Exception):
-    """Exception raised when an internal error occurs.
-
-    Raised for instance in case of server internal error.
-
-    :ivar cause: the cause of the exception being raised, when not none this
-                 will itself be an exception instance, this is useful for
-                 creating a chain of exceptions for versions of python where
-                 this is not yet implemented/supported natively.
-
-    """
-
-    def __init__(self, message, cause=None):
-        super(ToozError, self).__init__(message)
-        self.cause = cause
+@moves.moved_class(tooz.ToozError, "ToozError", "tooz.coordination")
+class ToozError(tooz.ToozError):
+    pass
 
 
-class ToozDriverChosenPoorly(ToozError):
+class ToozDriverChosenPoorly(tooz.ToozError):
     """Raised when a driver does not match desired characteristics."""
 
 
-class ToozConnectionError(ToozError):
+class ToozConnectionError(tooz.ToozError):
     """Exception raised when the client cannot connect to the server."""
 
 
-class OperationTimedOut(ToozError):
+class OperationTimedOut(tooz.ToozError):
     """Exception raised when an operation times out."""
 
 
-class LockAcquireFailed(ToozError):
+class LockAcquireFailed(tooz.ToozError):
     """Exception raised when a lock acquire fails in a context manager."""
 
 
-class GroupNotCreated(ToozError):
+class GroupNotCreated(tooz.ToozError):
     """Exception raised when the caller request an nonexistent group."""
     def __init__(self, group_id):
         self.group_id = group_id
@@ -775,7 +765,7 @@ class GroupNotCreated(ToozError):
             "Group %s does not exist" % group_id)
 
 
-class GroupAlreadyExist(ToozError):
+class GroupAlreadyExist(tooz.ToozError):
     """Exception raised trying to create an already existing group."""
     def __init__(self, group_id):
         self.group_id = group_id
@@ -783,7 +773,7 @@ class GroupAlreadyExist(ToozError):
             "Group %s already exists" % group_id)
 
 
-class MemberAlreadyExist(ToozError):
+class MemberAlreadyExist(tooz.ToozError):
     """Exception raised trying to join a group already joined."""
     def __init__(self, group_id, member_id):
         self.group_id = group_id
@@ -793,7 +783,7 @@ class MemberAlreadyExist(ToozError):
             (member_id, group_id))
 
 
-class MemberNotJoined(ToozError):
+class MemberNotJoined(tooz.ToozError):
     """Exception raised trying to access a member not in a group."""
     def __init__(self, group_id, member_id):
         self.group_id = group_id
@@ -802,14 +792,14 @@ class MemberNotJoined(ToozError):
                                               (member_id, group_id))
 
 
-class GroupNotEmpty(ToozError):
+class GroupNotEmpty(tooz.ToozError):
     "Exception raised when the caller try to delete a group with members."
     def __init__(self, group_id):
         self.group_id = group_id
         super(GroupNotEmpty, self).__init__("Group %s is not empty" % group_id)
 
 
-class WatchCallbackNotFound(ToozError):
+class WatchCallbackNotFound(tooz.ToozError):
     """Exception raised when unwatching a group.
 
     Raised when the caller tries to unwatch a group with a callback that
@@ -824,7 +814,7 @@ class WatchCallbackNotFound(ToozError):
             (callback.__name__, group_id))
 
 
-class SerializationError(ToozError):
+class SerializationError(tooz.ToozError):
     "Exception raised when serialization or deserialization breaks."
 
 
@@ -837,8 +827,7 @@ def raise_with_cause(exc_cls, message, *args, **kwargs):
     :pep:`3134`) we should try to raise the desired exception with the given
     *cause*.
 
-    :param exc_cls: the :py:class:`~tooz.coordination.ToozError` class
-                    to raise.
+    :param exc_cls: the :py:class:`~tooz.ToozError` class to raise.
     :param message: the text/str message that will be passed to
                     the exceptions constructor as its first positional
                     argument.
@@ -847,6 +836,6 @@ def raise_with_cause(exc_cls, message, *args, **kwargs):
     :param kwargs: any additional keyword arguments to pass to the
                    exceptions constructor.
     """
-    if not issubclass(exc_cls, ToozError):
+    if not issubclass(exc_cls, tooz.ToozError):
         raise ValueError("Subclass of tooz error is required")
     excutils.raise_with_cause(exc_cls, message, *args, **kwargs)

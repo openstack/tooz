@@ -25,6 +25,7 @@ from oslo_serialization import msgpackutils
 from oslo_utils import encodeutils
 import six
 
+import tooz
 from tooz import coordination
 
 
@@ -82,10 +83,10 @@ class ProxyExecutor(object):
                 default_executor_fact = cls.KIND_TO_FACTORY[executor_kind]
             except KeyError:
                 executors_known = sorted(list(cls.KIND_TO_FACTORY))
-                raise coordination.ToozError("Unknown executor"
-                                             " '%s' provided, accepted values"
-                                             " are %s" % (executor_kind,
-                                                          executors_known))
+                raise tooz.ToozError("Unknown executor"
+                                     " '%s' provided, accepted values"
+                                     " are %s" % (executor_kind,
+                                                  executors_known))
         return cls(driver_name, default_executor_fact)
 
     def start(self):
@@ -103,14 +104,14 @@ class ProxyExecutor(object):
 
     def submit(self, cb, *args, **kwargs):
         if not self.started:
-            raise coordination.ToozError("%s driver asynchronous executor"
-                                         " has not been started"
-                                         % self.driver_name)
+            raise tooz.ToozError("%s driver asynchronous executor"
+                                 " has not been started"
+                                 % self.driver_name)
         try:
             return self.executor.submit(cb, *args, **kwargs)
         except RuntimeError:
-            raise coordination.ToozError("%s driver asynchronous executor has"
-                                         " been shutdown" % self.driver_name)
+            raise tooz.ToozError("%s driver asynchronous executor has"
+                                 " been shutdown" % self.driver_name)
 
 
 def safe_abs_path(rooted_at, *pieces):

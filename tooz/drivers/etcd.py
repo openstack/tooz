@@ -21,6 +21,7 @@ from oslo_utils import timeutils
 import requests
 import six
 
+import tooz
 from tooz import coordination
 from tooz import locking
 from tooz import utils
@@ -38,7 +39,7 @@ def _translate_failures(func):
             return func(*args, **kwargs)
         except ValueError as e:
             # Typically json decoding failed for some reason.
-            coordination.raise_with_cause(coordination.ToozError,
+            coordination.raise_with_cause(tooz.ToozError,
                                           encodeutils.exception_to_unicode(e),
                                           cause=e)
         except requests.exceptions.RequestException as e:
