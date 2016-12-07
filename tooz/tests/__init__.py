@@ -15,8 +15,8 @@
 #    under the License.
 
 import functools
-import uuid
 
+from oslo_utils import uuidutils
 import six
 from testtools import testcase
 
@@ -24,7 +24,7 @@ import tooz
 
 
 def get_random_uuid():
-    return str(uuid.uuid4()).encode('ascii')
+    return uuidutils.generate_uuid().encode('ascii')
 
 
 def _skip_decorator(func):
