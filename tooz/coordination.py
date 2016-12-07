@@ -408,11 +408,13 @@ class CoordinationDriver(object):
         if self.heart.is_alive():
             self.heart.stop()
             self.heart.wait()
-        leaving = [self.leave_group(group)
-                   for group in self._joined_groups]
-        for leave in leaving:
+        # Some of the drivers modify joined_groups when being called to leave
+        # so clone it so that we aren't modifying something while iterating.
+        joined_groups = self._joined_groups.copy()
+        leaving = [self.leave_group(group) for group in joined_groups]
+        for fut in leaving:
             try:
-                leave.get()
+                fut.get()
             except ToozError:
                 # Whatever happens, ignore. Maybe we got booted out/never
                 # existed in the first place, or something is down, but we just
