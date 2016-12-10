@@ -46,29 +46,39 @@ class HashRingTestCase(testcase.TestCase):
         self.assertIn(int(r2, 16), ring._ring)
 
     def test_create_ring(self):
-        nodes = ['foo', 'bar']
+        nodes = {'foo', 'bar'}
         ring = hashring.HashRing(nodes)
-        self.assertEqual(set(nodes), ring.nodes)
+        self.assertEqual(nodes, set(ring.nodes.keys()))
         self.assertEqual(2 ** 5 * 2, len(ring))
 
     def test_add_node(self):
-        nodes = ['foo', 'bar']
+        nodes = {'foo', 'bar'}
         ring = hashring.HashRing(nodes)
-        self.assertEqual(set(nodes), ring.nodes)
+        self.assertEqual(nodes, set(ring.nodes.keys()))
         self.assertEqual(2 ** 5 * len(nodes), len(ring))
-        nodes.append('baz')
+        nodes.add('baz')
         ring.add_node('baz')
-        self.assertEqual(set(nodes), ring.nodes)
+        self.assertEqual(nodes, set(ring.nodes.keys()))
         self.assertEqual(2 ** 5 * len(nodes), len(ring))
 
-    def test_remove_node(self):
-        nodes = ['foo', 'bar']
+    def test_add_node_weight(self):
+        nodes = {'foo', 'bar'}
         ring = hashring.HashRing(nodes)
-        self.assertEqual(set(nodes), ring.nodes)
+        self.assertEqual(nodes, set(ring.nodes.keys()))
         self.assertEqual(2 ** 5 * len(nodes), len(ring))
-        nodes.remove('bar')
+        nodes.add('baz')
+        ring.add_node('baz', weight=10)
+        self.assertEqual(nodes, set(ring.nodes.keys()))
+        self.assertEqual(2 ** 5 * 12, len(ring))
+
+    def test_remove_node(self):
+        nodes = {'foo', 'bar'}
+        ring = hashring.HashRing(nodes)
+        self.assertEqual(nodes, set(ring.nodes.keys()))
+        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+        nodes.discard('bar')
         ring.remove_node('bar')
-        self.assertEqual(set(nodes), ring.nodes)
+        self.assertEqual(nodes, set(ring.nodes.keys()))
         self.assertEqual(2 ** 5 * len(nodes), len(ring))
 
     def test_remove_node_unknown(self):
@@ -79,17 +89,17 @@ class HashRingTestCase(testcase.TestCase):
             ring.remove_node, 'biz')
 
     def test_add_then_removenode(self):
-        nodes = ['foo', 'bar']
+        nodes = {'foo', 'bar'}
         ring = hashring.HashRing(nodes)
-        self.assertEqual(set(nodes), ring.nodes)
+        self.assertEqual(nodes, set(ring.nodes.keys()))
         self.assertEqual(2 ** 5 * len(nodes), len(ring))
-        nodes.append('baz')
+        nodes.add('baz')
         ring.add_node('baz')
-        self.assertEqual(set(nodes), ring.nodes)
+        self.assertEqual(nodes, set(ring.nodes.keys()))
         self.assertEqual(2 ** 5 * len(nodes), len(ring))
-        nodes.remove('bar')
+        nodes.discard('bar')
         ring.remove_node('bar')
-        self.assertEqual(set(nodes), ring.nodes)
+        self.assertEqual(nodes, set(ring.nodes.keys()))
         self.assertEqual(2 ** 5 * len(nodes), len(ring))
 
     def test_distribution_one_replica(self):

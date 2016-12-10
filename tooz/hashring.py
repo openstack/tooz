@@ -37,33 +37,42 @@ class HashRing(object):
         :param nodes: List of nodes where objects will be mapped onto.
         :param partitions: Number of partitions to spread objects onto.
         """
-        self.nodes = set()
+        self.nodes = {}
         self._ring = dict()
         self._partitions = []
         self._partition_number = partitions
 
         self.add_nodes(set(nodes))
 
-    def add_node(self, node):
+    def add_node(self, node, weight=1):
         """Add a node to the hashring.
 
         :param node: Node to add.
-        """
-        return self.add_nodes((node,))
+        :param weight: How many resource instances this node should manage
+        compared to the other nodes (default 1). Higher weights will be
+        assigned more resources. Three nodes A, B and C with weights 1, 2 and 3
+        will each handle 1/6, 1/3 and 1/2 of the resources, respectively.
 
-    def add_nodes(self, nodes):
+        """
+        return self.add_nodes((node,), weight)
+
+    def add_nodes(self, nodes, weight=1):
         """Add nodes to the hashring.
 
         :param nodes: Nodes to add.
+        :param weight: How many resource instances this node should manage
+        compared to the other nodes (default 1). Higher weights will be
+        assigned more resources. Three nodes A, B and C with weights 1, 2 and 3
+        will each handle 1/6, 1/3 and 1/2 of the resources, respectively.
         """
         for node in nodes:
             key = str(node).encode('utf-8')
             key_hash = hashlib.md5(key)
-            for r in six.moves.range(self._partition_number):
+            for r in six.moves.range(self._partition_number * weight):
                 key_hash.update(key)
                 self._ring[self._hash2int(key_hash)] = node
 
-            self.nodes.add(node)
+            self.nodes[node] = weight
 
         self._partitions = sorted(self._ring.keys())
 
@@ -75,13 +84,13 @@ class HashRing(object):
         :param node: Node to remove.
         """
         try:
-            self.nodes.remove(node)
+            weight = self.nodes.pop(node)
         except KeyError:
             raise UnknownNode(node)
 
         key = str(node).encode('utf-8')
         key_hash = hashlib.md5(key)
-        for r in six.moves.range(self._partition_number):
+        for r in six.moves.range(self._partition_number * weight):
             key_hash.update(key)
             del self._ring[self._hash2int(key_hash)]
 
@@ -110,7 +119,7 @@ class HashRing(object):
         partition = self._get_partition(data)
 
         ignore_nodes = set(ignore_nodes) if ignore_nodes else set()
-        candidates = self.nodes - ignore_nodes
+        candidates = set(self.nodes.keys()) - ignore_nodes
 
         replicas = min(replicas, len(candidates))
 
