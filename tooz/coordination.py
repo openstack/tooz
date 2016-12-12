@@ -736,9 +736,7 @@ def get_coordinator(backend_url, member_id,
     return d
 
 
-@moves.moved_class(tooz.ToozError, "ToozError", "tooz.coordination")
-class ToozError(tooz.ToozError):
-    pass
+ToozError = moves.moved_class(tooz.ToozError, "ToozError", "tooz.coordination")
 
 
 class ToozDriverChosenPoorly(tooz.ToozError):
