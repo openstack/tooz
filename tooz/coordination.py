@@ -463,7 +463,7 @@ class CoordinationDriver(object):
         raise tooz.NotImplemented
 
     @_retry.retry()
-    def join_group_create(self, group_id):
+    def join_group_create(self, group_id, capabilities=b""):
         """Join a group and create it if necessary.
 
         If the group cannot be joined because it does not exist, it is created
@@ -474,9 +474,9 @@ class CoordinationDriver(object):
         if another member is creating/deleting the group at the same time.
 
         :param group_id: Identifier of the group to join and create
-
+        :param capabilities: the capabilities of the joined member
         """
-        req = self.join_group(group_id)
+        req = self.join_group(group_id, capabilities)
         try:
             req.get()
         except GroupNotCreated:
