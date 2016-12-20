@@ -21,7 +21,6 @@ import enum
 import logging
 import threading
 
-from debtcollector import moves
 from oslo_utils import excutils
 from oslo_utils import netutils
 from oslo_utils import timeutils
@@ -736,7 +735,10 @@ def get_coordinator(backend_url, member_id,
     return d
 
 
-ToozError = moves.moved_class(tooz.ToozError, "ToozError", "tooz.coordination")
+# TODO(harlowja): We'll have to figure out a way to remove this 'alias' at
+# some point in the future (when we have a better way to tell people it has
+# moved without messing up their exception catching hierarchy).
+ToozError = tooz.ToozError
 
 
 class ToozDriverChosenPoorly(tooz.ToozError):
