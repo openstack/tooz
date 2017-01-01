@@ -254,9 +254,9 @@ class IPCFutureResult(coordination.CoordAsyncResult):
         try:
             return self._fut.result(timeout=timeout)
         except futures.TimeoutError as e:
-            coordination.raise_with_cause(coordination.OperationTimedOut,
-                                          encodeutils.exception_to_unicode(e),
-                                          cause=e)
+            utils.raise_with_cause(coordination.OperationTimedOut,
+                                   encodeutils.exception_to_unicode(e),
+                                   cause=e)
 
     def done(self):
         return self._fut.done()

@@ -23,10 +23,10 @@ import futurist
 import msgpack
 from oslo_serialization import msgpackutils
 from oslo_utils import encodeutils
+from oslo_utils import excutils
 import six
 
 import tooz
-from tooz import coordination
 
 
 class Base64LockEncoder(object):
@@ -173,26 +173,53 @@ def to_binary(text, encoding='ascii'):
     return text
 
 
-def dumps(data, excp_cls=coordination.SerializationError):
+class SerializationError(tooz.ToozError):
+    "Exception raised when serialization or deserialization breaks."
+
+
+def dumps(data, excp_cls=SerializationError):
     """Serializes provided data using msgpack into a byte string."""
     try:
         return msgpackutils.dumps(data)
     except (msgpack.PackException, ValueError) as e:
-        coordination.raise_with_cause(excp_cls,
-                                      encodeutils.exception_to_unicode(e),
-                                      cause=e)
+        raise_with_cause(excp_cls,
+                         encodeutils.exception_to_unicode(e),
+                         cause=e)
 
 
-def loads(blob, excp_cls=coordination.SerializationError):
+def loads(blob, excp_cls=SerializationError):
     """Deserializes provided data using msgpack (from a prior byte string)."""
     try:
         return msgpackutils.loads(blob)
     except (msgpack.UnpackException, ValueError) as e:
-        coordination.raise_with_cause(excp_cls,
-                                      encodeutils.exception_to_unicode(e),
-                                      cause=e)
+        raise_with_cause(excp_cls,
+                         encodeutils.exception_to_unicode(e),
+                         cause=e)
 
 
 def millis_to_datetime(milliseconds):
     """Converts number of milliseconds (from epoch) into a datetime object."""
     return datetime.datetime.fromtimestamp(float(milliseconds) / 1000)
+
+
+def raise_with_cause(exc_cls, message, *args, **kwargs):
+    """Helper to raise + chain exceptions (when able) and associate a *cause*.
+
+    **For internal usage only.**
+
+    NOTE(harlowja): Since in py3.x exceptions can be chained (due to
+    :pep:`3134`) we should try to raise the desired exception with the given
+    *cause*.
+
+    :param exc_cls: the :py:class:`~tooz.ToozError` class to raise.
+    :param message: the text/str message that will be passed to
+                    the exceptions constructor as its first positional
+                    argument.
+    :param args: any additional positional arguments to pass to the
+                 exceptions constructor.
+    :param kwargs: any additional keyword arguments to pass to the
+                   exceptions constructor.
+    """
+    if not issubclass(exc_cls, tooz.ToozError):
+        raise ValueError("Subclass of tooz error is required")
+    excutils.raise_with_cause(exc_cls, message, *args, **kwargs)

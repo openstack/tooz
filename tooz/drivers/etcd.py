@@ -39,13 +39,13 @@ def _translate_failures(func):
             return func(*args, **kwargs)
         except ValueError as e:
             # Typically json decoding failed for some reason.
-            coordination.raise_with_cause(tooz.ToozError,
-                                          encodeutils.exception_to_unicode(e),
-                                          cause=e)
+            utils.raise_with_cause(tooz.ToozError,
+                                   encodeutils.exception_to_unicode(e),
+                                   cause=e)
         except requests.exceptions.RequestException as e:
-            coordination.raise_with_cause(coordination.ToozConnectionError,
-                                          encodeutils.exception_to_unicode(e),
-                                          cause=e)
+            utils.raise_with_cause(coordination.ToozConnectionError,
+                                   encodeutils.exception_to_unicode(e),
+                                   cause=e)
 
     return wrapper
 

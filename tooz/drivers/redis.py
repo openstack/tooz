@@ -46,13 +46,13 @@ def _translate_failures():
     try:
         yield
     except (exceptions.ConnectionError, exceptions.TimeoutError) as e:
-        coordination.raise_with_cause(coordination.ToozConnectionError,
-                                      encodeutils.exception_to_unicode(e),
-                                      cause=e)
+        utils.raise_with_cause(coordination.ToozConnectionError,
+                               encodeutils.exception_to_unicode(e),
+                               cause=e)
     except exceptions.RedisError as e:
-        coordination.raise_with_cause(tooz.ToozError,
-                                      encodeutils.exception_to_unicode(e),
-                                      cause=e)
+        utils.raise_with_cause(tooz.ToozError,
+                               encodeutils.exception_to_unicode(e),
+                               cause=e)
 
 
 class RedisLock(locking.Lock):
@@ -431,9 +431,9 @@ return 1
             self._client = self._make_client(self._parsed_url, self._options,
                                              self.timeout)
         except exceptions.RedisError as e:
-            coordination.raise_with_cause(coordination.ToozConnectionError,
-                                          encodeutils.exception_to_unicode(e),
-                                          cause=e)
+            utils.raise_with_cause(coordination.ToozConnectionError,
+                                   encodeutils.exception_to_unicode(e),
+                                   cause=e)
         else:
             # Ensure that the server is alive and not dead, this does not
             # ensure the server will always be alive, but does insure that it
@@ -759,9 +759,9 @@ class RedisFutureResult(coordination.CoordAsyncResult):
             with _translate_failures():
                 return self._fut.result(timeout=timeout)
         except futures.TimeoutError as e:
-            coordination.raise_with_cause(coordination.OperationTimedOut,
-                                          encodeutils.exception_to_unicode(e),
-                                          cause=e)
+            utils.raise_with_cause(coordination.OperationTimedOut,
+                                   encodeutils.exception_to_unicode(e),
+                                   cause=e)
 
     def done(self):
         return self._fut.done()

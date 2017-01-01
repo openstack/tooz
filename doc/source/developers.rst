@@ -79,4 +79,4 @@ Exceptions
 .. autoclass:: tooz.coordination.MemberAlreadyExist
 .. autoclass:: tooz.coordination.MemberNotJoined
 .. autoclass:: tooz.coordination.GroupNotEmpty
-.. autofunction:: tooz.coordination.raise_with_cause
+.. autofunction:: tooz.utils.raise_with_cause

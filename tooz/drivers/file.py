@@ -55,9 +55,9 @@ def _translate_failures():
     try:
         yield
     except (EnvironmentError, voluptuous.Invalid) as e:
-        coordination.raise_with_cause(tooz.ToozError,
-                                      encodeutils.exception_to_unicode(e),
-                                      cause=e)
+        utils.raise_with_cause(tooz.ToozError,
+                               encodeutils.exception_to_unicode(e),
+                               cause=e)
 
 
 def _convert_from_old_format(data):
@@ -505,9 +505,9 @@ class FileFutureResult(coordination.CoordAsyncResult):
             with _translate_failures():
                 return self._fut.result(timeout=timeout)
         except futures.TimeoutError as e:
-            coordination.raise_with_cause(coordination.OperationTimedOut,
-                                          encodeutils.exception_to_unicode(e),
-                                          cause=e)
+            utils.raise_with_cause(coordination.OperationTimedOut,
+                                   encodeutils.exception_to_unicode(e),
+                                   cause=e)
 
     def done(self):
         return self._fut.done()

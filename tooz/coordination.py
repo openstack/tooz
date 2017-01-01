@@ -29,6 +29,7 @@ from stevedore import driver
 
 import tooz
 from tooz import _retry
+from tooz import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -814,28 +815,7 @@ class WatchCallbackNotFound(tooz.ToozError):
             (callback.__name__, group_id))
 
 
-class SerializationError(tooz.ToozError):
-    "Exception raised when serialization or deserialization breaks."
-
-
-def raise_with_cause(exc_cls, message, *args, **kwargs):
-    """Helper to raise + chain exceptions (when able) and associate a *cause*.
-
-    **For internal usage only.**
-
-    NOTE(harlowja): Since in py3.x exceptions can be chained (due to
-    :pep:`3134`) we should try to raise the desired exception with the given
-    *cause*.
-
-    :param exc_cls: the :py:class:`~tooz.ToozError` class to raise.
-    :param message: the text/str message that will be passed to
-                    the exceptions constructor as its first positional
-                    argument.
-    :param args: any additional positional arguments to pass to the
-                 exceptions constructor.
-    :param kwargs: any additional keyword arguments to pass to the
-                   exceptions constructor.
-    """
-    if not issubclass(exc_cls, tooz.ToozError):
-        raise ValueError("Subclass of tooz error is required")
-    excutils.raise_with_cause(exc_cls, message, *args, **kwargs)
+# TODO(harlowja,jd): We'll have to figure out a way to remove this 'alias' at
+# some point in the future (when we have a better way to tell people it has
+# moved without messing up their exception catching hierarchy).
+SerializationError = utils.SerializationError

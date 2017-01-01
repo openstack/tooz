@@ -63,7 +63,7 @@ class MySQLLock(locking.Lock):
                         self.acquired = True
                         return True
             except pymysql.MySQLError as e:
-                coordination.raise_with_cause(
+                utils.raise_with_cause(
                     tooz.ToozError,
                     encodeutils.exception_to_unicode(e),
                     cause=e)
@@ -84,9 +84,9 @@ class MySQLLock(locking.Lock):
                 self.acquired = False
                 return True
         except pymysql.MySQLError as e:
-            coordination.raise_with_cause(tooz.ToozError,
-                                          encodeutils.exception_to_unicode(e),
-                                          cause=e)
+            utils.raise_with_cause(tooz.ToozError,
+                                   encodeutils.exception_to_unicode(e),
+                                   cause=e)
 
     def __del__(self):
         if self.acquired:
@@ -178,6 +178,6 @@ class MySQLDriver(coordination.CoordinationDriver):
                                        passwd=password,
                                        database=dbname)
         except (pymysql.err.OperationalError, pymysql.err.InternalError) as e:
-            coordination.raise_with_cause(coordination.ToozConnectionError,
-                                          encodeutils.exception_to_unicode(e),
-                                          cause=e)
+            utils.raise_with_cause(coordination.ToozConnectionError,
+                                   encodeutils.exception_to_unicode(e),
+                                   cause=e)
