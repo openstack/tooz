@@ -32,7 +32,7 @@ class HashRingTestCase(testcase.TestCase):
     #                fake-again -> bar, baz, foo
 
     @mock.patch.object(hashlib, 'md5', autospec=True)
-    def test__hash2int_returns_int(self, mock_md5):
+    def test_hash2int_returns_int(self, mock_md5):
         r1 = 32 * 'a'
         r2 = 32 * 'b'
         # 2**PARTITION_EXPONENT calls to md5.update per node
