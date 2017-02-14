@@ -61,6 +61,16 @@ class HashRingTestCase(testcase.TestCase):
         self.assertEqual(nodes, set(ring.nodes.keys()))
         self.assertEqual(2 ** 5 * len(nodes), len(ring))
 
+    def test_add_node_unicode(self):
+        nodes = {'foo', 'bar'}
+        ring = hashring.HashRing(nodes)
+        self.assertEqual(nodes, set(ring.nodes.keys()))
+        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+        nodes.add(u'\u0634\u0628\u06a9\u0647')
+        ring.add_node(u'\u0634\u0628\u06a9\u0647')
+        self.assertEqual(nodes, set(ring.nodes.keys()))
+        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+
     def test_add_node_weight(self):
         nodes = {'foo', 'bar'}
         ring = hashring.HashRing(nodes)

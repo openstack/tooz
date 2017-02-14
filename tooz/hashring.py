@@ -68,7 +68,7 @@ class HashRing(object):
         will each handle 1/6, 1/3 and 1/2 of the resources, respectively.
         """
         for node in nodes:
-            key = str(node).encode('utf-8')
+            key = six.text_type(node).encode('utf-8')
             key_hash = hashlib.md5(key)
             for r in six.moves.range(self._partition_number * weight):
                 key_hash.update(key)
@@ -90,7 +90,7 @@ class HashRing(object):
         except KeyError:
             raise UnknownNode(node)
 
-        key = str(node).encode('utf-8')
+        key = six.text_type(node).encode('utf-8')
         key_hash = hashlib.md5(key)
         for r in six.moves.range(self._partition_number * weight):
             key_hash.update(key)
