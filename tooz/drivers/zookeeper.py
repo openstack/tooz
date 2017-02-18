@@ -16,6 +16,7 @@
 
 from kazoo import client
 from kazoo import exceptions
+from kazoo import security
 try:
     from kazoo.handlers import eventlet as eventlet_handler
 except ImportError:
@@ -447,6 +448,18 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         # Creates a kazoo client,
         # See: https://github.com/python-zk/kazoo/blob/2.2.1/kazoo/client.py
         # for what options a client takes...
+        if parsed_url.username and parsed_url.password:
+            username = parsed_url.username
+            password = parsed_url.password
+
+            digest_auth = "%s:%s" % (username, password)
+            digest_acl = security.make_digest_acl(username, password, all=True)
+            default_acl = (digest_acl,)
+            auth_data = [('digest', digest_auth)]
+        else:
+            default_acl = None
+            auth_data = None
+
         maybe_hosts = [parsed_url.netloc] + list(options.get('hosts', []))
         hosts = list(compat_filter(None, maybe_hosts))
         if not hosts:
@@ -458,6 +471,8 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
             'connection_retry': options.get('connection_retry'),
             'command_retry': options.get('command_retry'),
             'randomize_hosts': strutils.bool_from_string(randomize_hosts),
+            'auth_data': auth_data,
+            'default_acl': default_acl,
         }
         handler_kind = options.get('handler')
         if handler_kind:
