@@ -178,8 +178,7 @@ class PostgresDriver(coordination.CoordinationDriver):
         self._options = utils.collapse(options)
 
     def _start(self):
-        self._conn = PostgresDriver.get_connection(self._parsed_url,
-                                                   self._options)
+        self._conn = self.get_connection(self._parsed_url, self._options)
 
     def _stop(self):
         self._conn.close()
@@ -216,15 +215,17 @@ class PostgresDriver(coordination.CoordinationDriver):
         host = options.get("host") or parsed_url.hostname
         port = options.get("port") or parsed_url.port
         dbname = options.get("dbname") or parsed_url.path[1:]
-        username = parsed_url.username
-        password = parsed_url.password
+        kwargs = {}
+        if parsed_url.username is not None:
+            kwargs["username"] = parsed_url.username
+        if parsed_url.password is not None:
+            kwargs["password"] = parsed_url.password
 
         try:
             return psycopg2.connect(host=host,
                                     port=port,
-                                    user=username,
-                                    password=password,
-                                    database=dbname)
+                                    database=dbname,
+                                    **kwargs)
         except psycopg2.Error as e:
             utils.raise_with_cause(coordination.ToozConnectionError,
                                    _format_exception(e),
