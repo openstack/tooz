@@ -274,7 +274,7 @@ class CoordinationDriver(object):
         """
         self.join_group_create(
             group_id, capabilities=utils.dumps({'weight': weight}))
-        return partitioner.Partitioner(self, group_id)
+        return partitioner.Partitioner(self, group_id, partitions=partitions)
 
     def leave_partitioned_group(self, partitioner):
         """Leave a partitioned group.
