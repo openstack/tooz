@@ -19,6 +19,7 @@ from __future__ import absolute_import
 import consul
 from oslo_utils import encodeutils
 
+import tooz
 from tooz import _retry
 from tooz import coordination
 from tooz import locking
@@ -35,7 +36,9 @@ class ConsulLock(locking.Lock):
         self._client = client
         self.acquired = False
 
-    def acquire(self, blocking=True):
+    def acquire(self, blocking=True, shared=False):
+        if shared:
+            raise tooz.NotImplemented
 
         @_retry.retry(stop_max_delay=blocking)
         def _acquire():

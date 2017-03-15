@@ -80,7 +80,9 @@ class RedisLock(locking.Lock):
         with _translate_failures():
             return bool(self._client.delete(self.name))
 
-    def acquire(self, blocking=True):
+    def acquire(self, blocking=True, shared=False):
+        if shared:
+            raise tooz.NotImplemented
         blocking, timeout = utils.convert_blocking(blocking)
         with _translate_failures():
             acquired = self._lock.acquire(

@@ -712,6 +712,62 @@ class TestAPI(tests.TestWithCoordinator):
         with lock:
             pass
 
+    def test_get_shared_lock(self):
+        lock = self._coord.get_lock(tests.get_random_uuid())
+        self.assertTrue(lock.acquire(shared=True))
+        self.assertTrue(lock.release())
+        with lock(shared=True):
+            pass
+
+    def test_get_shared_lock_locking_same_lock_twice(self):
+        lock = self._coord.get_lock(tests.get_random_uuid())
+        self.assertTrue(lock.acquire(shared=True))
+        self.assertTrue(lock.acquire(shared=True))
+        self.assertTrue(lock.release())
+        self.assertTrue(lock.release())
+        self.assertFalse(lock.release())
+        with lock(shared=True):
+            pass
+
+    def test_get_shared_lock_locking_two_lock(self):
+        name = tests.get_random_uuid()
+        lock1 = self._coord.get_lock(name)
+        coord = tooz.coordination.get_coordinator(
+            self.url, tests.get_random_uuid())
+        coord.start()
+        lock2 = coord.get_lock(name)
+
+        self.assertTrue(lock1.acquire(shared=True))
+        self.assertTrue(lock2.acquire(shared=True))
+        self.assertTrue(lock1.release())
+        self.assertTrue(lock2.release())
+
+    def test_get_lock_locking_shared_and_exclusive(self):
+        name = tests.get_random_uuid()
+        lock1 = self._coord.get_lock(name)
+        coord = tooz.coordination.get_coordinator(
+            self.url, tests.get_random_uuid())
+        coord.start()
+        lock2 = coord.get_lock(name)
+
+        self.assertTrue(lock1.acquire(shared=True))
+        self.assertFalse(lock2.acquire(blocking=False))
+        self.assertTrue(lock1.release())
+        self.assertFalse(lock2.release())
+
+    def test_get_lock_locking_exclusive_and_shared(self):
+        name = tests.get_random_uuid()
+        lock1 = self._coord.get_lock(name)
+        coord = tooz.coordination.get_coordinator(
+            self.url, tests.get_random_uuid())
+        coord.start()
+        lock2 = coord.get_lock(name)
+
+        self.assertTrue(lock1.acquire())
+        self.assertFalse(lock2.acquire(shared=True, blocking=False))
+        self.assertTrue(lock1.release())
+        self.assertFalse(lock2.release())
+
     def test_get_lock_concurrency_locking_same_lock(self):
         lock = self._coord.get_lock(tests.get_random_uuid())
 

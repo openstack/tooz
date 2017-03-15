@@ -22,12 +22,13 @@ from tooz import coordination
 
 
 class _LockProxy(object):
-    def __init__(self, lock, blocking=True):
+    def __init__(self, lock, *args, **kwargs):
         self.lock = lock
-        self.blocking = blocking
+        self.args = args
+        self.kwargs = kwargs
 
     def __enter__(self):
-        return self.lock.__enter__(self.blocking)
+        return self.lock.__enter__(*self.args, **self.kwargs)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.lock.__exit__(exc_type, exc_val, exc_tb)
@@ -44,11 +45,11 @@ class Lock(object):
     def name(self):
         return self._name
 
-    def __call__(self, blocking=True):
-        return _LockProxy(self, blocking)
+    def __call__(self, *args, **kwargs):
+        return _LockProxy(self, *args, **kwargs)
 
-    def __enter__(self, blocking=True):
-        acquired = self.acquire(blocking)
+    def __enter__(self, *args, **kwargs):
+        acquired = self.acquire(*args, **kwargs)
         if not acquired:
             msg = u'Acquiring lock %s failed' % self.name
             raise coordination.LockAcquireFailed(msg)

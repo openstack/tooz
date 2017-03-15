@@ -37,7 +37,10 @@ class MySQLLock(locking.Lock):
         self.acquired = False
         self._conn = MySQLDriver.get_connection(parsed_url, options)
 
-    def acquire(self, blocking=True):
+    def acquire(self, blocking=True, shared=False):
+
+        if shared:
+            raise tooz.NotImplemented
 
         @_retry.retry(stop_max_delay=blocking)
         def _lock():

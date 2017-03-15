@@ -48,6 +48,8 @@ class _Barrier(object):
     def __init__(self):
         self.cond = threading.Condition()
         self.owner = None
+        self.shared = False
+        self.ref = 0
 
 
 @contextlib.contextmanager
@@ -109,11 +111,12 @@ class FileLock(locking.Lock):
         self._lock = fasteners.InterProcessLock(path)
         self._barrier = barrier
         self._member_id = member_id
+        self.ref = 0
 
     def is_still_owner(self):
         return self.acquired
 
-    def acquire(self, blocking=True):
+    def acquire(self, blocking=True, shared=False):
         blocking, timeout = utils.convert_blocking(blocking)
         watch = timeutils.StopWatch(duration=timeout)
         watch.start()
@@ -121,11 +124,16 @@ class FileLock(locking.Lock):
         # Make the shared barrier ours first.
         with self._barrier.cond:
             while self._barrier.owner is not None:
+                if (shared and self._barrier.shared):
+                    break
                 if not blocking or watch.expired():
                     return False
                 self._barrier.cond.wait(watch.leftover(return_none=True))
             self._barrier.owner = (threading.current_thread().ident,
                                    os.getpid(), self._member_id)
+            self._barrier.shared = shared
+            self._barrier.ref += 1
+            self.ref += 1
 
         # Ok at this point we are now working in a thread safe manner,
         # and now we can try to get the actual lock...
@@ -144,6 +152,8 @@ class FileLock(locking.Lock):
                 # Release the barrier to let someone else have a go at it...
                 with self._barrier.cond:
                     self._barrier.owner = None
+                    self._barrier.ref = 0
+                    self._barrier.shared = False
                     self._barrier.cond.notify_all()
 
         self.acquired = gotten
@@ -153,10 +163,14 @@ class FileLock(locking.Lock):
         if not self.acquired:
             return False
         with self._barrier.cond:
-            self.acquired = False
-            self._barrier.owner = None
-            self._lock.release()
-            self._barrier.cond.notify_all()
+            self._barrier.ref -= 1
+            self.ref -= 1
+            if not self.ref:
+                self.acquired = False
+            if not self._barrier.ref:
+                self._barrier.owner = None
+                self._lock.release()
+                self._barrier.cond.notify_all()
         return True
 
     def __del__(self):

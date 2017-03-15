@@ -83,7 +83,9 @@ class MemcachedLock(locking.Lock):
                 return False
             return owner == self.coord._member_id
 
-    def acquire(self, blocking=True):
+    def acquire(self, blocking=True, shared=False):
+        if shared:
+            raise tooz.NotImplemented
 
         @_retry.retry(stop_max_delay=blocking)
         @_translate_failures

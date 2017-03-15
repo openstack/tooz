@@ -57,7 +57,9 @@ class ZooKeeperLock(locking.Lock):
                                    "operation error: %s" % (e),
                                    cause=e)
 
-    def acquire(self, blocking=True):
+    def acquire(self, blocking=True, shared=False):
+        if shared:
+            raise tooz.NotImplemented
         blocking, timeout = utils.convert_blocking(blocking)
         return self._lock.acquire(blocking=blocking,
                                   timeout=timeout)
