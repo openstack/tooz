@@ -155,6 +155,7 @@ class FileLock(locking.Lock):
         with self._barrier.cond:
             self.acquired = False
             self._barrier.owner = None
+            self._lock.release()
             self._barrier.cond.notify_all()
         return True
 
