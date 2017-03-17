@@ -61,6 +61,16 @@ class HashRingTestCase(testcase.TestCase):
         self.assertEqual(nodes, set(ring.nodes.keys()))
         self.assertEqual(2 ** 5 * len(nodes), len(ring))
 
+    def test_add_node_bytes(self):
+        nodes = {'foo', 'bar'}
+        ring = hashring.HashRing(nodes)
+        self.assertEqual(nodes, set(ring.nodes.keys()))
+        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+        nodes.add(b'Z\xe2\xfa\x90\x17EC\xac\xae\x88\xa7[\xa1}:E')
+        ring.add_node(b'Z\xe2\xfa\x90\x17EC\xac\xae\x88\xa7[\xa1}:E')
+        self.assertEqual(nodes, set(ring.nodes.keys()))
+        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+
     def test_add_node_unicode(self):
         nodes = {'foo', 'bar'}
         ring = hashring.HashRing(nodes)
@@ -88,6 +98,16 @@ class HashRingTestCase(testcase.TestCase):
         self.assertEqual(2 ** 5 * len(nodes), len(ring))
         nodes.discard('bar')
         ring.remove_node('bar')
+        self.assertEqual(nodes, set(ring.nodes.keys()))
+        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+
+    def test_remove_node_bytes(self):
+        nodes = {'foo', b'Z\xe2\xfa\x90\x17EC\xac\xae\x88\xa7[\xa1}:E'}
+        ring = hashring.HashRing(nodes)
+        self.assertEqual(nodes, set(ring.nodes.keys()))
+        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+        nodes.discard(b'Z\xe2\xfa\x90\x17EC\xac\xae\x88\xa7[\xa1}:E')
+        ring.remove_node(b'Z\xe2\xfa\x90\x17EC\xac\xae\x88\xa7[\xa1}:E')
         self.assertEqual(nodes, set(ring.nodes.keys()))
         self.assertEqual(2 ** 5 * len(nodes), len(ring))
 
