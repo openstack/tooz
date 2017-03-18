@@ -86,7 +86,8 @@ class RedisLock(locking.Lock):
             acquired = self._lock.acquire(
                 blocking=blocking, blocking_timeout=timeout)
             if acquired:
-                self._coord._acquired_locks.add(self)
+                with self._exclusive_access:
+                    self._coord._acquired_locks.add(self)
             return acquired
 
     def release(self):
