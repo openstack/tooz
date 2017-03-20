@@ -743,8 +743,24 @@ class TestAPI(tests.TestWithCoordinator):
                              tests.get_random_uuid())
                 self.assertFalse(f.result())
 
+    def _do_test_get_lock_serial_locking_two_lock(self, executor,
+                                                  use_same_coord):
+        name = tests.get_random_uuid()
+        lock1 = self._coord.get_lock(name)
+        lock1.acquire()
+        lock1.release()
+        with executor(max_workers=1) as e:
+            coord = self._coord if use_same_coord else None
+            f = e.submit(try_to_lock_job, name, coord, self.url,
+                         tests.get_random_uuid())
+            self.assertTrue(f.result())
+
     def test_get_lock_concurrency_locking_two_lock_process(self):
         self._do_test_get_lock_concurrency_locking_two_lock(
+            futures.ProcessPoolExecutor, False)
+
+    def test_get_lock_serial_locking_two_lock_process(self):
+        self._do_test_get_lock_serial_locking_two_lock(
             futures.ProcessPoolExecutor, False)
 
     def test_get_lock_concurrency_locking_two_lock_thread1(self):
