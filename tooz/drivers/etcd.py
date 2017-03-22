@@ -91,7 +91,6 @@ class EtcdLock(locking.Lock):
         super(EtcdLock, self).__init__(name)
         self.client = client
         self.coord = coord
-        self.lock = None
         self.ttl = ttl
         self._lock_url = lock_url
         self._node = None
@@ -107,7 +106,6 @@ class EtcdLock(locking.Lock):
         reply = self.client.delete(self._lock_url, make_url=False)
         return reply.get('errorCode') is None
 
-    @fasteners.locked
     def acquire(self, blocking=True, shared=False):
         if shared:
             raise tooz.NotImplemented
@@ -120,22 +118,31 @@ class EtcdLock(locking.Lock):
             watch = None
 
         while True:
-            try:
-                reply = self.client.put(
-                    self._lock_url,
-                    make_url=False,
-                    timeout=watch.leftover() if watch else None,
-                    data={"ttl": self.ttl,
-                          "prevExist": "false"})
-            except requests.exceptions.RequestException:
-                if watch and watch.leftover() == 0:
-                    return False
+            if self.acquired:
+                # We already acquired the lock. Just go ahead and wait for ever
+                # if blocking != False using the last index.
+                lastindex = self._node['modifiedIndex']
+            else:
+                try:
+                    reply = self.client.put(
+                        self._lock_url,
+                        make_url=False,
+                        timeout=watch.leftover() if watch else None,
+                        data={"ttl": self.ttl,
+                              "prevExist": "false"})
+                except requests.exceptions.RequestException:
+                    if watch and watch.leftover() == 0:
+                        return False
 
-            # We got the lock!
-            if reply.get("errorCode") is None:
-                self._node = reply['node']
-                self.coord._acquired_locks.append(self)
-                return True
+                # We got the lock!
+                if reply.get("errorCode") is None:
+                    with self._lock:
+                        self._node = reply['node']
+                        self.coord._acquired_locks.add(self)
+                    return True
+
+                # No lock, somebody got it, wait for it to be released
+                lastindex = reply['index'] + 1
 
             # We didn't get the lock and we don't want to wait
             if not blocking:
@@ -145,7 +152,7 @@ class EtcdLock(locking.Lock):
             try:
                 reply = self.client.get(
                     self._lock_url +
-                    "?wait=true&waitIndex=%d" % (reply['index'] + 1),
+                    "?wait=true&waitIndex=%d" % lastindex,
                     make_url=False,
                     timeout=watch.leftover() if watch else None)
             except requests.exceptions.RequestException:
@@ -155,13 +162,13 @@ class EtcdLock(locking.Lock):
     @_translate_failures
     @fasteners.locked
     def release(self):
-        if self in self.coord._acquired_locks:
+        if self.acquired:
             lock_url = self._lock_url
             lock_url += "?prevIndex=%s" % self._node['modifiedIndex']
             reply = self.client.delete(lock_url, make_url=False)
             errorcode = reply.get("errorCode")
             if errorcode is None:
-                self.coord._acquired_locks.remove(self)
+                self.coord._acquired_locks.discard(self)
                 self._node = None
                 return True
             else:
@@ -169,19 +176,24 @@ class EtcdLock(locking.Lock):
                             self.name, errorcode, reply.get('message'))
         return False
 
+    @property
+    def acquired(self):
+        return self in self.coord._acquired_locks
+
     @_translate_failures
     @fasteners.locked
     def heartbeat(self):
         """Keep the lock alive."""
-        poked = self.client.put(self._lock_url,
-                                data={"ttl": self.ttl,
-                                      "prevExist": "true"}, make_url=False)
-        errorcode = poked.get("errorCode")
-        if errorcode:
-            LOG.warning("Unable to heartbeat by updating key '%s' with "
-                        "extended expiry of %s seconds: %d, %s", self.name,
-                        self.ttl, errorcode, poked.get("message"))
-        self._node = poked['node']
+        if self.acquired:
+            poked = self.client.put(self._lock_url,
+                                    data={"ttl": self.ttl,
+                                          "prevExist": "true"}, make_url=False)
+            errorcode = poked.get("errorCode")
+            if errorcode:
+                LOG.warning("Unable to heartbeat by updating key '%s' with "
+                            "extended expiry of %s seconds: %d, %s", self.name,
+                            self.ttl, errorcode, poked.get("message"))
+            self._node = poked['node']
 
 
 class EtcdDriver(coordination.CoordinationDriver):
@@ -213,7 +225,7 @@ class EtcdDriver(coordination.CoordinationDriver):
         default_timeout = options.get('timeout', self.DEFAULT_TIMEOUT)
         self.lock_encoder = self.lock_encoder_cls(self.client.get_url("keys"))
         self.lock_timeout = int(options.get('lock_timeout', default_timeout))
-        self._acquired_locks = []
+        self._acquired_locks = set()
 
     def _start(self):
         try:
@@ -227,6 +239,18 @@ class EtcdDriver(coordination.CoordinationDriver):
                         self, self.client, self.lock_timeout)
 
     def heartbeat(self):
-        for lock in self._acquired_locks:
+        for lock in self._acquired_locks.copy():
             lock.heartbeat()
         return self.lock_timeout
+
+    def watch_join_group(self, group_id, callback):
+        raise tooz.NotImplemented
+
+    def unwatch_join_group(self, group_id, callback):
+        raise tooz.NotImplemented
+
+    def watch_leave_group(self, group_id, callback):
+        raise tooz.NotImplemented
+
+    def unwatch_leave_group(self, group_id, callback):
+        raise tooz.NotImplemented

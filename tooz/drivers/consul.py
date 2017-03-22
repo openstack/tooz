@@ -162,3 +162,15 @@ class ConsulDriver(coordination.CoordinationDriver):
         for arg in args:
             pieces.append(encodeutils.safe_decode(arg))
         return u"/".join(pieces)
+
+    def watch_join_group(self, group_id, callback):
+        raise tooz.NotImplemented
+
+    def unwatch_join_group(self, group_id, callback):
+        raise tooz.NotImplemented
+
+    def watch_leave_group(self, group_id, callback):
+        raise tooz.NotImplemented
+
+    def unwatch_leave_group(self, group_id, callback):
+        raise tooz.NotImplemented
