@@ -978,18 +978,6 @@ class TestAPI(tests.TestWithCoordinator):
         self.assertTrue(lock.release())
 
 
-class ZakeTestAPI(TestAPI):
-    url = "zake://"
-
-
-class IPCTestAPI(TestAPI):
-    url = "ipc://"
-
-
-class FileTestAPI(TestAPI):
-    url = "file:///tmp"
-
-
 class TestHook(testcase.TestCase):
     def setUp(self):
         super(TestHook, self).setUp()
