@@ -91,6 +91,17 @@ class HashRingTestCase(testcase.TestCase):
         self.assertEqual(nodes, set(ring.nodes.keys()))
         self.assertEqual(2 ** 5 * 12, len(ring))
 
+    def test_add_nodes_weight(self):
+        nodes = {'foo', 'bar'}
+        ring = hashring.HashRing(nodes)
+        self.assertEqual(nodes, set(ring.nodes.keys()))
+        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+        nodes.add('baz')
+        nodes.add('baz2')
+        ring.add_nodes(set(['baz', 'baz2']), weight=10)
+        self.assertEqual(nodes, set(ring.nodes.keys()))
+        self.assertEqual(2 ** 5 * 22, len(ring))
+
     def test_remove_node(self):
         nodes = {'foo', 'bar'}
         ring = hashring.HashRing(nodes)

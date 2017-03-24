@@ -60,7 +60,7 @@ class HashRing(object):
         return self.add_nodes((node,), weight)
 
     def add_nodes(self, nodes, weight=1):
-        """Add nodes to the hashring.
+        """Add nodes to the hashring with equal weight
 
         :param nodes: Nodes to add.
         :param weight: How many resource instances this node should manage
