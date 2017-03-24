@@ -660,9 +660,9 @@ class CoordinationDriverCachedRunWatchers(CoordinationDriver):
         self._joined_groups = set()
 
     def _init_watch_group(self, group_id):
-        members = self.get_members(group_id).get()
         if group_id not in self._group_members:
-            self._group_members[group_id] = members
+            members = self.get_members(group_id)
+            self._group_members[group_id] = members.get()
 
     def watch_join_group(self, group_id, callback):
         self._init_watch_group(group_id)
