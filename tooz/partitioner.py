@@ -35,14 +35,17 @@ class Partitioner(object):
 
     def __init__(self, coordinator, group_id,
                  partitions=DEFAULT_PARTITION_NUMBER):
+        members = coordinator.get_members(group_id)
         self.partitions = partitions
         self.group_id = group_id
         self._coord = coordinator
+        caps = [(m, self._coord.get_member_capabilities(self.group_id, m))
+                for m in members.get()]
         self._coord.watch_join_group(self.group_id, self._on_member_join)
         self._coord.watch_leave_group(self.group_id, self._on_member_leave)
-        members = self._coord.get_members(self.group_id)
-        self.ring = hashring.HashRing(members.get(),
-                                      partitions=self.partitions)
+        self.ring = hashring.HashRing([], partitions=self.partitions)
+        for m_id, cap in caps:
+            self.ring.add_node(m_id, utils.loads(cap.get()).get("weight", 1))
 
     def _on_member_join(self, event):
         try:
