@@ -108,7 +108,10 @@ class EtcdLock(locking.Lock):
         return reply.get('errorCode') is None
 
     @fasteners.locked
-    def acquire(self, blocking=True):
+    def acquire(self, blocking=True, shared=False):
+        if shared:
+            raise tooz.NotImplemented
+
         blocking, timeout = utils.convert_blocking(blocking)
         if timeout is not None:
             watch = timeutils.StopWatch(duration=timeout)

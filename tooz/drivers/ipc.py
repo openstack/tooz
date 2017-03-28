@@ -73,7 +73,10 @@ class IPCLock(locking.Lock):
         else:
             return True
 
-    def acquire(self, blocking=True):
+    def acquire(self, blocking=True, shared=False):
+        if shared:
+            raise tooz.NotImplemented
+
         if (blocking is not True and
                 sysv_ipc.SEMAPHORE_TIMEOUT_SUPPORTED is False):
             raise tooz.NotImplemented("This system does not support"
