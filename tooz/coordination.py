@@ -184,7 +184,8 @@ class Heart(object):
             with timeutils.StopWatch() as w:
                 wait_until_next_beat = self._driver.heartbeat()
             ran_for = w.elapsed()
-            if ran_for > wait_until_next_beat:
+            has_to_sleep_for = wait_until_next_beat - ran_for
+            if has_to_sleep_for < 0:
                 LOG.warning(
                     "Heartbeating took too long to execute (it ran for"
                     " %0.2f seconds which is %0.2f seconds longer than"
@@ -197,7 +198,9 @@ class Heart(object):
             # not a sleep function since doing that will allow this code
             # to terminate early if stopped via the stop() method vs
             # having to wait until the sleep function returns.
-            self._dead.wait(wait_until_next_beat)
+            # NOTE(jd): Wait for only the half time of what we should.
+            # This is a measure of safety, better be too soon than too late.
+            self._dead.wait(has_to_sleep_for / 2.0)
 
     def start(self, thread_cls=None):
         """Starts the heart beating thread (noop if already started)."""
