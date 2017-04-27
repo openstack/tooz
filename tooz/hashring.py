@@ -127,15 +127,12 @@ class HashRing(object):
         replicas = min(replicas, len(candidates))
 
         nodes = set()
-        for replica in six.moves.range(0, replicas):
+        while len(nodes) < replicas:
             node = self._get_node(partition)
-            while node in nodes or node in ignore_nodes:
-                partition += 1
-                if partition >= len(self._partitions):
-                    partition = 0
-                node = self._get_node(partition)
-            nodes.add(node)
-
+            if node not in ignore_nodes:
+                nodes.add(node)
+            partition = (partition + 1
+                         if partition + 1 < len(self._partitions) else 0)
         return nodes
 
     def __getitem__(self, key):
