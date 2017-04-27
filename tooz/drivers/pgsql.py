@@ -96,7 +96,9 @@ class PostgresLock(locking.Lock):
     def __init__(self, name, parsed_url, options):
         super(PostgresLock, self).__init__(name)
         self.acquired = False
-        self._conn = PostgresDriver.get_connection(parsed_url, options)
+        self._conn = None
+        self._parsed_url = parsed_url
+        self._options = options
         h = hashlib.md5()
         h.update(name)
         if six.PY2:
@@ -118,34 +120,46 @@ class PostgresLock(locking.Lock):
                     raise _retry.TryAgain
                 return False
 
-            with _translating_cursor(self._conn) as cur:
-                if blocking is True:
-                    cur.execute("SELECT pg_advisory_lock(%s, %s);", self.key)
-                    cur.fetchone()
-                    self.acquired = True
-                    return True
-                else:
-                    cur.execute("SELECT pg_try_advisory_lock(%s, %s);",
-                                self.key)
-                    if cur.fetchone()[0] is True:
+            if not self._conn or self._conn.closed:
+                self._conn = PostgresDriver.get_connection(self._parsed_url,
+                                                           self._options)
+            try:
+                with _translating_cursor(self._conn) as cur:
+                    if blocking is True:
+                        cur.execute("SELECT pg_advisory_lock(%s, %s);",
+                                    self.key)
+                        cur.fetchone()
                         self.acquired = True
                         return True
-                    elif blocking is False:
-                        return False
                     else:
-                        raise _retry.TryAgain
+                        cur.execute("SELECT pg_try_advisory_lock(%s, %s);",
+                                    self.key)
+                        if cur.fetchone()[0] is True:
+                            self.acquired = True
+                            return True
+                        elif blocking is False:
+                            self._conn.close()
+                            return False
+                        else:
+                            raise _retry.TryAgain
+            except _retry.TryAgain:
+                pass  # contine to retrieve lock on same conn
+            except Exception:
+                self._conn.close()
+                raise
 
         return _lock()
 
     def release(self):
         if not self.acquired:
             return False
+
         with _translating_cursor(self._conn) as cur:
-            cur.execute("SELECT pg_advisory_unlock(%s, %s);",
-                        self.key)
+            cur.execute("SELECT pg_advisory_unlock(%s, %s);", self.key)
             cur.fetchone()
-            self.acquired = False
-            return True
+        self.acquired = False
+        self._conn.close()
+        return True
 
     def __del__(self):
         if self.acquired:
