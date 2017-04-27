@@ -26,16 +26,16 @@ identifying the running program.
 After the coordinator is created, it can be used to use the various features
 provided.
 
-In order to keep the connection to the coordination server active, you must
-call regularly the :meth:`~tooz.coordination.CoordinationDriver.heartbeat`
-method. This will ensure that the coordinator is not considered dead by
-other program participating in the coordination.
+In order to keep the connection to the coordination server active, the method
+:meth:`~tooz.coordination.CoordinationDriver.heartbeat` method must be called
+regularly. This will ensure that the coordinator is not considered dead by
+other program participating in the coordination. Unless you want to call it
+manually, you can use tooz builtin heartbeat manager by passing the
+`start_heart` argument.
 
 .. literalinclude:: ../../../examples/coordinator_heartbeat.py
    :language: python
 
-We use a pretty simple mechanism in this example to send a heartbeat every
-once in a while, but depending on your application, you may want to send the
 heartbeat at different moment or intervals.
 
 Note that certain drivers, such as `memcached` are heavily based on timeout,
