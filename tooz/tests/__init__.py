@@ -57,6 +57,8 @@ class TestWithCoordinator(testcase.TestCase):
         super(TestWithCoordinator, self).setUp()
         if self.url is None:
             raise RuntimeError("No URL set for this driver")
+        if os.getenv("TOOZ_TEST_ETCD3"):
+            self.url = self.url.replace("etcd://", "etcd3://")
         self.useFixture(fixtures.NestedTempfile())
         self.group_id = get_random_uuid()
         self.member_id = get_random_uuid()

@@ -13,12 +13,15 @@
 # under the License.
 
 from __future__ import absolute_import
+import uuid
 
 import etcd3
 from etcd3 import exceptions as etcd3_exc
 from oslo_utils import encodeutils
 import six
 
+import tooz
+from tooz import _retry
 from tooz import coordination
 from tooz import locking
 from tooz import utils
@@ -54,34 +57,76 @@ class Etcd3Lock(locking.Lock):
     semantics for the coordination driver.
     """
 
-    def __init__(self, etcd3_lock, coord):
-        super(Etcd3Lock, self).__init__(etcd3_lock.name)
-        self._lock = etcd3_lock
+    LOCK_PREFIX = b"/tooz/locks"
+
+    def __init__(self, coord, name, timeout):
+        super(Etcd3Lock, self).__init__(name)
+        self._timeout = timeout
         self._coord = coord
+        self._key = self.LOCK_PREFIX + name
+        self._uuid = uuid.uuid4().bytes
+        self._lease = self._coord.client.lease(self._timeout)
 
     @_translate_failures
-    def acquire(self, *args, **kwargs):
-        res = self._lock.acquire()
-        if res:
+    def acquire(self, blocking=True, shared=False):
+        if shared:
+            raise tooz.NotImplemented
+
+        blocking, timeout = utils.convert_blocking(blocking)
+
+        @_retry.retry(stop_max_delay=blocking)
+        def _acquire():
+            # TODO(jd): save the created revision so we can check it later to
+            # make sure we still have the lock
+            success, _ = self._coord.client.transaction(
+                compare=[
+                    self._coord.client.transactions.create(self._key) == 0
+                ],
+                success=[
+                    self._coord.client.transactions.put(self._key, self._uuid,
+                                                        lease=self._lease)
+                ],
+                failure=[
+                    self._coord.client.transactions.get(self._key)
+                ],
+            )
+            if success is not True:
+                if blocking is False:
+                    return False
+                raise _retry.TryAgain
             self._coord._acquired_locks.add(self)
-        return res
+            return True
+
+        return _acquire()
 
     @_translate_failures
-    def release(self, *args, **kwargs):
-        if self._lock.is_acquired():
-            res = self._lock.release()
-            if res:
-                self._coord._acquired_locks.remove(self)
+    def release(self):
+        success, _ = self._coord.client.transaction(
+            compare=[
+                self._coord.client.transactions.value(self._key) == self._uuid
+            ],
+            success=[self._coord.client.transactions.delete(self._key)],
+            failure=[],
+        )
+        if success:
+            self._coord._acquired_locks.remove(self)
+            return True
+        return False
 
     @_translate_failures
     def break_(self):
-        res = self._lock.release()
-        if res:
+        # FIXME(jd) when pyetcd3 returns the status
+        # https://github.com/kragniz/python-etcd3/pull/126
+        self._coord.client.delete(self._key)
+        try:
             self._coord._acquired_locks.remove(self)
+        except KeyError:
+            pass
+        return True
 
     @_translate_failures
     def heartbeat(self):
-        return self._lock.refresh()
+        self._lease.refresh()
 
 
 class Etcd3Driver(coordination.CoordinationDriver):
@@ -111,11 +156,22 @@ class Etcd3Driver(coordination.CoordinationDriver):
         self._acquired_locks = set()
 
     def get_lock(self, name):
-        etcd3_lock = self.client.lock(name, ttl=self.lock_timeout)
-        return Etcd3Lock(etcd3_lock, self)
+        return Etcd3Lock(self, name, self.lock_timeout)
 
     def heartbeat(self):
         # NOTE(jaypipes): Copying because set can mutate during iteration
         for lock in self._acquired_locks.copy():
             lock.heartbeat()
         return self.lock_timeout
+
+    def watch_join_group(self, group_id, callback):
+        raise tooz.NotImplemented
+
+    def unwatch_join_group(self, group_id, callback):
+        raise tooz.NotImplemented
+
+    def watch_leave_group(self, group_id, callback):
+        raise tooz.NotImplemented
+
+    def unwatch_leave_group(self, group_id, callback):
+        raise tooz.NotImplemented
