@@ -220,7 +220,7 @@ class PostgresDriver(coordination.CoordinationDriver):
         dbname = options.get("dbname") or parsed_url.path[1:]
         kwargs = {}
         if parsed_url.username is not None:
-            kwargs["username"] = parsed_url.username
+            kwargs["user"] = parsed_url.username
         if parsed_url.password is not None:
             kwargs["password"] = parsed_url.password
 
