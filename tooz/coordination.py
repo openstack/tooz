@@ -17,10 +17,12 @@
 
 import abc
 import collections
+from concurrent import futures
 import enum
 import logging
 import threading
 
+from oslo_utils import encodeutils
 from oslo_utils import excutils
 from oslo_utils import netutils
 from oslo_utils import timeutils
@@ -645,6 +647,29 @@ class CoordAsyncResult(object):
     @abc.abstractmethod
     def done(self):
         """Returns True if the task is done, False otherwise."""
+
+
+class CoordinatorResult(CoordAsyncResult):
+    """Asynchronous result that references a future."""
+
+    def __init__(self, fut, failure_translator=None):
+        self._fut = fut
+        self._failure_translator = failure_translator
+
+    def get(self, timeout=None):
+        try:
+            if self._failure_translator:
+                with self._failure_translator():
+                    return self._fut.result(timeout=timeout)
+            else:
+                return self._fut.result(timeout=timeout)
+        except futures.TimeoutError as e:
+            utils.raise_with_cause(OperationTimedOut,
+                                   encodeutils.exception_to_unicode(e),
+                                   cause=e)
+
+    def done(self):
+        return self._fut.done()
 
 
 class CoordinationDriverCachedRunWatchers(CoordinationDriver):

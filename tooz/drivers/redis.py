@@ -18,11 +18,11 @@ from __future__ import absolute_import
 
 import contextlib
 from distutils import version
+import functools
 import logging
 import string
 import threading
 
-from concurrent import futures
 from oslo_utils import encodeutils
 from oslo_utils import strutils
 import redis
@@ -747,24 +747,5 @@ return 1
         return result
 
 
-class RedisFutureResult(coordination.CoordAsyncResult):
-    """Redis asynchronous result that references a future."""
-
-    def __init__(self, fut):
-        self._fut = fut
-
-    def get(self, timeout=10):
-        try:
-            # Late translate the common failures since the redis client
-            # may throw things that we can not catch in the callbacks where
-            # it is used (especially one that uses the transaction
-            # method).
-            with _translate_failures():
-                return self._fut.result(timeout=timeout)
-        except futures.TimeoutError as e:
-            utils.raise_with_cause(coordination.OperationTimedOut,
-                                   encodeutils.exception_to_unicode(e),
-                                   cause=e)
-
-    def done(self):
-        return self._fut.done()
+RedisFutureResult = functools.partial(coordination.CoordinatorResult,
+                                      failure_translator=_translate_failures)

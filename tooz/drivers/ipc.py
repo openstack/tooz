@@ -18,9 +18,7 @@ import hashlib
 import struct
 import time
 
-from concurrent import futures
 import msgpack
-from oslo_utils import encodeutils
 import six
 import sysv_ipc
 
@@ -212,7 +210,8 @@ class IPCDriver(coordination.CoordinationDriver):
                 group_list.add(group_id)
                 self._write_group_list(group_list)
 
-        return IPCFutureResult(self._executor.submit(_create_group))
+        return coordination.CoordinatorResult(
+            self._executor.submit(_create_group))
 
     def delete_group(self, group_id):
         def _delete_group():
@@ -223,7 +222,8 @@ class IPCDriver(coordination.CoordinationDriver):
                 group_list.remove(group_id)
                 self._write_group_list(group_list)
 
-        return IPCFutureResult(self._executor.submit(_delete_group))
+        return coordination.CoordinatorResult(
+            self._executor.submit(_delete_group))
 
     def watch_join_group(self, group_id, callback):
         # Check the group exist
@@ -240,26 +240,9 @@ class IPCDriver(coordination.CoordinationDriver):
             return self._read_group_list()
 
     def get_groups(self):
-        return IPCFutureResult(self._executor.submit(
+        return coordination.CoordinatorResult(self._executor.submit(
             self._get_groups_handler))
 
     @staticmethod
     def get_lock(name):
         return IPCLock(name)
-
-
-class IPCFutureResult(coordination.CoordAsyncResult):
-    """IPC asynchronous result that references a future."""
-    def __init__(self, fut):
-        self._fut = fut
-
-    def get(self, timeout=10):
-        try:
-            return self._fut.result(timeout=timeout)
-        except futures.TimeoutError as e:
-            utils.raise_with_cause(coordination.OperationTimedOut,
-                                   encodeutils.exception_to_unicode(e),
-                                   cause=e)
-
-    def done(self):
-        return self._fut.done()

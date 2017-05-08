@@ -17,6 +17,7 @@
 import contextlib
 import datetime
 import errno
+import functools
 import hashlib
 import logging
 import os
@@ -26,8 +27,6 @@ import sys
 import tempfile
 import threading
 import weakref
-
-from concurrent import futures
 
 import fasteners
 from oslo_utils import encodeutils
@@ -533,23 +532,5 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers):
         raise tooz.NotImplemented
 
 
-class FileFutureResult(coordination.CoordAsyncResult):
-    """File asynchronous result that references a future."""
-
-    def __init__(self, fut):
-        self._fut = fut
-
-    def get(self, timeout=None):
-        try:
-            # Late translate the common failures since the file driver
-            # may throw things that we can not catch in the callbacks where
-            # it is used.
-            with _translate_failures():
-                return self._fut.result(timeout=timeout)
-        except futures.TimeoutError as e:
-            utils.raise_with_cause(coordination.OperationTimedOut,
-                                   encodeutils.exception_to_unicode(e),
-                                   cause=e)
-
-    def done(self):
-        return self._fut.done()
+FileFutureResult = functools.partial(coordination.CoordinatorResult,
+                                     failure_translator=_translate_failures)

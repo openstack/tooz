@@ -14,11 +14,12 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import contextlib
 import errno
+import functools
 import logging
 import socket
 
-from concurrent import futures
 from oslo_utils import encodeutils
 from pymemcache import client as pymemcache_client
 import six
@@ -33,35 +34,41 @@ from tooz import utils
 LOG = logging.getLogger(__name__)
 
 
-def _translate_failures(func):
+@contextlib.contextmanager
+def _failure_translator():
     """Translates common pymemcache exceptions into tooz exceptions.
 
     https://github.com/pinterest/pymemcache/blob/d995/pymemcache/client.py#L202
     """
+    try:
+        yield
+    except pymemcache_client.MemcacheUnexpectedCloseError as e:
+        utils.raise_with_cause(coordination.ToozConnectionError,
+                               encodeutils.exception_to_unicode(e),
+                               cause=e)
+    except (socket.timeout, socket.error,
+            socket.gaierror, socket.herror) as e:
+        # TODO(harlowja): get upstream pymemcache to produce a better
+        # exception for these, using socket (vs. a memcache specific
+        # error) seems sorta not right and/or the best approach...
+        msg = encodeutils.exception_to_unicode(e)
+        if e.errno is not None:
+            msg += " (with errno %s [%s])" % (errno.errorcode[e.errno],
+                                              e.errno)
+        utils.raise_with_cause(coordination.ToozConnectionError,
+                               msg, cause=e)
+    except pymemcache_client.MemcacheError as e:
+        utils.raise_with_cause(tooz.ToozError,
+                               encodeutils.exception_to_unicode(e),
+                               cause=e)
+
+
+def _translate_failures(func):
 
     @six.wraps(func)
     def wrapper(*args, **kwargs):
-        try:
+        with _failure_translator():
             return func(*args, **kwargs)
-        except pymemcache_client.MemcacheUnexpectedCloseError as e:
-            utils.raise_with_cause(coordination.ToozConnectionError,
-                                   encodeutils.exception_to_unicode(e),
-                                   cause=e)
-        except (socket.timeout, socket.error,
-                socket.gaierror, socket.herror) as e:
-            # TODO(harlowja): get upstream pymemcache to produce a better
-            # exception for these, using socket (vs. a memcache specific
-            # error) seems sorta not right and/or the best approach...
-            msg = encodeutils.exception_to_unicode(e)
-            if e.errno is not None:
-                msg += " (with errno %s [%s])" % (errno.errorcode[e.errno],
-                                                  e.errno)
-            utils.raise_with_cause(coordination.ToozConnectionError,
-                                   msg, cause=e)
-        except pymemcache_client.MemcacheError as e:
-            utils.raise_with_cause(tooz.ToozError,
-                                   encodeutils.exception_to_unicode(e),
-                                   cause=e)
 
     return wrapper
 
@@ -504,19 +511,6 @@ class MemcachedDriver(coordination.CoordinationDriverCachedRunWatchers):
         return result
 
 
-class MemcachedFutureResult(coordination.CoordAsyncResult):
-    """Memcached asynchronous result that references a future."""
-    def __init__(self, fut):
-        self._fut = fut
-
-    def get(self, timeout=10):
-        try:
-            return self._fut.result(timeout=timeout)
-        except futures.TimeoutError as e:
-            utils.raise_with_cause(
-                coordination.OperationTimedOut,
-                encodeutils.exception_to_unicode(e),
-                cause=e)
-
-    def done(self):
-        return self._fut.done()
+MemcachedFutureResult = functools.partial(
+    coordination.CoordinatorResult,
+    failure_translator=_failure_translator)
