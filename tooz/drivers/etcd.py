@@ -131,7 +131,7 @@ class EtcdLock(locking.Lock):
                         data={"ttl": self.ttl,
                               "prevExist": "false"})
                 except requests.exceptions.RequestException:
-                    if watch and watch.leftover() == 0:
+                    if not watch or watch.leftover() == 0:
                         return False
 
                 # We got the lock!
@@ -156,7 +156,7 @@ class EtcdLock(locking.Lock):
                     make_url=False,
                     timeout=watch.leftover() if watch else None)
             except requests.exceptions.RequestException:
-                if watch and watch.expired():
+                if not watch or watch.expired():
                     return False
 
     @_translate_failures
