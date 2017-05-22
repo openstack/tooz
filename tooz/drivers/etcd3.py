@@ -116,10 +116,7 @@ class Etcd3Lock(locking.Lock):
         # FIXME(jd) when pyetcd3 returns the status
         # https://github.com/kragniz/python-etcd3/pull/126
         self._coord.client.delete(self._key)
-        try:
-            self._coord._acquired_locks.remove(self)
-        except KeyError:
-            pass
+        self._coord._acquired_locks.discard(self)
         return True
 
     @_translate_failures
