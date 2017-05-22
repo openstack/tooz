@@ -72,8 +72,6 @@ class Etcd3Lock(locking.Lock):
         if shared:
             raise tooz.NotImplemented
 
-        blocking, timeout = utils.convert_blocking(blocking)
-
         @_retry.retry(stop_max_delay=blocking)
         def _acquire():
             # TODO(jd): save the created revision so we can check it later to
