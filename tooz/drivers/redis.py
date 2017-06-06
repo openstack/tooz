@@ -115,7 +115,8 @@ class RedisLock(locking.Lock):
         return self in self._coord._acquired_locks
 
 
-class RedisDriver(coordination.CoordinationDriverCachedRunWatchers):
+class RedisDriver(coordination.CoordinationDriverCachedRunWatchers,
+                  coordination.CoordinationDriverWithExecutor):
     """Redis provides a few nice benefits that act as a poormans zookeeper.
 
     It **is** fully functional and implements all of the coordination
@@ -323,26 +324,25 @@ return 1
     .. _Lua: http://www.lua.org
     """
 
+    EXCLUDE_OPTIONS = CLIENT_LIST_ARGS
+
     def __init__(self, member_id, parsed_url, options):
-        super(RedisDriver, self).__init__(member_id)
-        options = utils.collapse(options, exclude=self.CLIENT_LIST_ARGS)
+        super(RedisDriver, self).__init__(member_id, parsed_url, options)
         self._parsed_url = parsed_url
-        self._options = options
-        self._encoding = options.get('encoding', self.DEFAULT_ENCODING)
-        timeout = options.get('timeout', self.CLIENT_DEFAULT_SOCKET_TO)
+        self._encoding = self._options.get('encoding', self.DEFAULT_ENCODING)
+        timeout = self._options.get('timeout', self.CLIENT_DEFAULT_SOCKET_TO)
         self.timeout = int(timeout)
-        self.membership_timeout = float(options.get(
+        self.membership_timeout = float(self._options.get(
             'membership_timeout', timeout))
-        lock_timeout = options.get('lock_timeout', self.timeout)
+        lock_timeout = self._options.get('lock_timeout', self.timeout)
         self.lock_timeout = int(lock_timeout)
-        namespace = options.get('namespace', self.DEFAULT_NAMESPACE)
+        namespace = self._options.get('namespace', self.DEFAULT_NAMESPACE)
         self._namespace = utils.to_binary(namespace, encoding=self._encoding)
         self._group_prefix = self._namespace + b"_group"
         self._beat_prefix = self._namespace + b"_beats"
         self._groups = self._namespace + b"_groups"
         self._client = None
         self._acquired_locks = set()
-        self._executor = utils.ProxyExecutor.build("Redis", options)
         self._started = False
         self._server_info = {}
         self._scripts = {}
@@ -429,7 +429,7 @@ return 1
         return redis.StrictRedis(**kwargs)
 
     def _start(self):
-        self._executor.start()
+        super(RedisDriver, self)._start()
         try:
             self._client = self._make_client(self._parsed_url, self._options,
                                              self.timeout)
@@ -522,7 +522,7 @@ return 1
                 lock.release()
             except tooz.ToozError:
                 LOG.warning("Unable to release lock '%s'", lock, exc_info=True)
-        self._executor.stop()
+        super(RedisDriver, self)._stop()
         if self._client is not None:
             # Make sure we no longer exist...
             beat_id = self._encode_beat_id(self._member_id)

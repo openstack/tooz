@@ -136,7 +136,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
     """
 
     def __init__(self, member_id, parsed_url, options):
-        super(KazooDriver, self).__init__(member_id)
+        super(KazooDriver, self).__init__(member_id, parsed_url, options)
         options = utils.collapse(options, exclude=['hosts'])
         self.timeout = int(options.get('timeout', '10'))
         self._namespace = options.get('namespace', self.TOOZ_NAMESPACE)

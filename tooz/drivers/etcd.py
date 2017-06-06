@@ -216,7 +216,7 @@ class EtcdDriver(coordination.CoordinationDriver):
     lock_encoder_cls = utils.Base64LockEncoder
 
     def __init__(self, member_id, parsed_url, options):
-        super(EtcdDriver, self).__init__(member_id)
+        super(EtcdDriver, self).__init__(member_id, parsed_url, options)
         host = parsed_url.hostname or self.DEFAULT_HOST
         port = parsed_url.port or self.DEFAULT_PORT
         options = utils.collapse(options)

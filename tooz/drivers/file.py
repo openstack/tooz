@@ -177,7 +177,8 @@ class FileLock(locking.Lock):
             LOG.warning("Unreleased lock %s garbage collected", self.name)
 
 
-class FileDriver(coordination.CoordinationDriverCachedRunWatchers):
+class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
+                 coordination.CoordinationDriverWithExecutor):
     """A file based driver.
 
     This driver uses files and directories (and associated file locks) to
@@ -219,9 +220,8 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers):
 
     def __init__(self, member_id, parsed_url, options):
         """Initialize the file driver."""
-        super(FileDriver, self).__init__(member_id)
+        super(FileDriver, self).__init__(member_id, parsed_url, options)
         self._dir = self._normalize_path(parsed_url.path)
-        self._executor = utils.ProxyExecutor.build("File", options)
         self._group_dir = os.path.join(self._dir, 'groups')
         self._tmpdir = os.path.join(self._dir, 'tmp')
         self._driver_lock_path = os.path.join(self._dir, '.driver_lock')
@@ -231,7 +231,6 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers):
         self._reserved_paths = list(self._reserved_dirs)
         self._reserved_paths.append(self._driver_lock_path)
         self._safe_member_id = self._make_filesystem_safe(member_id)
-        self._options = utils.collapse(options)
         self._timeout = int(self._options.get('timeout', 10))
 
     @staticmethod
@@ -266,15 +265,12 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers):
         return hashlib.new(cls.HASH_ROUTINE, item).hexdigest()
 
     def _start(self):
+        super(FileDriver, self)._start()
         for a_dir in self._reserved_dirs:
             try:
                 fileutils.ensure_tree(a_dir)
             except OSError as e:
                 raise coordination.ToozConnectionError(e)
-        self._executor.start()
-
-    def _stop(self):
-        self._executor.stop()
 
     def _update_group_metadata(self, path, group_id):
         details = {

@@ -141,7 +141,7 @@ class Etcd3Driver(coordination.CoordinationDriver):
     DEFAULT_PORT = 2379
 
     def __init__(self, member_id, parsed_url, options):
-        super(Etcd3Driver, self).__init__(member_id)
+        super(Etcd3Driver, self).__init__(member_id, parsed_url, options)
         host = parsed_url.hostname or self.DEFAULT_HOST
         port = parsed_url.port or self.DEFAULT_PORT
         options = utils.collapse(options)
