@@ -112,7 +112,6 @@ class ConsulDriver(coordination.CoordinationDriver):
     def __init__(self, member_id, parsed_url, options):
         super(ConsulDriver, self).__init__(member_id)
         options = utils.collapse(options)
-        self._executor = utils.ProxyExecutor.build("Consul", options)
         self._host = parsed_url.hostname
         self._port = parsed_url.port or self.DEFAULT_PORT
         self._session_id = None
@@ -124,8 +123,6 @@ class ConsulDriver(coordination.CoordinationDriver):
 
     def _start(self):
         """Create a client, register a node and create a session."""
-        self._executor.start()
-
         # Create a consul client
         if self._client is None:
             self._client = consul.Consul(host=self._host, port=self._port)
@@ -148,7 +145,6 @@ class ConsulDriver(coordination.CoordinationDriver):
                 self._client.session.destroy(self._session_id)
                 self._session_id = None
             self._client = None
-        self._executor.stop()
 
     def get_lock(self, name):
         real_name = self._paths_join(self._namespace, u"locks", name)
