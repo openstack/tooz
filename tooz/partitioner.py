@@ -13,13 +13,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-import logging
-
 from tooz import hashring
-from tooz import utils
-
-
-LOG = logging.getLogger(__name__)
 
 
 class Partitioner(object):
@@ -45,20 +39,12 @@ class Partitioner(object):
         self._coord.watch_leave_group(self.group_id, self._on_member_leave)
         self.ring = hashring.HashRing([], partitions=self.partitions)
         for m_id, cap in caps:
-            self.ring.add_node(m_id, utils.loads(cap.get()).get("weight", 1))
+            self.ring.add_node(m_id, cap.get().get("weight", 1))
 
     def _on_member_join(self, event):
-        try:
-            weight = utils.loads(self._coord.get_member_capabilities(
-                self.group_id, event.member_id).get()).get("weight", 1)
-        except utils.SerializationError:
-            # This node does not seem to have joined with the partitioner
-            # system, so just ignore it.
-            LOG.warning(
-                "Node %s did not join group %s in partition mode, ignoring",
-                self.group_id, event.member_id)
-        else:
-            self.ring.add_node(event.member_id, weight)
+        weight = self._coord.get_member_capabilities(
+            self.group_id, event.member_id).get().get("weight", 1)
+        self.ring.add_node(event.member_id, weight)
 
     def _on_member_leave(self, event):
         self.ring.remove_node(event.member_id)
