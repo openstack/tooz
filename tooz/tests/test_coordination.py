@@ -124,7 +124,7 @@ class TestAPI(tests.TestWithCoordinator):
         delete = self._coord.delete_group(self.group_id)
         self.assertRaises(tooz.coordination.GroupNotEmpty,
                           delete.get)
-        self._coord.leave_group(self.group_id)
+        self._coord.leave_group(self.group_id).get()
         self._coord.delete_group(self.group_id).get()
 
     def test_join_group(self):
@@ -221,7 +221,7 @@ class TestAPI(tests.TestWithCoordinator):
             'type': 'warrior',
             'abilities': ['fight', 'flight', 'double-hit-damage'],
         }
-        self._coord.join_group(self.group_id, caps)
+        self._coord.join_group(self.group_id, caps).get()
         capa = self._coord.get_member_capabilities(self.group_id,
                                                    self.member_id).get()
         self.assertEqual(capa, caps)
@@ -244,7 +244,7 @@ class TestAPI(tests.TestWithCoordinator):
 
     def test_get_member_info(self):
         self._coord.create_group(self.group_id).get()
-        self._coord.join_group(self.group_id, b"test_capabilities")
+        self._coord.join_group(self.group_id, b"test_capabilities").get()
 
         member_info = self._coord.get_member_info(self.group_id,
                                                   self.member_id).get()
@@ -259,7 +259,7 @@ class TestAPI(tests.TestWithCoordinator):
         member_info = {'capabilities': 'caps',
                        'created_at': '0',
                        'updated_at': '0'}
-        self._coord.join_group(self.group_id, caps)
+        self._coord.join_group(self.group_id, caps).get()
         member_info = self._coord.get_member_info(self.group_id,
                                                   self.member_id).get()
         self.assertEqual(member_info['capabilities'], caps)
