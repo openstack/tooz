@@ -68,7 +68,6 @@ class MySQLLock(locking.Lock):
                         self.acquired = True
                         return True
             except pymysql.MySQLError as e:
-                self._conn.close()
                 utils.raise_with_cause(
                     tooz.ToozError,
                     encodeutils.exception_to_unicode(e),
@@ -79,7 +78,13 @@ class MySQLLock(locking.Lock):
             self._conn.close()
             return False
 
-        return _lock()
+        try:
+            return _lock()
+        except Exception:
+            # Close the connection if we tried too much and finally failed, or
+            # anything else bad happened.
+            self._conn.close()
+            raise
 
     def release(self):
         if not self.acquired:
