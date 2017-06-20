@@ -467,7 +467,7 @@ class CoordinationDriver(object):
         """Request the creation of a group asynchronously.
 
         :param group_id: the id of the group to create
-        :type group_id: str
+        :type group_id: ascii bytes
         :returns: None
         :rtype: CoordAsyncResult
         """
@@ -487,9 +487,9 @@ class CoordinationDriver(object):
         """Join a group and establish group membership asynchronously.
 
         :param group_id: the id of the group to join
-        :type group_id: str
+        :type group_id: ascii bytes
         :param capabilities: the capabilities of the joined member
-        :type capabilities: object (typically str)
+        :type capabilities: object
         :returns: None
         :rtype: CoordAsyncResult
         """
@@ -527,7 +527,7 @@ class CoordinationDriver(object):
         """Leave a group asynchronously.
 
         :param group_id: the id of the group to leave
-        :type group_id: str
+        :type group_id: ascii bytes
         :returns: None
         :rtype: CoordAsyncResult
         """
@@ -538,7 +538,7 @@ class CoordinationDriver(object):
         """Delete a group asynchronously.
 
         :param group_id: the id of the group to leave
-        :type group_id: str
+        :type group_id: ascii bytes
         :returns: Result
         :rtype: CoordAsyncResult
         """
@@ -558,9 +558,9 @@ class CoordinationDriver(object):
         """Return the capabilities of a member asynchronously.
 
         :param group_id: the id of the group of the member
-        :type group_id: str
+        :type group_id: ascii bytes
         :param member_id: the id of the member
-        :type member_id: str
+        :type member_id: ascii bytes
         :returns: capabilities of a member
         :rtype: CoordAsyncResult
         """
@@ -571,9 +571,9 @@ class CoordinationDriver(object):
         """Return the statistics and capabilities of a member asynchronously.
 
         :param group_id: the id of the group of the member
-        :type group_id: str
+        :type group_id: ascii bytes
         :param member_id: the id of the member
-        :type member_id: str
+        :type member_id: ascii bytes
         :returns: capabilities and statistics of a member
         :rtype: CoordAsyncResult
         """
@@ -584,9 +584,9 @@ class CoordinationDriver(object):
         """Update member capabilities in the specified group.
 
         :param group_id: the id of the group of the current member
-        :type group_id: str
+        :type group_id: ascii bytes
         :param capabilities: the capabilities of the updated member
-        :type capabilities: object (typically str)
+        :type capabilities: object
         :returns: None
         :rtype: CoordAsyncResult
         """
@@ -752,7 +752,7 @@ def get_coordinator(backend_url, member_id,
     :param backend_url: the backend URL to use
     :type backend: str
     :param member_id: the id of the member
-    :type member_id: str
+    :type member_id: ascii bytes
     :param characteristics: set
     :type characteristics: set of :py:class:`.Characteristics` that will
                            be matched to the requested driver (this **will**
