@@ -133,8 +133,8 @@ class MemberJoinedGroup(Event):
 
     def __repr__(self):
         return "<%s: group %s: +member %s>" % (self.__class__.__name__,
-                                               self.member_id,
-                                               self.group_id)
+                                               self.group_id,
+                                               self.member_id)
 
 
 class MemberLeftGroup(Event):
@@ -146,8 +146,8 @@ class MemberLeftGroup(Event):
 
     def __repr__(self):
         return "<%s: group %s: -member %s>" % (self.__class__.__name__,
-                                               self.member_id,
-                                               self.group_id)
+                                               self.group_id,
+                                               self.member_id)
 
 
 class LeaderElected(Event):
