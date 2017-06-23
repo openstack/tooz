@@ -146,7 +146,8 @@ class PostgresLock(locking.Lock):
         try:
             return _lock()
         except Exception:
-            self._conn.close()
+            if self._conn:
+                self._conn.close()
             raise
 
     def release(self):
