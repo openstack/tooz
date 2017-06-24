@@ -110,7 +110,7 @@ class ConsulDriver(coordination.CoordinationDriver):
     DEFAULT_PORT = 8500
 
     def __init__(self, member_id, parsed_url, options):
-        super(ConsulDriver, self).__init__(member_id)
+        super(ConsulDriver, self).__init__(member_id, parsed_url, options)
         options = utils.collapse(options)
         self._host = parsed_url.hostname
         self._port = parsed_url.port or self.DEFAULT_PORT

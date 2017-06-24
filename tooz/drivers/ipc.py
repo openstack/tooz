@@ -134,7 +134,7 @@ class IPCLock(locking.Lock):
         return False
 
 
-class IPCDriver(coordination.CoordinationDriver):
+class IPCDriver(coordination.CoordinationDriverWithExecutor):
     """A `IPC`_ based driver.
 
     This driver uses `IPC`_ concepts to provide the coordination driver
@@ -165,21 +165,16 @@ class IPCDriver(coordination.CoordinationDriver):
     _GROUP_PROJECT = "_TOOZ_INTERNAL"
     _INTERNAL_LOCK_NAME = "TOOZ_INTERNAL_LOCK"
 
-    def __init__(self, member_id, parsed_url, options):
-        """Initialize the IPC driver."""
-        super(IPCDriver, self).__init__(member_id)
-        self._executor = utils.ProxyExecutor.build("IPC", options)
-
     def _start(self):
+        super(IPCDriver, self)._start()
         self._group_list = sysv_ipc.SharedMemory(
             ftok(self._GROUP_LIST_KEY, self._GROUP_PROJECT),
             sysv_ipc.IPC_CREAT,
             size=self._SEGMENT_SIZE)
         self._lock = self.get_lock(self._INTERNAL_LOCK_NAME)
-        self._executor.start()
 
     def _stop(self):
-        self._executor.stop()
+        super(IPCDriver, self)._stop()
         try:
             self._group_list.detach()
             self._group_list.remove()

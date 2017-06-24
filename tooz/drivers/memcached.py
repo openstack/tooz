@@ -179,7 +179,8 @@ class MemcachedLock(locking.Lock):
         return self in self.coord._acquired_locks
 
 
-class MemcachedDriver(coordination.CoordinationDriverCachedRunWatchers):
+class MemcachedDriver(coordination.CoordinationDriverCachedRunWatchers,
+                      coordination.CoordinationDriverWithExecutor):
     """A `memcached`_ based driver.
 
     This driver users `memcached`_ concepts to provide the coordination driver
@@ -226,21 +227,18 @@ class MemcachedDriver(coordination.CoordinationDriverCachedRunWatchers):
     STILL_ALIVE = b"It's alive!"
 
     def __init__(self, member_id, parsed_url, options):
-        super(MemcachedDriver, self).__init__(member_id)
-        options = utils.collapse(options)
-        self._options = options
-        self._executor = utils.ProxyExecutor.build("Memcached", options)
+        super(MemcachedDriver, self).__init__(member_id, parsed_url, options)
         self.host = (parsed_url.hostname or "localhost",
                      parsed_url.port or 11211)
-        default_timeout = options.get('timeout', self.DEFAULT_TIMEOUT)
+        default_timeout = self._options.get('timeout', self.DEFAULT_TIMEOUT)
         self.timeout = int(default_timeout)
-        self.membership_timeout = int(options.get(
+        self.membership_timeout = int(self._options.get(
             'membership_timeout', default_timeout))
-        self.lock_timeout = int(options.get(
+        self.lock_timeout = int(self._options.get(
             'lock_timeout', default_timeout))
-        self.leader_timeout = int(options.get(
+        self.leader_timeout = int(self._options.get(
             'leader_timeout', default_timeout))
-        max_pool_size = options.get('max_pool_size', None)
+        max_pool_size = self._options.get('max_pool_size', None)
         if max_pool_size is not None:
             self.max_pool_size = int(max_pool_size)
         else:
@@ -264,6 +262,7 @@ class MemcachedDriver(coordination.CoordinationDriverCachedRunWatchers):
 
     @_translate_failures
     def _start(self):
+        super(MemcachedDriver, self)._start()
         self.client = pymemcache_client.PooledClient(
             self.host,
             serializer=self._msgpack_serializer,
@@ -274,14 +273,13 @@ class MemcachedDriver(coordination.CoordinationDriverCachedRunWatchers):
         # Run heartbeat here because pymemcache use a lazy connection
         # method and only connect once you do an operation.
         self.heartbeat()
-        self._executor.start()
 
     @_translate_failures
     def _stop(self):
+        super(MemcachedDriver, self)._stop()
         for lock in list(self._acquired_locks):
             lock.release()
         self.client.delete(self._encode_member_id(self._member_id))
-        self._executor.stop()
         self.client.close()
 
     def _encode_group_id(self, group_id):

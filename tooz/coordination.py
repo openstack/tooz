@@ -241,7 +241,7 @@ class CoordinationDriver(object):
     enum member(s) that can be used to interogate how this driver works.
     """
 
-    def __init__(self, member_id):
+    def __init__(self, member_id, parsed_url, options):
         super(CoordinationDriver, self).__init__()
         self._member_id = member_id
         self._started = False
@@ -672,6 +672,26 @@ class CoordinatorResult(CoordAsyncResult):
         return self._fut.done()
 
 
+class CoordinationDriverWithExecutor(CoordinationDriver):
+
+    EXCLUDE_OPTIONS = None
+
+    def __init__(self, member_id, parsed_url, options):
+        self._options = utils.collapse(options, exclude=self.EXCLUDE_OPTIONS)
+        self._executor = utils.ProxyExecutor.build(
+            self.__class__.__name__, self._options)
+        super(CoordinationDriverWithExecutor, self).__init__(
+            member_id, parsed_url, options)
+
+    def start(self, start_heart=False):
+        self._executor.start()
+        super(CoordinationDriverWithExecutor, self).start(start_heart)
+
+    def stop(self):
+        super(CoordinationDriverWithExecutor, self).stop()
+        self._executor.stop()
+
+
 class CoordinationDriverCachedRunWatchers(CoordinationDriver):
     """Coordination driver with a `run_watchers` implementation.
 
@@ -681,8 +701,9 @@ class CoordinationDriverCachedRunWatchers(CoordinationDriver):
 
     """
 
-    def __init__(self, member_id):
-        super(CoordinationDriverCachedRunWatchers, self).__init__(member_id)
+    def __init__(self, member_id, parsed_url, options):
+        super(CoordinationDriverCachedRunWatchers, self).__init__(
+            member_id, parsed_url, options)
         # A cache for group members
         self._group_members = collections.defaultdict(set)
         self._joined_groups = set()
