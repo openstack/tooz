@@ -812,6 +812,12 @@ class TestAPI(tests.TestWithCoordinator):
             self.assertTrue(f.result())
 
     def test_get_lock_concurrency_locking_two_lock_process(self):
+        # NOTE(jd) Using gRPC and forking is not supported so this test might
+        # very likely hang forever or crash. See
+        # https://github.com/grpc/grpc/issues/10140#issuecomment-297548714 for
+        # more info.
+        if self.url.startswith("etcd3://"):
+            self.skipTest("Unable to use etcd3 with fork()")
         self._do_test_get_lock_concurrency_locking_two_lock(
             futures.ProcessPoolExecutor, False)
 
