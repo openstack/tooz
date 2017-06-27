@@ -277,8 +277,7 @@ class CoordinationDriver(object):
         :return: A :py:class:`~tooz.partitioner.Partitioner` object.
 
         """
-        self.join_group_create(
-            group_id, capabilities=utils.dumps({'weight': weight}))
+        self.join_group_create(group_id, capabilities={'weight': weight})
         return partitioner.Partitioner(self, group_id, partitions=partitions)
 
     def leave_partitioned_group(self, partitioner):
