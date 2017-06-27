@@ -712,6 +712,12 @@ class TestAPI(tests.TestWithCoordinator):
         with lock:
             pass
 
+    def test_heartbeat_lock_not_acquired(self):
+        lock = self._coord.get_lock(tests.get_random_uuid())
+        # Not all locks need heartbeat
+        if hasattr(lock, "heartbeat"):
+            self.assertFalse(lock.heartbeat())
+
     def test_get_shared_lock(self):
         lock = self._coord.get_lock(tests.get_random_uuid())
         self.assertTrue(lock.acquire(shared=True))
