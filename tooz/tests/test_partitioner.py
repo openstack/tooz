@@ -31,13 +31,16 @@ class TestPartitioner(tests.TestWithCoordinator):
         super(TestPartitioner, self).tearDown()
 
     def _add_members(self, number_of_members, weight=1):
+        groups = []
         for _ in six.moves.range(number_of_members):
             m = tests.get_random_uuid()
             coord = coordination.get_coordinator(self.url, m)
             coord.start()
-            coord.join_partitioned_group(self.group_id, weight=weight)
+            groups.append(coord.join_partitioned_group(
+                self.group_id, weight=weight))
             self._extra_coords.append(coord)
         self._coord.run_watchers()
+        return groups
 
     def _remove_members(self, number_of_members):
         for _ in six.moves.range(number_of_members):
@@ -63,15 +66,10 @@ class TestPartitioner(tests.TestWithCoordinator):
     def test_hashring_weight(self):
         p = self._coord.join_partitioned_group(self.group_id, weight=5)
         self.assertEqual([5], list(p.ring.nodes.values()))
-        coord = coordination.get_coordinator(self.url, tests.get_random_uuid())
-        coord.start()
-        p2 = coord.join_partitioned_group(self.group_id, weight=10)
-        self._extra_coords.append(coord)
-        self._coord.run_watchers()
+        p2 = self._add_members(1, weight=10)[0]
         self.assertEqual(set([5, 10]), set(p.ring.nodes.values()))
         self.assertEqual(set([5, 10]), set(p2.ring.nodes.values()))
         p.stop()
-        p2.stop()
 
     def test_stop(self):
         p = self._coord.join_partitioned_group(self.group_id)
