@@ -109,6 +109,8 @@ class RedisLock(locking.Lock):
             if self.acquired:
                 with _translate_failures():
                     self._lock.extend(self._lock.timeout)
+                    return True
+        return False
 
     @property
     def acquired(self):

@@ -14,6 +14,7 @@
 
 from __future__ import absolute_import
 import base64
+import threading
 import uuid
 
 import etcd3gw
@@ -68,6 +69,7 @@ class Etcd3Lock(locking.Lock):
         self._key_b64 = base64.b64encode(self._key).decode("ascii")
         self._uuid = base64.b64encode(uuid.uuid4().bytes).decode("ascii")
         self._lease = self._coord.client.lease(self._timeout)
+        self._exclusive_access = threading.Lock()
 
     @_translate_failures
     def acquire(self, blocking=True, shared=False):
@@ -126,11 +128,12 @@ class Etcd3Lock(locking.Lock):
             }]
         }
 
-        result = self._coord.client.transaction(txn)
-        success = result.get('succeeded', False)
-        if success:
-            self._coord._acquired_locks.remove(self)
-            return True
+        with self._exclusive_access:
+            result = self._coord.client.transaction(txn)
+            success = result.get('succeeded', False)
+            if success:
+                self._coord._acquired_locks.remove(self)
+                return True
         return False
 
     @_translate_failures
@@ -140,9 +143,17 @@ class Etcd3Lock(locking.Lock):
             return True
         return False
 
+    @property
+    def acquired(self):
+        return self in self._coord._acquired_locks
+
     @_translate_failures
     def heartbeat(self):
-        self._lease.refresh()
+        with self._exclusive_access:
+            if self.acquired:
+                self._lease.refresh()
+                return True
+        return False
 
 
 class Etcd3Driver(coordination.CoordinationDriver):

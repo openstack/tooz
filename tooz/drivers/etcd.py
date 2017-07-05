@@ -188,12 +188,14 @@ class EtcdLock(locking.Lock):
             poked = self.client.put(self._lock_url,
                                     data={"ttl": self.ttl,
                                           "prevExist": "true"}, make_url=False)
-            errorcode = poked.get("errorCode")
-            if errorcode:
-                LOG.warning("Unable to heartbeat by updating key '%s' with "
-                            "extended expiry of %s seconds: %d, %s", self.name,
-                            self.ttl, errorcode, poked.get("message"))
             self._node = poked['node']
+            errorcode = poked.get("errorCode")
+            if not errorcode:
+                return True
+            LOG.warning("Unable to heartbeat by updating key '%s' with "
+                        "extended expiry of %s seconds: %d, %s", self.name,
+                        self.ttl, errorcode, poked.get("message"))
+        return False
 
 
 class EtcdDriver(coordination.CoordinationDriver):

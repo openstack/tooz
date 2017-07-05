@@ -13,6 +13,7 @@
 # under the License.
 
 from __future__ import absolute_import
+import threading
 
 import etcd3
 from etcd3 import exceptions as etcd3_exc
@@ -61,6 +62,7 @@ class Etcd3Lock(locking.Lock):
         super(Etcd3Lock, self).__init__(name)
         self._coord = coord
         self._lock = coord.client.lock(name.decode(), timeout)
+        self._exclusive_access = threading.Lock()
 
     @_translate_failures
     def acquire(self, blocking=True, shared=False):
@@ -83,14 +85,19 @@ class Etcd3Lock(locking.Lock):
 
     @_translate_failures
     def release(self):
-        if self.acquired and self._lock.release():
-            self._coord._acquired_locks.discard(self)
-            return True
+        with self._exclusive_access:
+            if self.acquired and self._lock.release():
+                self._coord._acquired_locks.discard(self)
+                return True
         return False
 
     @_translate_failures
     def heartbeat(self):
-        self._lock.refresh()
+        with self._exclusive_access:
+            if self.acquired:
+                self._lock.refresh()
+                return True
+        return False
 
 
 class Etcd3Driver(coordination.CoordinationDriver):

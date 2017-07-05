@@ -165,10 +165,12 @@ class MemcachedLock(locking.Lock):
             poked = self.coord.client.touch(self.name,
                                             expire=self.timeout,
                                             noreply=False)
-            if not poked:
-                LOG.warning("Unable to heartbeat by updating key '%s' with "
-                            "extended expiry of %s seconds", self.name,
-                            self.timeout)
+            if poked:
+                return True
+            LOG.warning("Unable to heartbeat by updating key '%s' with "
+                        "extended expiry of %s seconds", self.name,
+                        self.timeout)
+        return False
 
     @_translate_failures
     def get_owner(self):
