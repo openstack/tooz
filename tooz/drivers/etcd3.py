@@ -13,7 +13,6 @@
 # under the License.
 
 from __future__ import absolute_import
-import uuid
 
 import etcd3
 from etcd3 import exceptions as etcd3_exc
@@ -21,7 +20,6 @@ from oslo_utils import encodeutils
 import six
 
 import tooz
-from tooz import _retry
 from tooz import coordination
 from tooz import locking
 from tooz import utils
@@ -61,67 +59,38 @@ class Etcd3Lock(locking.Lock):
 
     def __init__(self, coord, name, timeout):
         super(Etcd3Lock, self).__init__(name)
-        self._timeout = timeout
         self._coord = coord
-        self._key = self.LOCK_PREFIX + name
-        self._uuid = uuid.uuid4().bytes
-        self._lease = self._coord.client.lease(self._timeout)
+        self._lock = coord.client.lock(name.decode(), timeout)
 
     @_translate_failures
     def acquire(self, blocking=True, shared=False):
         if shared:
             raise tooz.NotImplemented
 
-        @_retry.retry(stop_max_delay=blocking)
-        def _acquire():
-            # TODO(jd): save the created revision so we can check it later to
-            # make sure we still have the lock
-            success, _ = self._coord.client.transaction(
-                compare=[
-                    self._coord.client.transactions.create(self._key) == 0
-                ],
-                success=[
-                    self._coord.client.transactions.put(self._key, self._uuid,
-                                                        lease=self._lease)
-                ],
-                failure=[
-                    self._coord.client.transactions.get(self._key)
-                ],
-            )
-            if success is not True:
-                if blocking is False:
-                    return False
-                raise _retry.TryAgain
+        blocking, timeout = utils.convert_blocking(blocking)
+        if blocking is False:
+            timeout = 0
+
+        if self._lock.acquire(timeout):
             self._coord._acquired_locks.add(self)
             return True
 
-        return _acquire()
+        return False
+
+    @property
+    def acquired(self):
+        return self in self._coord._acquired_locks
 
     @_translate_failures
     def release(self):
-        success, _ = self._coord.client.transaction(
-            compare=[
-                self._coord.client.transactions.value(self._key) == self._uuid
-            ],
-            success=[self._coord.client.transactions.delete(self._key)],
-            failure=[],
-        )
-        if success:
-            self._coord._acquired_locks.remove(self)
+        if self.acquired and self._lock.release():
+            self._coord._acquired_locks.discard(self)
             return True
         return False
 
     @_translate_failures
-    def break_(self):
-        # FIXME(jd) when pyetcd3 returns the status
-        # https://github.com/kragniz/python-etcd3/pull/126
-        self._coord.client.delete(self._key)
-        self._coord._acquired_locks.discard(self)
-        return True
-
-    @_translate_failures
     def heartbeat(self):
-        self._lease.refresh()
+        self._lock.refresh()
 
 
 class Etcd3Driver(coordination.CoordinationDriver):
