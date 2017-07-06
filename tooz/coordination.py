@@ -59,7 +59,7 @@ class Characteristics(enum.Enum):
     """The driver has the following property:
 
     * Its operations are not based on the timeout of other clients, but on some
-    other more robust mechanisms.
+      other more robust mechanisms.
     """
 
     LINEARIZABLE = 'LINEARIZABLE'

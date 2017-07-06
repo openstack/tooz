@@ -13,3 +13,4 @@ use tooz in your application.
    leader_election
    lock
    hashring
+   partitioner
