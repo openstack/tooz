@@ -24,11 +24,31 @@ APIs
 Driver support
 --------------
 
-===============================================  ===========================================  ===========================================  =========================================  =====================================================  =============================================  ================================================  =============================================  ===========================================  =================================================
-:py:class:`~tooz.drivers.consul.ConsulDriver`    :py:class:`~tooz.drivers.etcd.EtcdDriver`    :py:class:`~tooz.drivers.file.FileDriver`    :py:class:`~tooz.drivers.ipc.IPCDriver`    :py:class:`~tooz.drivers.memcached.MemcachedDriver`    :py:class:`~tooz.drivers.mysql.MySQLDriver`    :py:class:`~tooz.drivers.pgsql.PostgresDriver`    :py:class:`~tooz.drivers.redis.RedisDriver`    :py:class:`~tooz.drivers.zake.ZakeDriver`    :py:class:`~tooz.drivers.zookeeper.KazooDriver`
-===============================================  ===========================================  ===========================================  =========================================  =====================================================  =============================================  ================================================  =============================================  ===========================================  =================================================
-No                                               No                                           Yes                                          No                                         Yes                                                    No                                             No                                                Yes                                            Yes                                          Yes
-===============================================  ===========================================  ===========================================  =========================================  =====================================================  =============================================  ================================================  =============================================  ===========================================  =================================================
+.. list-table::
+   :header-rows: 1
+
+   * - Driver
+     - Supported
+   * - :py:class:`~tooz.drivers.consul.ConsulDriver`
+     - No
+   * - :py:class:`~tooz.drivers.etcd.EtcdDriver`
+     - No
+   * - :py:class:`~tooz.drivers.file.FileDriver`
+     - Yes
+   * - :py:class:`~tooz.drivers.ipc.IPCDriver`
+     - No
+   * - :py:class:`~tooz.drivers.memcached.MemcachedDriver`
+     - Yes
+   * - :py:class:`~tooz.drivers.mysql.MySQLDriver`
+     - No
+   * - :py:class:`~tooz.drivers.pgsql.PostgresDriver`
+     - No
+   * - :py:class:`~tooz.drivers.redis.RedisDriver`
+     - Yes
+   * - :py:class:`~tooz.drivers.zake.ZakeDriver`
+     - Yes
+   * - :py:class:`~tooz.drivers.zookeeper.KazooDriver`
+     - Yes
 
 Leaders
 =======
@@ -44,11 +64,31 @@ APIs
 Driver support
 --------------
 
-===============================================  ===========================================  ===========================================  =========================================  =====================================================  =============================================  ================================================  =============================================  ===========================================  =================================================
-:py:class:`~tooz.drivers.consul.ConsulDriver`    :py:class:`~tooz.drivers.etcd.EtcdDriver`    :py:class:`~tooz.drivers.file.FileDriver`    :py:class:`~tooz.drivers.ipc.IPCDriver`    :py:class:`~tooz.drivers.memcached.MemcachedDriver`    :py:class:`~tooz.drivers.mysql.MySQLDriver`    :py:class:`~tooz.drivers.pgsql.PostgresDriver`    :py:class:`~tooz.drivers.redis.RedisDriver`    :py:class:`~tooz.drivers.zake.ZakeDriver`    :py:class:`~tooz.drivers.zookeeper.KazooDriver`
-===============================================  ===========================================  ===========================================  =========================================  =====================================================  =============================================  ================================================  =============================================  ===========================================  =================================================
-No                                               No                                           No                                           No                                         Yes                                                    No                                             No                                                Yes                                            Yes                                          Yes
-===============================================  ===========================================  ===========================================  =========================================  =====================================================  =============================================  ================================================  =============================================  ===========================================  =================================================
+.. list-table::
+   :header-rows: 1
+
+   * - Driver
+     - Supported
+   * - :py:class:`~tooz.drivers.consul.ConsulDriver`
+     - No
+   * - :py:class:`~tooz.drivers.etcd.EtcdDriver`
+     - No
+   * - :py:class:`~tooz.drivers.file.FileDriver`
+     - No
+   * - :py:class:`~tooz.drivers.ipc.IPCDriver`
+     - No
+   * - :py:class:`~tooz.drivers.memcached.MemcachedDriver`
+     - Yes
+   * - :py:class:`~tooz.drivers.mysql.MySQLDriver`
+     - No
+   * - :py:class:`~tooz.drivers.pgsql.PostgresDriver`
+     - No
+   * - :py:class:`~tooz.drivers.redis.RedisDriver`
+     - Yes
+   * - :py:class:`~tooz.drivers.zake.ZakeDriver`
+     - Yes
+   * - :py:class:`~tooz.drivers.zookeeper.KazooDriver`
+     - Yes
 
 Locking
 =======
@@ -61,8 +101,28 @@ APIs
 Driver support
 --------------
 
-===============================================  ===========================================  ===========================================  =========================================  =====================================================  =============================================  ================================================  =============================================  ===========================================  =================================================
-:py:class:`~tooz.drivers.consul.ConsulDriver`    :py:class:`~tooz.drivers.etcd.EtcdDriver`    :py:class:`~tooz.drivers.file.FileDriver`    :py:class:`~tooz.drivers.ipc.IPCDriver`    :py:class:`~tooz.drivers.memcached.MemcachedDriver`    :py:class:`~tooz.drivers.mysql.MySQLDriver`    :py:class:`~tooz.drivers.pgsql.PostgresDriver`    :py:class:`~tooz.drivers.redis.RedisDriver`    :py:class:`~tooz.drivers.zake.ZakeDriver`    :py:class:`~tooz.drivers.zookeeper.KazooDriver`
-===============================================  ===========================================  ===========================================  =========================================  =====================================================  =============================================  ================================================  =============================================  ===========================================  =================================================
-Yes                                              Yes                                          Yes                                          Yes                                        Yes                                                    Yes                                            Yes                                               Yes                                            Yes                                          Yes
-===============================================  ===========================================  ===========================================  =========================================  =====================================================  =============================================  ================================================  =============================================  ===========================================  =================================================
+.. list-table::
+   :header-rows: 1
+
+   * - Driver
+     - Supported
+   * - :py:class:`~tooz.drivers.consul.ConsulDriver`
+     - Yes
+   * - :py:class:`~tooz.drivers.etcd.EtcdDriver`
+     - Yes
+   * - :py:class:`~tooz.drivers.file.FileDriver`
+     - Yes
+   * - :py:class:`~tooz.drivers.ipc.IPCDriver`
+     - Yes
+   * - :py:class:`~tooz.drivers.memcached.MemcachedDriver`
+     - Yes
+   * - :py:class:`~tooz.drivers.mysql.MySQLDriver`
+     - Yes
+   * - :py:class:`~tooz.drivers.pgsql.PostgresDriver`
+     - Yes
+   * - :py:class:`~tooz.drivers.redis.RedisDriver`
+     - Yes
+   * - :py:class:`~tooz.drivers.zake.ZakeDriver`
+     - Yes
+   * - :py:class:`~tooz.drivers.zookeeper.KazooDriver`
+     - Yes
