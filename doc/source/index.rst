@@ -6,28 +6,14 @@ The Tooz project aims at centralizing the most common distributed primitives
 like group membership protocol, lock service and leader election by providing
 a coordination API helping developers to build distributed applications. [#f1]_
 
-Contents
-========
-
 .. toctree::
-   :glob:
+   :maxdepth: 2
 
-   install
-   drivers
-   compatibility
-   tutorial/index
-   developers
+   install/index
+   user/index
+   reference/index
 
-Release Notes
-=============
-
-.. toctree::
-   :maxdepth: 1
-
-   history
-
-Indices and tables
-==================
+.. rubric:: Indices and tables
 
 * :ref:`genindex`
 * :ref:`modindex`

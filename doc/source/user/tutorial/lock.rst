@@ -5,7 +5,7 @@
 Tooz provides distributed locks. A lock is identified by a name, and a lock can
 only be acquired by one coordinator at a time.
 
-.. literalinclude:: ../../../examples/lock.py
+.. literalinclude:: ../../../../examples/lock.py
    :language: python
 
 The method :meth:`tooz.coordination.CoordinationDriver.get_lock` allows

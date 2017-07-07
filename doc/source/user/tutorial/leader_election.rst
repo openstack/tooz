@@ -7,7 +7,7 @@ in a group. Only members that are running for the election can be elected.
 As soon as one of leader steps down or dies, a new member that was running
 for the election will be elected.
 
-.. literalinclude:: ../../../examples/leader_election.py
+.. literalinclude:: ../../../../examples/leader_election.py
    :language: python
 
 The method

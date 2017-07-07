@@ -1,6 +1,6 @@
-==========
-Developers
-==========
+================
+Module Reference
+================
 
 Interfaces
 ----------

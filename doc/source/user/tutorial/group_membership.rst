@@ -10,7 +10,7 @@ group membership. Once a group is created, any coordinator can join the
 group and become a member of it. Any coordinator can be notified when a
 members joins or leaves the group.
 
-.. literalinclude:: ../../../examples/group_membership.py
+.. literalinclude:: ../../../../examples/group_membership.py
    :language: python
 
 Note that all the operation are asynchronous. That means you cannot be sure
@@ -29,7 +29,7 @@ changes. That's useful to run callback functions whenever something happens
 in that group.
 
 
-.. literalinclude:: ../../../examples/group_membership_watch.py
+.. literalinclude:: ../../../../examples/group_membership_watch.py
    :language: python
 
 Using :meth:`tooz.coordination.CoordinationDriver.watch_join_group` and

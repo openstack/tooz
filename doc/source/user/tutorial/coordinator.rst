@@ -17,7 +17,7 @@ If a driver does not support a feature, it will raise a
 This example program loads a basic coordinator using the ZooKeeper based
 driver.
 
-.. literalinclude:: ../../../examples/coordinator.py
+.. literalinclude:: ../../../../examples/coordinator.py
    :language: python
 
 The second argument passed to the coordinator must be a unique identifier
@@ -33,7 +33,7 @@ other program participating in the coordination. Unless you want to call it
 manually, you can use tooz builtin heartbeat manager by passing the
 `start_heart` argument.
 
-.. literalinclude:: ../../../examples/coordinator_heartbeat.py
+.. literalinclude:: ../../../../examples/coordinator_heartbeat.py
    :language: python
 
 heartbeat at different moment or intervals.
