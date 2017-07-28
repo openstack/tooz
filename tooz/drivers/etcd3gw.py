@@ -68,7 +68,6 @@ class Etcd3Lock(locking.Lock):
         self._key = self.LOCK_PREFIX + name
         self._key_b64 = base64.b64encode(self._key).decode("ascii")
         self._uuid = base64.b64encode(uuid.uuid4().bytes).decode("ascii")
-        self._lease = self._coord.client.lease(self._timeout)
         self._exclusive_access = threading.Lock()
 
     @_translate_failures
@@ -80,6 +79,7 @@ class Etcd3Lock(locking.Lock):
         def _acquire():
             # TODO(jd): save the created revision so we can check it later to
             # make sure we still have the lock
+            self._lease = self._coord.client.lease(self._timeout)
             txn = {
                 'compare': [{
                     'key': self._key_b64,
