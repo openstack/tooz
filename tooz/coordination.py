@@ -636,7 +636,7 @@ class CoordAsyncResult(object):
     """
 
     @abc.abstractmethod
-    def get(self, timeout=10):
+    def get(self, timeout=None):
         """Retrieve the result of the corresponding asynchronous call.
 
         :param timeout: block until the timeout expire.
