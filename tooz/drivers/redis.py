@@ -102,7 +102,8 @@ class RedisLock(locking.Lock):
                 except exceptions.LockError as e:
                     LOG.error("Unable to release lock '%r': %s", self, e)
                     return False
-                self._coord._acquired_locks.discard(self)
+                finally:
+                    self._coord._acquired_locks.discard(self)
                 return True
 
     def heartbeat(self):
