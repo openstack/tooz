@@ -540,7 +540,7 @@ class ZooAsyncResult(coordination.CoordAsyncResult):
         self._handler = handler
         self._kwargs = kwargs
 
-    def get(self, timeout=10):
+    def get(self, timeout=None):
         return self._handler(self._kazoo_async_result, timeout, **self._kwargs)
 
     def done(self):
