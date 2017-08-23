@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    The etcd3 driver now supports the group membership API.
