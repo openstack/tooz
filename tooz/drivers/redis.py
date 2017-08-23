@@ -99,7 +99,8 @@ class RedisLock(locking.Lock):
             with _translate_failures():
                 try:
                     self._lock.release()
-                except exceptions.LockError:
+                except exceptions.LockError as e:
+                    LOG.error("Unable to release lock '%r': %s", self, e)
                     return False
                 self._coord._acquired_locks.discard(self)
                 return True
