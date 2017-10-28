@@ -72,8 +72,8 @@
 - job:
     name: tooz-tox-py27-consul
     parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py27-consul/run
-    post-run: playbooks/legacy/tooz-tox-py27-consul/post
+    run: playbooks/legacy/tooz-tox-py27-consul/run.yaml
+    post-run: playbooks/legacy/tooz-tox-py27-consul/post.yaml
     timeout: 2400
     required-projects:
       - openstack/requirements
@@ -81,8 +81,8 @@
 - job:
     name: tooz-tox-py27-etcd
     parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py27-etcd/run
-    post-run: playbooks/legacy/tooz-tox-py27-etcd/post
+    run: playbooks/legacy/tooz-tox-py27-etcd/run.yaml
+    post-run: playbooks/legacy/tooz-tox-py27-etcd/post.yaml
     timeout: 2400
     required-projects:
       - openstack/requirements
@@ -90,8 +90,8 @@
 - job:
     name: tooz-tox-py27-etcd3
     parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py27-etcd3/run
-    post-run: playbooks/legacy/tooz-tox-py27-etcd3/post
+    run: playbooks/legacy/tooz-tox-py27-etcd3/run.yaml
+    post-run: playbooks/legacy/tooz-tox-py27-etcd3/post.yaml
     timeout: 2400
     required-projects:
       - openstack/requirements
@@ -99,8 +99,8 @@
 - job:
     name: tooz-tox-py27-etcd3gw
     parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py27-etcd3gw/run
-    post-run: playbooks/legacy/tooz-tox-py27-etcd3gw/post
+    run: playbooks/legacy/tooz-tox-py27-etcd3gw/run.yaml
+    post-run: playbooks/legacy/tooz-tox-py27-etcd3gw/post.yaml
     timeout: 2400
     required-projects:
       - openstack/requirements
@@ -108,8 +108,8 @@
 - job:
     name: tooz-tox-py27-memcached
     parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py27-memcached/run
-    post-run: playbooks/legacy/tooz-tox-py27-memcached/post
+    run: playbooks/legacy/tooz-tox-py27-memcached/run.yaml
+    post-run: playbooks/legacy/tooz-tox-py27-memcached/post.yaml
     timeout: 2400
     required-projects:
       - openstack/requirements
@@ -117,8 +117,8 @@
 - job:
     name: tooz-tox-py27-mysql
     parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py27-mysql/run
-    post-run: playbooks/legacy/tooz-tox-py27-mysql/post
+    run: playbooks/legacy/tooz-tox-py27-mysql/run.yaml
+    post-run: playbooks/legacy/tooz-tox-py27-mysql/post.yaml
     timeout: 2400
     required-projects:
       - openstack/requirements
@@ -126,8 +126,8 @@
 - job:
     name: tooz-tox-py27-postgresql
     parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py27-postgresql/run
-    post-run: playbooks/legacy/tooz-tox-py27-postgresql/post
+    run: playbooks/legacy/tooz-tox-py27-postgresql/run.yaml
+    post-run: playbooks/legacy/tooz-tox-py27-postgresql/post.yaml
     timeout: 2400
     required-projects:
       - openstack/requirements
@@ -135,8 +135,8 @@
 - job:
     name: tooz-tox-py27-redis
     parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py27-redis/run
-    post-run: playbooks/legacy/tooz-tox-py27-redis/post
+    run: playbooks/legacy/tooz-tox-py27-redis/run.yaml
+    post-run: playbooks/legacy/tooz-tox-py27-redis/post.yaml
     timeout: 2400
     required-projects:
       - openstack/requirements
@@ -144,8 +144,8 @@
 - job:
     name: tooz-tox-py27-sentinel
     parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py27-sentinel/run
-    post-run: playbooks/legacy/tooz-tox-py27-sentinel/post
+    run: playbooks/legacy/tooz-tox-py27-sentinel/run.yaml
+    post-run: playbooks/legacy/tooz-tox-py27-sentinel/post.yaml
     timeout: 2400
     required-projects:
       - openstack/requirements
@@ -153,8 +153,8 @@
 - job:
     name: tooz-tox-py27-zookeeper
     parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py27-zookeeper/run
-    post-run: playbooks/legacy/tooz-tox-py27-zookeeper/post
+    run: playbooks/legacy/tooz-tox-py27-zookeeper/run.yaml
+    post-run: playbooks/legacy/tooz-tox-py27-zookeeper/post.yaml
     timeout: 2400
     required-projects:
       - openstack/requirements
@@ -162,8 +162,8 @@
 - job:
     name: tooz-tox-py35-consul
     parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py35-consul/run
-    post-run: playbooks/legacy/tooz-tox-py35-consul/post
+    run: playbooks/legacy/tooz-tox-py35-consul/run.yaml
+    post-run: playbooks/legacy/tooz-tox-py35-consul/post.yaml
     timeout: 2400
     required-projects:
       - openstack/requirements
@@ -171,8 +171,8 @@
 - job:
     name: tooz-tox-py35-etcd
     parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py35-etcd/run
-    post-run: playbooks/legacy/tooz-tox-py35-etcd/post
+    run: playbooks/legacy/tooz-tox-py35-etcd/run.yaml
+    post-run: playbooks/legacy/tooz-tox-py35-etcd/post.yaml
     timeout: 2400
     required-projects:
       - openstack/requirements
@@ -180,8 +180,8 @@
 - job:
     name: tooz-tox-py35-etcd3
     parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py35-etcd3/run
-    post-run: playbooks/legacy/tooz-tox-py35-etcd3/post
+    run: playbooks/legacy/tooz-tox-py35-etcd3/run.yaml
+    post-run: playbooks/legacy/tooz-tox-py35-etcd3/post.yaml
     timeout: 2400
     required-projects:
       - openstack/requirements
@@ -189,8 +189,8 @@
 - job:
     name: tooz-tox-py35-etcd3gw
     parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py35-etcd3gw/run
-    post-run: playbooks/legacy/tooz-tox-py35-etcd3gw/post
+    run: playbooks/legacy/tooz-tox-py35-etcd3gw/run.yaml
+    post-run: playbooks/legacy/tooz-tox-py35-etcd3gw/post.yaml
     timeout: 2400
     required-projects:
       - openstack/requirements
@@ -198,8 +198,8 @@
 - job:
     name: tooz-tox-py35-memcached
     parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py35-memcached/run
-    post-run: playbooks/legacy/tooz-tox-py35-memcached/post
+    run: playbooks/legacy/tooz-tox-py35-memcached/run.yaml
+    post-run: playbooks/legacy/tooz-tox-py35-memcached/post.yaml
     timeout: 2400
     required-projects:
       - openstack/requirements
@@ -207,8 +207,8 @@
 - job:
     name: tooz-tox-py35-mysql
     parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py35-mysql/run
-    post-run: playbooks/legacy/tooz-tox-py35-mysql/post
+    run: playbooks/legacy/tooz-tox-py35-mysql/run.yaml
+    post-run: playbooks/legacy/tooz-tox-py35-mysql/post.yaml
     timeout: 2400
     required-projects:
       - openstack/requirements
@@ -216,8 +216,8 @@
 - job:
     name: tooz-tox-py35-postgresql
     parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py35-postgresql/run
-    post-run: playbooks/legacy/tooz-tox-py35-postgresql/post
+    run: playbooks/legacy/tooz-tox-py35-postgresql/run.yaml
+    post-run: playbooks/legacy/tooz-tox-py35-postgresql/post.yaml
     timeout: 2400
     required-projects:
       - openstack/requirements
@@ -225,8 +225,8 @@
 - job:
     name: tooz-tox-py35-redis
     parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py35-redis/run
-    post-run: playbooks/legacy/tooz-tox-py35-redis/post
+    run: playbooks/legacy/tooz-tox-py35-redis/run.yaml
+    post-run: playbooks/legacy/tooz-tox-py35-redis/post.yaml
     timeout: 2400
     required-projects:
       - openstack/requirements
@@ -234,8 +234,8 @@
 - job:
     name: tooz-tox-py35-sentinel
     parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py35-sentinel/run
-    post-run: playbooks/legacy/tooz-tox-py35-sentinel/post
+    run: playbooks/legacy/tooz-tox-py35-sentinel/run.yaml
+    post-run: playbooks/legacy/tooz-tox-py35-sentinel/post.yaml
     timeout: 2400
     required-projects:
       - openstack/requirements
@@ -243,8 +243,8 @@
 - job:
     name: tooz-tox-py35-zookeeper
     parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py35-zookeeper/run
-    post-run: playbooks/legacy/tooz-tox-py35-zookeeper/post
+    run: playbooks/legacy/tooz-tox-py35-zookeeper/run.yaml
+    post-run: playbooks/legacy/tooz-tox-py35-zookeeper/post.yaml
     timeout: 2400
     required-projects:
       - openstack/requirements
