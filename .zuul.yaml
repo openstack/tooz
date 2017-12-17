@@ -1,0 +1,229 @@
+- project:
+    check:
+      jobs:
+        - tooz-tox-py27-etcd
+        - tooz-tox-py35-etcd:
+            branches: ^(?!stable/newton).*$
+        - tooz-tox-py27-etcd3:
+            branches: ^(?!stable/(newton|ocata)).*$
+        - tooz-tox-py35-etcd3:
+            branches: ^(?!stable/(newton|ocata)).*$
+        - tooz-tox-py27-etcd3gw:
+            branches: ^(?!stable/(newton|ocata)).*$
+        - tooz-tox-py35-etcd3gw:
+            branches: ^(?!stable/(newton|ocata)).*$
+        - tooz-tox-py27-zookeeper
+        - tooz-tox-py35-zookeeper:
+            branches: ^(?!stable/newton).*$
+        - tooz-tox-py27-redis
+        - tooz-tox-py35-redis:
+            branches: ^(?!stable/newton).*$
+        - tooz-tox-py27-sentinel
+        - tooz-tox-py35-sentinel:
+            branches: ^(?!stable/newton).*$
+        - tooz-tox-py27-memcached
+        - tooz-tox-py35-memcached:
+            branches: ^(?!stable/newton).*$
+        - tooz-tox-py27-postgresql
+        - tooz-tox-py35-postgresql:
+            branches: ^(?!stable/newton).*$
+        - tooz-tox-py27-mysql
+        - tooz-tox-py35-mysql:
+            branches: ^(?!stable/newton).*$
+        - tooz-tox-py27-consul
+        - tooz-tox-py35-consul:
+            branches: ^(?!stable/newton).*$
+    gate:
+      jobs:
+        - tooz-tox-py27-etcd
+        - tooz-tox-py35-etcd:
+            branches: ^(?!stable/newton).*$
+        - tooz-tox-py27-etcd3:
+            branches: ^(?!stable/(newton|ocata)).*$
+        - tooz-tox-py35-etcd3:
+            branches: ^(?!stable/(newton|ocata)).*$
+        - tooz-tox-py27-etcd3gw:
+            branches: ^(?!stable/(newton|ocata)).*$
+        - tooz-tox-py35-etcd3gw:
+            branches: ^(?!stable/(newton|ocata)).*$
+        - tooz-tox-py27-zookeeper
+        - tooz-tox-py35-zookeeper:
+            branches: ^(?!stable/newton).*$
+        - tooz-tox-py27-redis
+        - tooz-tox-py35-redis:
+            branches: ^(?!stable/newton).*$
+        - tooz-tox-py27-sentinel
+        - tooz-tox-py35-sentinel:
+            branches: ^(?!stable/newton).*$
+        - tooz-tox-py27-memcached
+        - tooz-tox-py35-memcached:
+            branches: ^(?!stable/newton).*$
+        - tooz-tox-py27-postgresql
+        - tooz-tox-py35-postgresql:
+            branches: ^(?!stable/newton).*$
+        - tooz-tox-py27-mysql
+        - tooz-tox-py35-mysql:
+            branches: ^(?!stable/newton).*$
+        - tooz-tox-py27-consul
+        - tooz-tox-py35-consul:
+            branches: ^(?!stable/newton).*$
+
+- job:
+    name: tooz-tox-py27-consul
+    parent: openstack-tox
+    description: |
+      Run tests using ``py27-consul`` environment.
+    vars:
+      tox_envlist: mysql-python
+
+- job:
+    name: tooz-tox-py27-etcd
+    parent: openstack-tox
+    description: |
+      Run tests using ``py27-etcd`` environment.
+    vars:
+      tox_envlist: py27-etcd
+
+- job:
+    name: tooz-tox-py27-etcd3
+    parent: openstack-tox
+    description: |
+      Run tests using ``py27-etcd3`` environment.
+    vars:
+      tox_envlist: py27-etcd3
+
+- job:
+    name: tooz-tox-py27-etcd3gw
+    parent: openstack-tox
+    description: |
+      Run tests using ``py27-etcd3gw`` environment.
+    vars:
+      tox_envlist: py27-etcd3gw
+
+- job:
+    name: tooz-tox-py27-memcached
+    parent: openstack-tox
+    description: |
+      Run tests using ``py27-memcached`` environment.
+    vars:
+      tox_envlist: py27-memcached
+
+- job:
+    name: tooz-tox-py27-mysql
+    parent: openstack-tox
+    description: |
+      Run tests using ``py27-mysql`` environment.
+    vars:
+      tox_envlist: py27-mysql
+
+- job:
+    name: tooz-tox-py27-postgresql
+    parent: openstack-tox
+    description: |
+      Run tests using ``py27-postgresql`` environment.
+    vars:
+      tox_envlist: py27-postgresql
+
+- job:
+    name: tooz-tox-py27-redis
+    parent: openstack-tox
+    description: |
+      Run tests using ``py27-redis`` environment.
+    vars:
+      tox_envlist: py27-redis
+
+- job:
+    name: tooz-tox-py27-sentinel
+    parent: openstack-tox
+    description: |
+      Run tests using ``py27-sentinel`` environment.
+    vars:
+      tox_envlist: py27-sentinel
+
+- job:
+    name: tooz-tox-py27-zookeeper
+    parent: openstack-tox
+    description: |
+      Run tests using ``py27-zookeeper`` environment.
+    vars:
+      tox_envlist: py27-zookeeper
+
+- job:
+    name: tooz-tox-py35-consul
+    parent: openstack-tox
+    description: |
+      Run tests using ``py35-consul`` environment.
+    vars:
+      tox_envlist: py35-consul
+
+- job:
+    name: tooz-tox-py35-etcd
+    parent: openstack-tox
+    description: |
+      Run tests using ``py35-etcd`` environment.
+    vars:
+      tox_envlist: py35-etcd
+
+- job:
+    name: tooz-tox-py35-etcd3
+    parent: openstack-tox
+    description: |
+      Run tests using ``py35-etcd3`` environment.
+    vars:
+      tox_envlist: py35-etcd3
+
+- job:
+    name: tooz-tox-py35-etcd3gw
+    parent: openstack-tox
+    description: |
+      Run tests using ``py35-etcd3gw`` environment.
+    vars:
+      tox_envlist: py35-etcd3gw
+
+- job:
+    name: tooz-tox-py35-memcached
+    parent: openstack-tox
+    description: |
+      Run tests using ``py35-memcached`` environment.
+    vars:
+      tox_envlist: py35-memcached
+
+- job:
+    name: tooz-tox-py35-mysql
+    parent: openstack-tox
+    description: |
+      Run tests using ``py35-mysql`` environment.
+    vars:
+      tox_envlist: py35-mysql
+
+- job:
+    name: tooz-tox-py35-postgresql
+    parent: openstack-tox
+    description: |
+      Run tests using ``py35-postgresql`` environment.
+    vars:
+      tox_envlist: py35-postgresql
+
+- job:
+    name: tooz-tox-py35-redis
+    parent: openstack-tox
+    description: |
+      Run tests using ``py35-redis`` environment.
+    vars:
+      tox_envlist: py35-redis
+
+- job:
+    name: tooz-tox-py35-sentinel
+    parent: openstack-tox
+    description: |
+      Run tests using ``py35-sentinel`` environment.
+    vars:
+      tox_envlist: py35-sentinel
+
+- job:
+    name: tooz-tox-py35-zookeeper
+    parent: openstack-tox
+    description: |
+      Run tests using ``py35-zookeeper`` environment.
+    vars:
+      tox_envlist: py35-zookeeper
