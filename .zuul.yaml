@@ -71,180 +71,160 @@
 
 - job:
     name: tooz-tox-py27-consul
-    parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py27-consul/run.yaml
-    post-run: playbooks/legacy/tooz-tox-py27-consul/post.yaml
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    description: |
+      Run tests using ``py27-consul`` environment.
+    vars:
+      tox_envlist: mysql-python
 
 - job:
     name: tooz-tox-py27-etcd
-    parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py27-etcd/run.yaml
-    post-run: playbooks/legacy/tooz-tox-py27-etcd/post.yaml
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    description: |
+      Run tests using ``py27-etcd`` environment.
+    vars:
+      tox_envlist: py27-etcd
 
 - job:
     name: tooz-tox-py27-etcd3
-    parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py27-etcd3/run.yaml
-    post-run: playbooks/legacy/tooz-tox-py27-etcd3/post.yaml
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    description: |
+      Run tests using ``py27-etcd3`` environment.
+    vars:
+      tox_envlist: py27-etcd3
 
 - job:
     name: tooz-tox-py27-etcd3gw
-    parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py27-etcd3gw/run.yaml
-    post-run: playbooks/legacy/tooz-tox-py27-etcd3gw/post.yaml
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    description: |
+      Run tests using ``py27-etcd3gw`` environment.
+    vars:
+      tox_envlist: py27-etcd3gw
 
 - job:
     name: tooz-tox-py27-memcached
-    parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py27-memcached/run.yaml
-    post-run: playbooks/legacy/tooz-tox-py27-memcached/post.yaml
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    description: |
+      Run tests using ``py27-memcached`` environment.
+    vars:
+      tox_envlist: py27-memcached
 
 - job:
     name: tooz-tox-py27-mysql
-    parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py27-mysql/run.yaml
-    post-run: playbooks/legacy/tooz-tox-py27-mysql/post.yaml
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    description: |
+      Run tests using ``py27-mysql`` environment.
+    vars:
+      tox_envlist: py27-mysql
 
 - job:
     name: tooz-tox-py27-postgresql
-    parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py27-postgresql/run.yaml
-    post-run: playbooks/legacy/tooz-tox-py27-postgresql/post.yaml
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    description: |
+      Run tests using ``py27-postgresql`` environment.
+    vars:
+      tox_envlist: py27-postgresql
 
 - job:
     name: tooz-tox-py27-redis
-    parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py27-redis/run.yaml
-    post-run: playbooks/legacy/tooz-tox-py27-redis/post.yaml
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    description: |
+      Run tests using ``py27-redis`` environment.
+    vars:
+      tox_envlist: py27-redis
 
 - job:
     name: tooz-tox-py27-sentinel
-    parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py27-sentinel/run.yaml
-    post-run: playbooks/legacy/tooz-tox-py27-sentinel/post.yaml
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    description: |
+      Run tests using ``py27-sentinel`` environment.
+    vars:
+      tox_envlist: py27-sentinel
 
 - job:
     name: tooz-tox-py27-zookeeper
-    parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py27-zookeeper/run.yaml
-    post-run: playbooks/legacy/tooz-tox-py27-zookeeper/post.yaml
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    description: |
+      Run tests using ``py27-zookeeper`` environment.
+    vars:
+      tox_envlist: py27-zookeeper
 
 - job:
     name: tooz-tox-py35-consul
-    parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py35-consul/run.yaml
-    post-run: playbooks/legacy/tooz-tox-py35-consul/post.yaml
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    description: |
+      Run tests using ``py35-consul`` environment.
+    vars:
+      tox_envlist: py35-consul
 
 - job:
     name: tooz-tox-py35-etcd
-    parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py35-etcd/run.yaml
-    post-run: playbooks/legacy/tooz-tox-py35-etcd/post.yaml
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    description: |
+      Run tests using ``py35-etcd`` environment.
+    vars:
+      tox_envlist: py35-etcd
 
 - job:
     name: tooz-tox-py35-etcd3
-    parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py35-etcd3/run.yaml
-    post-run: playbooks/legacy/tooz-tox-py35-etcd3/post.yaml
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    description: |
+      Run tests using ``py35-etcd3`` environment.
+    vars:
+      tox_envlist: py35-etcd3
 
 - job:
     name: tooz-tox-py35-etcd3gw
-    parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py35-etcd3gw/run.yaml
-    post-run: playbooks/legacy/tooz-tox-py35-etcd3gw/post.yaml
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    description: |
+      Run tests using ``py35-etcd3gw`` environment.
+    vars:
+      tox_envlist: py35-etcd3gw
 
 - job:
     name: tooz-tox-py35-memcached
-    parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py35-memcached/run.yaml
-    post-run: playbooks/legacy/tooz-tox-py35-memcached/post.yaml
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    description: |
+      Run tests using ``py35-memcached`` environment.
+    vars:
+      tox_envlist: py35-memcached
 
 - job:
     name: tooz-tox-py35-mysql
-    parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py35-mysql/run.yaml
-    post-run: playbooks/legacy/tooz-tox-py35-mysql/post.yaml
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    description: |
+      Run tests using ``py35-mysql`` environment.
+    vars:
+      tox_envlist: py35-mysql
 
 - job:
     name: tooz-tox-py35-postgresql
-    parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py35-postgresql/run.yaml
-    post-run: playbooks/legacy/tooz-tox-py35-postgresql/post.yaml
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    description: |
+      Run tests using ``py35-postgresql`` environment.
+    vars:
+      tox_envlist: py35-postgresql
 
 - job:
     name: tooz-tox-py35-redis
-    parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py35-redis/run.yaml
-    post-run: playbooks/legacy/tooz-tox-py35-redis/post.yaml
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    description: |
+      Run tests using ``py35-redis`` environment.
+    vars:
+      tox_envlist: py35-redis
 
 - job:
     name: tooz-tox-py35-sentinel
-    parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py35-sentinel/run.yaml
-    post-run: playbooks/legacy/tooz-tox-py35-sentinel/post.yaml
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    description: |
+      Run tests using ``py35-sentinel`` environment.
+    vars:
+      tox_envlist: py35-sentinel
 
 - job:
     name: tooz-tox-py35-zookeeper
-    parent: legacy-base
-    run: playbooks/legacy/tooz-tox-py35-zookeeper/run.yaml
-    post-run: playbooks/legacy/tooz-tox-py35-zookeeper/post.yaml
-    timeout: 2400
-    required-projects:
-      - openstack/requirements
+    parent: openstack-tox
+    description: |
+      Run tests using ``py35-zookeeper`` environment.
+    vars:
+      tox_envlist: py35-zookeeper
