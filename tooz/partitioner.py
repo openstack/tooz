@@ -53,7 +53,7 @@ class Partitioner(object):
     def _hash_object(obj):
         if hasattr(obj, "__tooz_hash__"):
             return obj.__tooz_hash__()
-        return str(hash(obj)).encode('ascii')
+        return str(obj).encode()
 
     def members_for_object(self, obj, ignore_members=None, replicas=1):
         """Return the members responsible for an object.
