@@ -1,5 +1,4 @@
 - project:
-    name: openstack/tooz
     check:
       jobs:
         - tooz-tox-py27-etcd
