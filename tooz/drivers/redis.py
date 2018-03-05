@@ -171,7 +171,7 @@ class RedisDriver(coordination.CoordinationDriverCachedRunWatchers,
     - When used for locks, run in AOF mode and think carefully about how
       your redis deployment handles losing a server (the clustering support
       is supposed to aid in losing servers, but it is also of unknown
-      reliablity and is relatively new, so use at your own risk).
+      reliability and is relatively new, so use at your own risk).
 
     .. _redis: http://redis.io/
     .. _msgpack: http://msgpack.org/
