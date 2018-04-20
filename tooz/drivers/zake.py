@@ -28,7 +28,7 @@ class ZakeDriver(zookeeper.KazooDriver):
     this manner) for testing and integration (where real `zookeeper`_ servers
     are typically not available).
 
-    .. _zake: https://pypi.python.org/pypi/zake
+    .. _zake: https://pypi.org/project/zake
     .. _zookeeper: http://zookeeper.apache.org/
     """
 

@@ -2,11 +2,11 @@ Tooz
 ====
 
 .. image:: https://img.shields.io/pypi/v/tooz.svg
-    :target: https://pypi.python.org/pypi/tooz/
+    :target: https://pypi.org/project/tooz/
     :alt: Latest Version
 
 .. image:: https://img.shields.io/pypi/dm/tooz.svg
-    :target: https://pypi.python.org/pypi/tooz/
+    :target: https://pypi.org/project/tooz/
     :alt: Downloads
 
 The Tooz project aims at centralizing the most common distributed primitives
