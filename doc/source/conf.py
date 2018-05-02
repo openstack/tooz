@@ -64,7 +64,7 @@ copyright = u'%s, OpenStack Foundation' % datetime.date.today().year
 # The short X.Y version.
 version = subprocess.Popen(['sh', '-c', 'cd ../..; python setup.py --version'],
                            stdout=subprocess.PIPE).stdout.read()
-version = version.strip()
+version = str(version).strip()
 # The full version, including alpha/beta/rc tags.
 release = version
 
