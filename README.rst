@@ -17,6 +17,7 @@ a coordination API helping developers to build distributed applications.
 * Documentation: https://docs.openstack.org/tooz/latest/
 * Source: https://git.openstack.org/cgit/openstack/tooz
 * Bugs: https://bugs.launchpad.net/python-tooz/
+* Release notes: https://docs.openstack.org/releasenotes/tooz
 
 Join us
 -------
