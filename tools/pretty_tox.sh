@@ -10,7 +10,7 @@ TESTRARGS=$1
 #
 # this work around exists until that is addressed
 if [[ "$TESTARGS" =~ "until-failure" ]]; then
-    python setup.py testr --slowest --testr-args="$TESTRARGS"
+    stestr run --slowest "$TESTRARGS"
 else
-    python setup.py testr --slowest --testr-args="--subunit $TESTRARGS" | subunit-trace -f
+    stestr run --slowest --subunit "$TESTRARGS" | subunit-trace -f
 fi
