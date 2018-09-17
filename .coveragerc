@@ -1,7 +1,7 @@
 [run]
 branch = True
 source = tooz
-omit = tooz/tests/*,tooz/openstack/*
+omit = tooz/tests/*
 
 [report]
 ignore_errors = True
