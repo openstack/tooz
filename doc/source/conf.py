@@ -260,4 +260,8 @@ texinfo_documents = [
 # extlinks = {
 # }
 
-autodoc_default_flags = ['members', 'special-members', 'show-inheritance']
+autodoc_default_options = {
+    'members': None,
+    'special-members': None,
+    'show_inheritance': None,
+    }
