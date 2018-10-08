@@ -160,10 +160,10 @@ class Etcd3Driver(coordination.CoordinationDriverCachedRunWatchers,
     GROUP_PREFIX = b"tooz/groups/"
 
     def _encode_group_id(self, group_id):
-        return self.GROUP_PREFIX + group_id + b"/"
+        return self.GROUP_PREFIX + utils.to_binary(group_id) + b"/"
 
     def _encode_group_member_id(self, group_id, member_id):
-        return self._encode_group_id(group_id) + member_id
+        return self._encode_group_id(group_id) + utils.to_binary(member_id)
 
     def create_group(self, group_id):
         encoded_group = self._encode_group_id(group_id)

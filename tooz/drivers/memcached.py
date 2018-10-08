@@ -285,13 +285,13 @@ class MemcachedDriver(coordination.CoordinationDriverCachedRunWatchers,
         self.client.close()
 
     def _encode_group_id(self, group_id):
-        return self.GROUP_PREFIX + group_id
+        return self.GROUP_PREFIX + utils.to_binary(group_id)
 
     def _encode_member_id(self, member_id):
-        return self.MEMBER_PREFIX + member_id
+        return self.MEMBER_PREFIX + utils.to_binary(member_id)
 
     def _encode_group_leader(self, group_id):
-        return self.GROUP_LEADER_PREFIX + group_id
+        return self.GROUP_LEADER_PREFIX + utils.to_binary(group_id)
 
     @_retry.retry()
     def _add_group_to_group_list(self, group_id):
