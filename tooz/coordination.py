@@ -23,11 +23,11 @@ import logging
 import threading
 
 from oslo_utils import encodeutils
-from oslo_utils import excutils
 from oslo_utils import netutils
 from oslo_utils import timeutils
 import six
 from stevedore import driver
+import tenacity
 
 import tooz
 from tooz import _retry
@@ -179,12 +179,15 @@ class Heart(object):
         return not (self._runner is None
                     or not self._runner.is_alive())
 
-    @excutils.forever_retry_uncaught_exceptions
     def _beat_forever_until_stopped(self):
         """Inner beating loop."""
+        retry = tenacity.Retrying(
+            wait=tenacity.wait_fixed(1),
+            before_sleep=tenacity.before_sleep_log(LOG, logging.warning),
+        )
         while not self._dead.is_set():
             with timeutils.StopWatch() as w:
-                wait_until_next_beat = self._driver.heartbeat()
+                wait_until_next_beat = retry(self._driver.heartbeat)
             ran_for = w.elapsed()
             has_to_sleep_for = wait_until_next_beat - ran_for
             if has_to_sleep_for < 0:
