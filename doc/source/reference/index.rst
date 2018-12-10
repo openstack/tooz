@@ -20,6 +20,18 @@ Etcd
 .. autoclass:: tooz.drivers.etcd.EtcdDriver
    :members:
 
+Etcd3
+~~~~~
+
+.. autoclass:: tooz.drivers.etcd3.Etcd3Driver
+   :members:
+
+Etcd3gw
+~~~~~~~
+
+.. autoclass:: tooz.drivers.etcd3gw.Etcd3Driver
+   :members:
+
 File
 ~~~~
 

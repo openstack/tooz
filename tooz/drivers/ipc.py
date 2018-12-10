@@ -141,6 +141,10 @@ class IPCDriver(coordination.CoordinationDriverWithExecutor):
     semantics and required API(s). It **is** missing some functionality but
     in the future these not implemented API(s) will be filled in.
 
+    The IPC driver connection URI should look like::
+
+      ipc://
+
     General recommendations/usage considerations:
 
     - It is **not** distributed (or recommended to be used in those

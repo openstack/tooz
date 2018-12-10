@@ -88,6 +88,10 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
     will be extracted from the coordinator url (or any provided options),
     so that a specific coordinator can be created that will work for you.
 
+    The Zookeeper coordinator url should look like::
+
+      zookeeper://[USERNAME:PASSWORD@][HOST[:PORT]][?OPTION1=VALUE1[&OPTION2=VALUE2[&...]]]
+
     Currently the following options will be proxied to the contained client:
 
     ================  ===============================  ====================

@@ -138,6 +138,14 @@ class RedisDriver(coordination.CoordinationDriverCachedRunWatchers,
       some notion of HA (values *can* be lost when a failover transition
       occurs).
 
+    The Redis driver connection URI should look like::
+
+      redis://[:PASSWORD@]HOST:PORT[?OPTION=VALUE[&OPTION2=VALUE2[&...]]]
+
+    For a list of options recognized by this driver, see the documentation
+    for the member CLIENT_ARGS, and to determine the expected types of those
+    options see CLIENT_BOOL_ARGS, CLIENT_INT_ARGS, and CLIENT_LIST_ARGS.
+
     To use a `sentinel`_ the connection URI must point to the sentinel server.
     At connection time the sentinel will be asked for the current IP and port
     of the master and then connect there. The connection URI for sentinel

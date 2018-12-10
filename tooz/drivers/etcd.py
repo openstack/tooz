@@ -203,6 +203,21 @@ class EtcdDriver(coordination.CoordinationDriver):
 
     This driver uses etcd provide the coordination driver semantics and
     required API(s).
+
+    The Etcd driver connection URI should look like::
+
+      etcd://[HOST[:PORT]][?OPTION1=VALUE1[&OPTION2=VALUE2[&...]]]
+
+    If not specified, HOST defaults to localhost and PORT defaults to 2379.
+    Available options are:
+
+    ==================  =======
+    Name                Default
+    ==================  =======
+    protocol            http
+    timeout             30
+    lock_timeout        30
+    ==================  =======
     """
 
     #: Default socket/lock/member/leader timeout used when none is provided.

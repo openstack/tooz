@@ -186,6 +186,13 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
     missing some functionality but in the future these not implemented API(s)
     will be filled in.
 
+    The File driver connection URI should look like::
+
+      file://DIRECTORY[?timeout=TIMEOUT]
+
+    DIRECTORY is the location that should be used to store lock files.
+    TIMEOUT defaults to 10.
+
     General recommendations/usage considerations:
 
     - It does **not** automatically delete members from

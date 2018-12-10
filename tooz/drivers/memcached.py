@@ -190,6 +190,23 @@ class MemcachedDriver(coordination.CoordinationDriverCachedRunWatchers,
     all of the coordination driver API(s). It stores data into memcache
     using expiries and `msgpack`_ encoded values.
 
+    The Memcached driver connection URI should look like::
+
+      memcached://[HOST[:PORT]][?OPTION1=VALUE1[&OPTION2=VALUE2[&...]]]
+
+    If not specified, HOST defaults to localhost and PORT defaults to 11211.
+    Available options are:
+
+    ==================  =======
+    Name                Default
+    ==================  =======
+    timeout             30
+    membership_timeout  30
+    lock_timeout        30
+    leader_timeout      30
+    max_pool_size       None
+    ==================  =======
+
     General recommendations/usage considerations:
 
     - Memcache (without different backend technology) is a **cache** enough

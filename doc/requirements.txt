@@ -10,3 +10,5 @@ redis>=2.10.0 # MIT
 psycopg2>=2.5 # LGPL/ZPL
 PyMySQL>=0.6.2 # MIT License
 pymemcache!=1.3.0,>=1.2.9 # Apache 2.0 License
+etcd3>=0.6.2 # Apache-2.0
+etcd3gw>=0.1.0 # Apache-2.0
