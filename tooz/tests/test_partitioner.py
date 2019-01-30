@@ -80,7 +80,7 @@ class TestPartitioner(tests.TestWithCoordinator):
     def test_members_of_object_and_others(self):
         p = self._coord.join_partitioned_group(self.group_id)
         self._add_members(3)
-        o = object()
+        o = six.text_type(u"чупакабра")
         m = p.members_for_object(o)
         self.assertEqual(1, len(m))
         m = m.pop()
