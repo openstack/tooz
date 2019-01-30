@@ -13,6 +13,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+import six
 from tooz import hashring
 
 
@@ -53,7 +54,7 @@ class Partitioner(object):
     def _hash_object(obj):
         if hasattr(obj, "__tooz_hash__"):
             return obj.__tooz_hash__()
-        return str(obj).encode()
+        return six.text_type(obj).encode('utf8')
 
     def members_for_object(self, obj, ignore_members=None, replicas=1):
         """Return the members responsible for an object.
