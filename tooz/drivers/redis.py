@@ -94,8 +94,6 @@ class RedisLock(locking.Lock):
 
     def release(self):
         with self._exclusive_access:
-            if not self.acquired:
-                return False
             with _translate_failures():
                 try:
                     self._lock.release()
