@@ -198,6 +198,38 @@ The etcd driver is a driver providing only distributed locks (for now)
 and is based on the `etcd server`_ supported key/value storage and
 associated primitives.
 
+Etcd3
+-----
+
+**Driver:**  :py:class:`tooz.drivers.etcd3.Etcd3Driver`
+
+**Characteristics:** :py:attr:`tooz.drivers.etcd3.Etcd3Driver.CHARACTERISTICS`
+
+**Entrypoint name:** ``etcd3``
+
+**Summary:**
+
+The etcd3 driver is a driver providing only distributed locks (for now)
+and is based on the `etcd server`_ supported key/value storage and
+associated primitives.
+
+Etcd3 Gateway
+-------------
+
+**Driver:**  :py:class:`tooz.drivers.etcd3gw.Etcd3Driver`
+
+**Characteristics:**
+:py:attr:`tooz.drivers.etcd3gw.Etcd3Driver.CHARACTERISTICS`
+
+**Entrypoint name:** ``etcd3+http``
+
+**Summary:**
+
+The etcd3gw driver is a driver providing only distributed locks (for now)
+and is based on the `etcd server`_ supported key/value storage and
+associated primitives. It relies on the `GRPC Gateway`_ to provide HTTP access
+to etcd3.
+
 Consul
 ------
 
@@ -231,3 +263,4 @@ Characteristics
 .. _PostgreSQL database server: http://postgresql.org
 .. _MySQL database server: http://mysql.org
 .. _redis-sentinel: http://redis.io/topics/sentinel
+.. _GRPC Gateway: https://github.com/grpc-ecosystem/grpc-gateway

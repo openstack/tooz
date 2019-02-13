@@ -174,6 +174,10 @@ class PostgresDriver(coordination.CoordinationDriver):
     missing some functionality but in the future these not implemented API(s)
     will be filled in.
 
+    The PostgreSQL driver connection URI should look like::
+
+      postgresql://[USERNAME[:PASSWORD]@]HOST:PORT?dbname=DBNAME
+
     .. _PostgreSQL: http://www.postgresql.org/
     """
 

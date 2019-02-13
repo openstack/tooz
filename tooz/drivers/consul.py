@@ -91,10 +91,22 @@ class ConsulDriver(coordination.CoordinationDriver):
     needed to make Consul being used as an option for Distributed Locking. The
     data is stored in Consul's key-value store.
 
-    To configure the client to your liking please refer
-    http://python-consul.readthedocs.org/en/latest/. Few options like 'ttl'
-    and 'namespace' will be passed as part of the options. 'ttl' governs the
-    duration till when the session holding the lock will be active.
+    The Consul driver connection URI should look like::
+
+      consul://HOST[:PORT][?OPTION1=VALUE1[&OPTION2=VALUE2[&...]]]
+
+    If not specified, PORT defaults to 8500.
+    Available options are:
+
+    ==================  =======
+    Name                Default
+    ==================  =======
+    ttl                 15
+    namespace           tooz
+    ==================  =======
+
+    For details on the available options, refer to
+    http://python-consul.readthedocs.org/en/latest/.
 
     .. _python-consul: http://python-consul.readthedocs.org/
     .. _consul: https://consul.io/

@@ -114,6 +114,12 @@ class MySQLDriver(coordination.CoordinationDriver):
     missing some functionality but in the future these not implemented API(s)
     will be filled in.
 
+    The MySQL driver connection URI should look like::
+
+      mysql://USERNAME:PASSWORD@HOST[:PORT]/DBNAME[?unix_socket=SOCKET_PATH]
+
+    If not specified, PORT defaults to 3306.
+
     .. _MySQL: http://dev.mysql.com/
     """
 
