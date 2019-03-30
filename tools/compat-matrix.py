@@ -73,7 +73,7 @@ print_header("Driver support", delim="-")
 print("")
 grouping_table = [
     [
-        "No",  # Consul
+        "Yes",  # Consul
         "No",  # Etcd
         "Yes",  # File
         "No",  # IPC

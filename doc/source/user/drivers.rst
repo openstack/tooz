@@ -243,8 +243,8 @@ Consul
 
 **Summary:**
 
-The `consul`_ driver is a driver providing only distributed locks (for now)
-and is based on the consul server key/value storage and/or
+The `consul`_ driver is a driver providing distributed locking and group
+membership and is based on the consul server key/value storage and/or
 primitives. When a lock is acquired it will release either when explicitly
 released or automatically when the consul session ends (for example if
 the program using the lock crashes).

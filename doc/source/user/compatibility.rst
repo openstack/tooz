@@ -30,7 +30,7 @@ Driver support
    * - Driver
      - Supported
    * - :py:class:`~tooz.drivers.consul.ConsulDriver`
-     - No
+     - Yes
    * - :py:class:`~tooz.drivers.etcd.EtcdDriver`
      - No
    * - :py:class:`~tooz.drivers.file.FileDriver`
