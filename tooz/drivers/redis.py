@@ -110,7 +110,10 @@ class RedisLock(locking.Lock):
         with self._exclusive_access:
             if self.acquired:
                 with _translate_failures():
-                    self._lock.extend(self._lock.timeout)
+                    if hasattr(self._lock, 'reacquire'):  # redis >= 3.1.0
+                        self._lock.reacquire()
+                    else:
+                        self._lock.extend(self._lock.timeout)
                     return True
         return False
 
