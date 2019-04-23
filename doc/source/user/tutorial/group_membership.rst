@@ -1,9 +1,9 @@
-=====================
- Group Membership
-=====================
+================
+Group Membership
+================
 
 Basic operations
-===================
+================
 
 One of the feature provided by the coordinator is the ability to handle
 group membership. Once a group is created, any coordinator can join the

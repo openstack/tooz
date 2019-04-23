@@ -1,6 +1,6 @@
-=====================================
- Using Tooz in Your Application
-=====================================
+==============================
+Using Tooz in Your Application
+==============================
 
 This tutorial is a step-by-step walk-through demonstrating how to
 use tooz in your application.

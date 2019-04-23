@@ -1,6 +1,6 @@
-=======================
- Creating A Coordinator
-=======================
+======================
+Creating A Coordinator
+======================
 
 The principal object provided by tooz is the *coordinator*. It allows you to
 use various features, such as group membership, leader election or

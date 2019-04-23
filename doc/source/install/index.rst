@@ -34,7 +34,7 @@ http://pypi.python.org/pypi/tooz
 Source Code
 ===========
 
-The source is hosted on the OpenStack infrastructure: https://git.openstack.org/cgit/openstack/tooz/
+The source is hosted on the OpenStack infrastructure: https://opendev.org/openstack/tooz/
 
 Reporting Bugs
 ==============
