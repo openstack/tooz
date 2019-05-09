@@ -1,0 +1,12 @@
+# On Ubuntu, just installing the redis-server package starts Redis. As a
+# result, when we try to start one via pifpaf it fails because the port
+# is already in use.
+# See https://bugs.launchpad.net/python-tooz/+bug/1828610
+- hosts: all
+  name: Stop Redis server before running tests
+  tasks:
+    - name: Stop Redis
+      service:
+        name: redis-server
+        state: stopped
+      become: true
