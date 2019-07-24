@@ -183,7 +183,7 @@ class Heart(object):
         """Inner beating loop."""
         retry = tenacity.Retrying(
             wait=tenacity.wait_fixed(1),
-            before_sleep=tenacity.before_sleep_log(LOG, logging.warning),
+            before_sleep=tenacity.before_sleep_log(LOG, logging.WARNING),
         )
         while not self._dead.is_set():
             with timeutils.StopWatch() as w:
