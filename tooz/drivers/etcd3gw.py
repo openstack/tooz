@@ -218,7 +218,9 @@ class Etcd3Driver(coordination.CoordinationDriverWithExecutor):
         # NOTE(jaypipes): Copying because set can mutate during iteration
         for lock in self._acquired_locks.copy():
             lock.heartbeat()
-        return self.lock_timeout
+        # TODO(kaifeng) use the same lease for locks?
+        self._membership_lease.refresh()
+        return min(self.lock_timeout, self.membership_timeout)
 
     def watch_join_group(self, group_id, callback):
         raise tooz.NotImplemented
