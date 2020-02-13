@@ -169,15 +169,18 @@ class Etcd3Driver(coordination.CoordinationDriverWithExecutor):
 
     The Etcd driver connection URI should look like::
 
-      etcd3+http://[HOST[:PORT]][?OPTION1=VALUE1[&OPTION2=VALUE2[&...]]]
+      etcd3+PROTOCOL://[HOST[:PORT]][?OPTION1=VALUE1[&OPTION2=VALUE2[&...]]]
 
-    If not specified, HOST defaults to localhost and PORT defaults to 2379.
+    The PROTOCOL can be http or https. If not specified, HOST defaults to
+    localhost and PORT defaults to 2379.
     Available options are:
 
     ==================  =======
     Name                Default
     ==================  =======
-    protocol            http
+    ca_cert             None
+    cert_key            None
+    cert_cert           None
     timeout             30
     lock_timeout        30
     membership_timeout  30
@@ -197,11 +200,21 @@ class Etcd3Driver(coordination.CoordinationDriverWithExecutor):
 
     def __init__(self, member_id, parsed_url, options):
         super(Etcd3Driver, self).__init__(member_id, parsed_url, options)
+        protocol = 'https' if parsed_url.scheme.endswith('https') else 'http'
         host = parsed_url.hostname or self.DEFAULT_HOST
         port = parsed_url.port or self.DEFAULT_PORT
         options = utils.collapse(options)
+        ca_cert = options.get('ca_cert')
+        cert_key = options.get('cert_key')
+        cert_cert = options.get('cert_cert')
         timeout = int(options.get('timeout', self.DEFAULT_TIMEOUT))
-        self.client = etcd3gw.client(host=host, port=port, timeout=timeout)
+        self.client = etcd3gw.client(host=host,
+                                     port=port,
+                                     protocol=protocol,
+                                     ca_cert=ca_cert,
+                                     cert_key=cert_key,
+                                     cert_cert=cert_cert,
+                                     timeout=timeout)
         self.lock_timeout = int(options.get('lock_timeout', timeout))
         self.membership_timeout = int(options.get(
             'membership_timeout', timeout))
