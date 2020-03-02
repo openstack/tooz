@@ -108,7 +108,7 @@ class RedisLock(locking.Lock):
         with self._exclusive_access:
             if self.acquired:
                 with _translate_failures():
-                    self._lock.extend(self._lock.timeout)
+                    self._lock.reacquire()
                     return True
         return False
 
