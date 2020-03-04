@@ -158,6 +158,19 @@ class ConsulDriver(coordination.CoordinationDriver):
                 self._session_id = None
             self._client = None
 
+    def heartbeat(self):
+        # THIS IS A REQUIREMENT FOR CONSUL TO WORK PROPERLY.
+        # Consul maintains a "session" token that is used to as the basis
+        # for all operations in the service. The session must be refreshed
+        # periodically or else it assumes that the agent maintaining the
+        # session has died or is unreachable. When a session expires all locks
+        # are released and any services that were registered with that session
+        # are marked as no longer active.
+        self._client.session.renew(self._session_id)
+        # renew the session every half-TTL or 1 second, whatever is larger
+        sleep_sec = max(self._ttl / 2, 1)
+        return sleep_sec
+
     def get_lock(self, name):
         real_name = self._paths_join(self._namespace, u"locks", name)
         return ConsulLock(real_name, self._node, self._address,

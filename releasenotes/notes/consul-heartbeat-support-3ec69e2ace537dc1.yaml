@@ -1,0 +1,9 @@
+---
+features:
+  - |
+    Added heartbeat supported to the Consul driver so that locks would remain locked
+    instead of timing out on the first TTL. This can be considered both a feature and
+    a bug fix because previously the Consul driver would only hold the lock for the
+    first TTL and behind the scenes Consul would release it due to the lack of session
+    updates. In order for the Consul driver to perform distributed locking properly
+    you MUST utilize heartbeats!
