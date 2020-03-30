@@ -1,6 +1,5 @@
 - project:
     templates:
-      - check-requirements
       - lib-forward-testing
       - lib-forward-testing-python3
       - openstack-cover-jobs
