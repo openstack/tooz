@@ -126,7 +126,9 @@ class Etcd3Driver(coordination.CoordinationDriverCachedRunWatchers,
     ==================  =======
     Name                Default
     ==================  =======
-    protocol            http
+    ca_cert             None
+    cert_key            None
+    cert_cert           None
     timeout             30
     lock_timeout        30
     membership_timeout  30
@@ -147,8 +149,16 @@ class Etcd3Driver(coordination.CoordinationDriverCachedRunWatchers,
         host = parsed_url.hostname or self.DEFAULT_HOST
         port = parsed_url.port or self.DEFAULT_PORT
         options = utils.collapse(options)
+        ca_cert = options.get('ca_cert')
+        cert_key = options.get('cert_key')
+        cert_cert = options.get('cert_cert')
         timeout = int(options.get('timeout', self.DEFAULT_TIMEOUT))
-        self.client = etcd3.client(host=host, port=port, timeout=timeout)
+        self.client = etcd3.client(host=host,
+                                   port=port,
+                                   ca_cert=ca_cert,
+                                   cert_key=cert_key,
+                                   cert_cert=cert_cert,
+                                   timeout=timeout)
         self.lock_timeout = int(options.get('lock_timeout', timeout))
         self.membership_timeout = int(options.get(
             'membership_timeout', timeout))

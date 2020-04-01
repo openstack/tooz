@@ -1,0 +1,6 @@
+---
+features:
+  - |
+    The etcd3 and etcd3gw drivers now support TLS, by adding the ability to
+    specify ca_cert, cert_key and cert_cert files. For the etcd3gw driver,
+    this is controlled by specifying "etcd3+https" in the coordination URL.
