@@ -27,11 +27,12 @@ from tooz import utils
 
 
 class ConsulLock(locking.Lock):
-    def __init__(self, name, node, address, session_id, client):
+    def __init__(self, name, node, address, session_id, client, token=None):
         super(ConsulLock, self).__init__(name)
         self._name = name
         self._node = node
         self._address = address
+        self._acl_token = token
         self._session_id = session_id
         self._client = client
         self.acquired = False
@@ -45,7 +46,8 @@ class ConsulLock(locking.Lock):
             # Check if we are the owner and if we are simulate
             # blocking (because consul will not block a second
             # acquisition attempt by the same owner).
-            _index, value = self._client.kv.get(key=self._name)
+            _index, value = self._client.kv.get(key=self._name,
+                                                token=self._acl_token)
             if value and value.get('Session') == self._session_id:
                 if blocking is False:
                     return False
@@ -55,7 +57,8 @@ class ConsulLock(locking.Lock):
                 # The value can be anything.
                 gotten = self._client.kv.put(key=self._name,
                                              value=u"I got it!",
-                                             acquire=self._session_id)
+                                             acquire=self._session_id,
+                                             token=self._acl_token)
                 if gotten:
                     self.acquired = True
                     return True
@@ -70,14 +73,16 @@ class ConsulLock(locking.Lock):
         if not self.acquired:
             return False
         # Get the lock to verify the session ID's are same
-        _index, contents = self._client.kv.get(key=self._name)
+        _index, contents = self._client.kv.get(key=self._name,
+                                               token=self._acl_token)
         if not contents:
             return False
         owner = contents.get('Session')
         if owner == self._session_id:
             removed = self._client.kv.put(key=self._name,
                                           value=self._session_id,
-                                          release=self._session_id)
+                                          release=self._session_id,
+                                          token=self._acl_token)
             if removed:
                 self.acquired = False
                 return True
@@ -103,6 +108,7 @@ class ConsulDriver(coordination.CoordinationDriver):
     ==================  =======
     ttl                 15
     namespace           tooz
+    acl_token           None
     ==================  =======
 
     For details on the available options, refer to
@@ -121,6 +127,9 @@ class ConsulDriver(coordination.CoordinationDriver):
     #: Default consul port if not provided.
     DEFAULT_PORT = 8500
 
+    #: Consul ACL Token if not provided
+    ACL_TOKEN = None
+
     def __init__(self, member_id, parsed_url, options):
         super(ConsulDriver, self).__init__(member_id, parsed_url, options)
         options = utils.collapse(options)
@@ -131,13 +140,15 @@ class ConsulDriver(coordination.CoordinationDriver):
         self._ttl = int(options.get('ttl', self.DEFAULT_TTL))
         namespace = options.get('namespace', self.TOOZ_NAMESPACE)
         self._namespace = encodeutils.safe_decode(namespace)
+        self._acl_token = options.get('acl_token', self.ACL_TOKEN)
         self._client = None
 
     def _start(self):
         """Create a client, register a node and create a session."""
         # Create a consul client
         if self._client is None:
-            self._client = consul.Consul(host=self._host, port=self._port)
+            self._client = consul.Consul(host=self._host, port=self._port,
+                                         token=self._acl_token)
 
         local_agent = self._client.agent.self()
         self._node = local_agent['Member']['Name']
@@ -145,11 +156,15 @@ class ConsulDriver(coordination.CoordinationDriver):
 
         # Register a Node
         self._client.catalog.register(node=self._node,
-                                      address=self._address)
+                                      address=self._address,
+                                      token=self._acl_token)
 
         # Create a session
         self._session_id = self._client.session.create(
-            name=self._session_name, node=self._node, ttl=self._ttl)
+                                        name=self._session_name,
+                                        node=self._node,
+                                        ttl=self._ttl,
+                                        token=self._acl_token)
 
     def _stop(self):
         if self._client is not None:
@@ -175,7 +190,7 @@ class ConsulDriver(coordination.CoordinationDriver):
         real_name = self._paths_join(self._namespace, u"locks", name)
         return ConsulLock(real_name, self._node, self._address,
                           session_id=self._session_id,
-                          client=self._client)
+                          client=self._client, token=self._acl_token)
 
     @staticmethod
     def _paths_join(*args):

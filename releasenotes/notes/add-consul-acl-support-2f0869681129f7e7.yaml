@@ -1,0 +1,12 @@
+---
+features:
+  - |
+    Added support for Consul ACL tokens. Consul ACL tokens can be passed in as
+    a parameterized argument. Requires python-consul2
+upgrade:
+  - |
+    Updated the python-consul library to python-consul2. The original library is
+    no longer maintained while python-consul2 is reasonably maintained. Consul 1.4
+    has a new ACL implementation, and Consul 1.7 includes some standards enforcement
+    which break python-consul.
+
