@@ -64,7 +64,7 @@ class MySQLLock(locking.Lock):
                 with self._conn as cur:
                     cur.execute("SELECT GET_LOCK(%s, 0);", self.name)
                     # Can return NULL on error
-                    if cur.fetchone()[0] is 1:
+                    if cur.fetchone()[0] == 1:
                         self.acquired = True
                         return True
             except pymysql.MySQLError as e:
