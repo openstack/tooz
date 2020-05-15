@@ -16,11 +16,7 @@
 #    under the License.
 
 import socket
-
-try:
-    from unittest import mock
-except ImportError:
-    import mock
+from unittest import mock
 
 from testtools import testcase
 

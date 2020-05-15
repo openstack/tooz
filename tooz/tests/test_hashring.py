@@ -14,8 +14,8 @@
 #    under the License.
 
 import hashlib
+from unittest import mock
 
-import mock
 from testtools import matchers
 from testtools import testcase
 
