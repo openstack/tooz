@@ -16,9 +16,9 @@
 
 import threading
 import time
+from unittest import mock
 
 from concurrent import futures
-import mock
 from six.moves.urllib import parse
 from testtools import matchers
 from testtools import testcase

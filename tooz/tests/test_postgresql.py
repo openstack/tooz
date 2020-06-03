@@ -14,11 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-try:
-    # Added in python 3.3+
-    from unittest import mock
-except ImportError:
-    import mock
+from unittest import mock
 
 from oslo_utils import encodeutils
 import testtools
