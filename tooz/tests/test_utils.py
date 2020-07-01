@@ -19,7 +19,6 @@ import os
 import tempfile
 
 import futurist
-import six
 from testtools import testcase
 
 import tooz
@@ -113,7 +112,7 @@ class TestUtilsCollapse(testcase.TestCase):
             'b': [2],
             'c': (1, 2, 3),
         }
-        c_ex = utils.collapse(ex, exclude=set(six.iterkeys(ex)))
+        c_ex = utils.collapse(ex, exclude=set(ex.keys()))
         self.assertEqual(ex, c_ex)
 
     def test_custom_selector(self):

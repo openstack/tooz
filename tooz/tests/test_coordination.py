@@ -17,9 +17,9 @@
 import threading
 import time
 from unittest import mock
+import urllib
 
 from concurrent import futures
-from six.moves.urllib import parse
 from testtools import matchers
 from testtools import testcase
 
@@ -49,7 +49,7 @@ class TestAPI(tests.TestWithCoordinator):
         if (tooz.coordination.Characteristics.DISTRIBUTED_ACROSS_HOSTS
            not in self._coord.CHARACTERISTICS):
             self.skipTest("This driver is not distributed across hosts")
-        scheme = parse.urlparse(self.url).scheme
+        scheme = urllib.parse.urlparse(self.url).scheme
         coord = tooz.coordination.get_coordinator(
             "%s://localhost:1/f00" % scheme,
             self.member_id)

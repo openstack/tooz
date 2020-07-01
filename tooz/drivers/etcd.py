@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import functools
 import logging
 import threading
 
@@ -19,7 +20,6 @@ import fasteners
 from oslo_utils import encodeutils
 from oslo_utils import timeutils
 import requests
-import six
 
 import tooz
 from tooz import coordination
@@ -33,7 +33,7 @@ LOG = logging.getLogger(__name__)
 def _translate_failures(func):
     """Translates common requests exceptions into tooz exceptions."""
 
-    @six.wraps(func)
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)

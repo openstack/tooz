@@ -26,9 +26,6 @@ from oslo_utils import strutils
 import redis
 from redis import exceptions
 from redis import sentinel
-import six
-from six.moves import map as compat_map
-from six.moves import zip as compat_zip
 
 import tooz
 from tooz import coordination
@@ -55,7 +52,7 @@ def _translate_failures():
 
 class RedisLock(locking.Lock):
     def __init__(self, coord, client, name, timeout):
-        name = "%s_%s_lock" % (coord.namespace, six.text_type(name))
+        name = "%s_%s_lock" % (coord.namespace, str(name))
         super(RedisLock, self).__init__(name)
         # NOTE(jd) Make sure we don't release and heartbeat at the same time by
         # using a exclusive access lock (LP#1557593)
@@ -356,7 +353,7 @@ return 1
         self._scripts = {}
 
     def _check_fetch_redis_version(self, geq_version, not_existent=True):
-        if isinstance(geq_version, six.string_types):
+        if isinstance(geq_version, str):
             desired_version = version.LooseVersion(geq_version)
         elif isinstance(geq_version, version.LooseVersion):
             desired_version = geq_version
@@ -470,12 +467,12 @@ return 1
             # For py3.x ensure these are unicode since the string template
             # replacement will expect unicode (and we don't want b'' as a
             # prefix which will happen in py3.x if this is not done).
-            for (k, v) in six.iteritems(tpl_params.copy()):
-                if isinstance(v, six.binary_type):
+            for (k, v) in tpl_params.copy().items():
+                if isinstance(v, bytes):
                     v = v.decode('ascii')
                 tpl_params[k] = v
             prepared_scripts = {}
-            for name, raw_script_tpl in six.iteritems(self.SCRIPTS):
+            for name, raw_script_tpl in self.SCRIPTS.items():
                 script_tpl = string.Template(raw_script_tpl)
                 script = script_tpl.substitute(**tpl_params)
                 prepared_scripts[name] = self._client.register_script(script)
@@ -630,10 +627,10 @@ return 1
                 return set()
             # Ok now we need to see which members have passed away...
             gone_members = set()
-            member_values = p.mget(compat_map(self._encode_beat_id,
-                                              potential_members))
-            for (potential_member, value) in compat_zip(potential_members,
-                                                        member_values):
+            member_values = p.mget(map(self._encode_beat_id,
+                                       potential_members))
+            for (potential_member, value) in zip(potential_members,
+                                                 member_values):
                 # Always preserve self (just incase we haven't heartbeated
                 # while this call/s was being made...), this does *not* prevent
                 # another client from removing this though...
@@ -742,7 +739,7 @@ return 1
         return self.get_lock(name)
 
     def run_elect_coordinator(self):
-        for group_id, hooks in six.iteritems(self._hooks_elected_leader):
+        for group_id, hooks in self._hooks_elected_leader.items():
             leader_lock = self._get_leader_lock(group_id)
             if leader_lock.acquire(blocking=False):
                 # We got the lock

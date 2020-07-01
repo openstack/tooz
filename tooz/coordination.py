@@ -21,11 +21,11 @@ from concurrent import futures
 import enum
 import logging
 import threading
+import urllib
 
 from oslo_utils import encodeutils
 from oslo_utils import netutils
 from oslo_utils import timeutils
-import six
 from stevedore import driver
 import tenacity
 
@@ -629,8 +629,7 @@ class CoordinationDriver(object):
         pass
 
 
-@six.add_metaclass(abc.ABCMeta)
-class CoordAsyncResult(object):
+class CoordAsyncResult(object, metaclass=abc.ABCMeta):
     """Representation of an asynchronous task.
 
     Every call API returns an CoordAsyncResult object on which the result or
@@ -786,12 +785,12 @@ def get_coordinator(backend_url, member_id,
                    arguments query string)
     """
     parsed_url = netutils.urlsplit(backend_url)
-    parsed_qs = six.moves.urllib.parse.parse_qs(parsed_url.query)
+    parsed_qs = urllib.parse.parse_qs(parsed_url.query)
     if kwargs:
         options = {}
-        for (k, v) in six.iteritems(kwargs):
+        for (k, v) in kwargs.items():
             options[k] = [v]
-        for (k, v) in six.iteritems(parsed_qs):
+        for (k, v) in parsed_qs.items():
             if k not in options:
                 options[k] = v
     else:

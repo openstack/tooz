@@ -25,8 +25,6 @@ from kazoo.handlers import threading as threading_handler
 from kazoo.protocol import paths
 from oslo_utils import encodeutils
 from oslo_utils import strutils
-import six
-from six.moves import filter as compat_filter
 
 import tooz
 from tooz import coordination
@@ -444,7 +442,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         args.extend(more_args)
         cleaned_args = []
         for arg in args:
-            if isinstance(arg, six.binary_type):
+            if isinstance(arg, bytes):
                 cleaned_args.append(arg.decode('ascii'))
             else:
                 cleaned_args.append(arg)
@@ -467,7 +465,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
             auth_data = None
 
         maybe_hosts = [parsed_url.netloc] + list(options.get('hosts', []))
-        hosts = list(compat_filter(None, maybe_hosts))
+        hosts = list(filter(None, maybe_hosts))
         if not hosts:
             hosts = ['localhost:2181']
         randomize_hosts = options.get('randomize_hosts', True)
@@ -520,7 +518,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         return ZooKeeperLock(name, z_lock)
 
     def run_elect_coordinator(self):
-        for group_id in six.iterkeys(self._hooks_elected_leader):
+        for group_id in self._hooks_elected_leader.keys():
             leader_lock = self._get_group_leader_lock(group_id)
             if leader_lock.is_acquired:
                 # Previously acquired/still leader, leave it be...

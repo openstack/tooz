@@ -15,8 +15,6 @@
 #    under the License.
 import abc
 
-import six
-
 import tooz
 from tooz import coordination
 
@@ -34,8 +32,7 @@ class _LockProxy(object):
         self.lock.__exit__(exc_type, exc_val, exc_tb)
 
 
-@six.add_metaclass(abc.ABCMeta)
-class Lock(object):
+class Lock(object, metaclass=abc.ABCMeta):
     def __init__(self, name):
         if not name:
             raise ValueError("Locks must be provided a name")

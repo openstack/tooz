@@ -19,7 +19,6 @@ import struct
 import time
 
 import msgpack
-import six
 import sysv_ipc
 
 import tooz
@@ -37,10 +36,10 @@ def ftok(name, project):
     # Similar to ftok & http://semanchuk.com/philip/sysv_ipc/#ftok_weakness
     # but hopefully without as many weaknesses...
     h = hashlib.md5()
-    if not isinstance(project, six.binary_type):
+    if not isinstance(project, bytes):
         project = project.encode('ascii')
     h.update(project)
-    if not isinstance(name, six.binary_type):
+    if not isinstance(name, bytes):
         name = name.encode('ascii')
     h.update(name)
     return (int(h.hexdigest(), 16) % _KEY_RANGE) + sysv_ipc.KEY_MIN

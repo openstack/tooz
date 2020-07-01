@@ -32,7 +32,6 @@ import fasteners
 from oslo_utils import encodeutils
 from oslo_utils import fileutils
 from oslo_utils import timeutils
-import six
 import voluptuous
 
 import tooz
@@ -74,7 +73,7 @@ def _convert_from_old_format(data):
     # example of potential old python3 payload:
     # {u"member_id": b"member"}
     # {u"member_id": u"member"}
-    if six.PY3 and b"member_id" in data or b"group_id" in data:
+    if b"member_id" in data or b"group_id" in data:
         data = dict((k.decode("utf8"), v) for k, v in data.items())
         # About member_id and group_id valuse if the file have been written
         # with python2 and in the old format, we can't known with python3
@@ -91,7 +90,7 @@ def _lock_me(lock):
 
     def wrapper(func):
 
-        @six.wraps(func)
+        @functools.wraps(func)
         def decorator(*args, **kwargs):
             with lock:
                 return func(*args, **kwargs)
@@ -361,14 +360,12 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
 
     _SCHEMAS = {
         'group': voluptuous.Schema({
-            voluptuous.Required('group_id'): voluptuous.Any(six.text_type,
-                                                            six.binary_type),
+            voluptuous.Required('group_id'): voluptuous.Any(str, bytes),
             # NOTE(sileht): tooz <1.36 was creating file without this
             voluptuous.Optional('encoded'): bool,
         }),
         'member': voluptuous.Schema({
-            voluptuous.Required('member_id'): voluptuous.Any(six.text_type,
-                                                             six.binary_type),
+            voluptuous.Required('member_id'): voluptuous.Any(str, bytes),
             voluptuous.Required('joined_on'): datetime.datetime,
             # NOTE(sileht): tooz <1.36 was creating file without this
             voluptuous.Optional('encoded'): bool,

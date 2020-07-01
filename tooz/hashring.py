@@ -16,8 +16,6 @@
 import bisect
 import hashlib
 
-import six
-
 import tooz
 from tooz import utils
 
@@ -71,7 +69,7 @@ class HashRing(object):
         for node in nodes:
             key = utils.to_binary(node, 'utf-8')
             key_hash = hashlib.md5(key)
-            for r in six.moves.range(self._partition_number * weight):
+            for r in range(self._partition_number * weight):
                 key_hash.update(key)
                 self._ring[self._hash2int(key_hash)] = node
 
@@ -93,7 +91,7 @@ class HashRing(object):
 
         key = utils.to_binary(node, 'utf-8')
         key_hash = hashlib.md5(key)
-        for r in six.moves.range(self._partition_number * weight):
+        for r in range(self._partition_number * weight):
             key_hash.update(key)
             del self._ring[self._hash2int(key_hash)]
 

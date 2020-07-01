@@ -18,7 +18,6 @@ import threading
 import etcd3
 from etcd3 import exceptions as etcd3_exc
 from oslo_utils import encodeutils
-import six
 
 import tooz
 from tooz import _retry
@@ -48,7 +47,7 @@ def _failure_translator():
 
 def _translate_failures(func):
 
-    @six.wraps(func)
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         with _failure_translator():
             return func(*args, **kwargs)

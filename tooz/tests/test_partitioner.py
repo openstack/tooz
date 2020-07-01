@@ -13,7 +13,6 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-import six
 
 from tooz import coordination
 from tooz import tests
@@ -32,7 +31,7 @@ class TestPartitioner(tests.TestWithCoordinator):
 
     def _add_members(self, number_of_members, weight=1):
         groups = []
-        for _ in six.moves.range(number_of_members):
+        for _ in range(number_of_members):
             m = tests.get_random_uuid()
             coord = coordination.get_coordinator(self.url, m)
             coord.start()
@@ -43,7 +42,7 @@ class TestPartitioner(tests.TestWithCoordinator):
         return groups
 
     def _remove_members(self, number_of_members):
-        for _ in six.moves.range(number_of_members):
+        for _ in range(number_of_members):
             c = self._extra_coords.pop()
             c.stop()
         self._coord.run_watchers()
@@ -80,7 +79,7 @@ class TestPartitioner(tests.TestWithCoordinator):
     def test_members_of_object_and_others(self):
         p = self._coord.join_partitioned_group(self.group_id)
         self._add_members(3)
-        o = six.text_type(u"чупакабра")
+        o = str(u"чупакабра")
         m = p.members_for_object(o)
         self.assertEqual(1, len(m))
         m = m.pop()

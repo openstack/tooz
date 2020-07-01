@@ -19,7 +19,6 @@ import os
 
 import fixtures
 from oslo_utils import uuidutils
-import six
 from testtools import testcase
 
 import tooz
@@ -49,8 +48,7 @@ class SkipNotImplementedMeta(type):
         return type.__new__(cls, name, bases, local)
 
 
-@six.add_metaclass(SkipNotImplementedMeta)
-class TestWithCoordinator(testcase.TestCase):
+class TestWithCoordinator(testcase.TestCase, metaclass=SkipNotImplementedMeta):
     url = os.getenv("TOOZ_TEST_URL")
 
     def setUp(self):

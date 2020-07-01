@@ -20,7 +20,6 @@ import logging
 
 from oslo_utils import encodeutils
 import psycopg2
-import six
 
 import tooz
 from tooz import _retry
@@ -101,10 +100,7 @@ class PostgresLock(locking.Lock):
         self._options = options
         h = hashlib.md5()
         h.update(name)
-        if six.PY2:
-            self.key = list(map(ord, h.digest()[0:2]))
-        else:
-            self.key = h.digest()[0:2]
+        self.key = h.digest()[0:2]
 
     def acquire(self, blocking=True, shared=False):
 

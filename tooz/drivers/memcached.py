@@ -22,7 +22,6 @@ import socket
 
 from oslo_utils import encodeutils
 from pymemcache import client as pymemcache_client
-import six
 
 import tooz
 from tooz import _retry
@@ -65,7 +64,7 @@ def _failure_translator():
 
 def _translate_failures(func):
 
-    @six.wraps(func)
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         with _failure_translator():
             return func(*args, **kwargs)
@@ -266,7 +265,7 @@ class MemcachedDriver(coordination.CoordinationDriverCachedRunWatchers,
 
     @staticmethod
     def _msgpack_serializer(key, value):
-        if isinstance(value, six.binary_type):
+        if isinstance(value, bytes):
             return value, 1
         return utils.dumps(value), 2
 
@@ -435,7 +434,7 @@ class MemcachedDriver(coordination.CoordinationDriverCachedRunWatchers,
         if group_members is None:
             raise coordination.GroupNotCreated(group_id)
         actual_group_members = {}
-        for m, v in six.iteritems(group_members):
+        for m, v in group_members.items():
             # Never kick self from the group, we know we're alive
             if (m == self._member_id or
                self.client.get(self._encode_member_id(m))):
@@ -512,7 +511,7 @@ class MemcachedDriver(coordination.CoordinationDriverCachedRunWatchers,
 
     @_translate_failures
     def run_elect_coordinator(self):
-        for group_id, hooks in six.iteritems(self._hooks_elected_leader):
+        for group_id, hooks in self._hooks_elected_leader.items():
             # Try to grab the lock, if that fails, that means someone has it
             # already.
             leader_lock = self._get_leader_lock(group_id)

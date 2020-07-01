@@ -24,7 +24,6 @@ import msgpack
 from oslo_serialization import msgpackutils
 from oslo_utils import encodeutils
 from oslo_utils import excutils
-import six
 
 import tooz
 
@@ -36,7 +35,7 @@ class Base64LockEncoder(object):
             self.keyspace_url += prefix
 
     def check_and_encode(self, name):
-        if not isinstance(name, (six.text_type, six.binary_type)):
+        if not isinstance(name, (str, bytes)):
             raise TypeError("Provided lock name is expected to be a string"
                             " or binary type and not %s" % type(name))
         try:
@@ -47,7 +46,7 @@ class Base64LockEncoder(object):
                              % encodeutils.exception_to_unicode(e))
 
     def encode(self, name):
-        if isinstance(name, six.text_type):
+        if isinstance(name, str):
             name = name.encode("ascii")
         enc_name = base64.urlsafe_b64encode(name)
         return self.keyspace_url + "/" + enc_name.decode("ascii")
@@ -154,7 +153,7 @@ def collapse(config, exclude=None, item_selector=operator.itemgetter(-1)):
     if exclude is None:
         exclude = set()
     collapsed = {}
-    for (k, v) in six.iteritems(config):
+    for (k, v) in config.items():
         if isinstance(v, (tuple, list)):
             if k in exclude:
                 collapsed[k] = v
@@ -168,7 +167,7 @@ def collapse(config, exclude=None, item_selector=operator.itemgetter(-1)):
 
 def to_binary(text, encoding='ascii'):
     """Return the binary representation of string (if not already binary)."""
-    if not isinstance(text, six.binary_type):
+    if not isinstance(text, bytes):
         text = text.encode(encoding)
     return text
 

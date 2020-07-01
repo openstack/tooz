@@ -11,14 +11,15 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+
 import base64
+import functools
 import threading
 import uuid
 
 import etcd3gw
 from etcd3gw import exceptions as etcd3_exc
 from oslo_utils import encodeutils
-import six
 
 import tooz
 from tooz import _retry
@@ -35,7 +36,7 @@ def _encode(data):
 def _translate_failures(func):
     """Translates common requests exceptions into tooz exceptions."""
 
-    @six.wraps(func)
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
