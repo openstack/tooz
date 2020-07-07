@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    ``HashRing`` now accepts a new argument ``hash_function``, allowing
+    using a different hash function.
