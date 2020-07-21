@@ -31,7 +31,7 @@ class HashRingTestCase(testcase.TestCase):
     #                fake -> foo, bar, baz
     #                fake-again -> bar, baz, foo
 
-    @mock.patch.object(hashlib, 'md5', autospec=True)
+    @mock.patch.object(hashlib, 'new', autospec=True)
     def test_hash2int_returns_int(self, mock_md5):
         r1 = 32 * 'a'
         r2 = 32 * 'b'
@@ -45,11 +45,19 @@ class HashRingTestCase(testcase.TestCase):
         self.assertIn(int(r1, 16), ring._ring)
         self.assertIn(int(r2, 16), ring._ring)
 
+        mock_md5.assert_called_with('md5', mock.ANY)
+
     def test_create_ring(self):
         nodes = {'foo', 'bar'}
         ring = hashring.HashRing(nodes)
         self.assertEqual(nodes, set(ring.nodes.keys()))
         self.assertEqual(2 ** 5 * 2, len(ring))
+
+    def test_wrong_hash_function(self):
+        nodes = {'foo', 'bar'}
+        self.assertRaisesRegex(ValueError, 'is not supported',
+                               hashring.HashRing, nodes,
+                               hash_function='fold twice and leave to dry')
 
     def test_add_node(self):
         nodes = {'foo', 'bar'}

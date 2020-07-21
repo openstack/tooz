@@ -32,16 +32,28 @@ class HashRing(object):
 
     DEFAULT_PARTITION_NUMBER = 2**5
 
-    def __init__(self, nodes, partitions=DEFAULT_PARTITION_NUMBER):
+    DEFAULT_HASH_FUNCTION = 'md5'
+
+    def __init__(self, nodes, partitions=DEFAULT_PARTITION_NUMBER,
+                 hash_function=DEFAULT_HASH_FUNCTION):
         """Create a new hashring.
 
         :param nodes: List of nodes where objects will be mapped onto.
         :param partitions: Number of partitions to spread objects onto.
+        :param hash_function: Hash function to use, one of supported by hashlib
+        :raises: ValueError if `hash_function` is not supported.
         """
+        if hash_function not in hashlib.algorithms_available:
+            raise ValueError('Hash function %s is not supported on this '
+                             'system, supported are %s'
+                             % (hash_function,
+                                ', '.join(hashlib.algorithms_available)))
+
         self.nodes = {}
         self._ring = dict()
         self._partitions = []
         self._partition_number = partitions
+        self._hash_function = hash_function
 
         self.add_nodes(set(nodes))
 
@@ -68,7 +80,7 @@ class HashRing(object):
         """
         for node in nodes:
             key = utils.to_binary(node, 'utf-8')
-            key_hash = hashlib.md5(key)
+            key_hash = hashlib.new(self._hash_function, key)
             for r in range(self._partition_number * weight):
                 key_hash.update(key)
                 self._ring[self._hash2int(key_hash)] = node
@@ -90,7 +102,7 @@ class HashRing(object):
             raise UnknownNode(node)
 
         key = utils.to_binary(node, 'utf-8')
-        key_hash = hashlib.md5(key)
+        key_hash = hashlib.new(self._hash_function, key)
         for r in range(self._partition_number * weight):
             key_hash.update(key)
             del self._ring[self._hash2int(key_hash)]
@@ -102,7 +114,7 @@ class HashRing(object):
         return int(key.hexdigest(), 16)
 
     def _get_partition(self, data):
-        hashed_key = self._hash2int(hashlib.md5(data))
+        hashed_key = self._hash2int(hashlib.new(self._hash_function, data))
         position = bisect.bisect(self._partitions, hashed_key)
         return position if position < len(self._partitions) else 0
 
