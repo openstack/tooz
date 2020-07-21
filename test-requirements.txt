@@ -10,3 +10,5 @@ pifpaf>=0.10.0 # Apache-2.0
 stestr>=2.0.0
 ddt>=1.2.1 # MIT
 nose>=1.3.7 # LGPL
+
+pre-commit>=2.6.0 # MIT
