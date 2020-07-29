@@ -443,7 +443,9 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         cleaned_args = []
         for arg in args:
             if isinstance(arg, bytes):
-                cleaned_args.append(arg.decode('ascii'))
+                cleaned_args.append(
+                  encodeutils.safe_decode(arg, incoming='ascii')
+                )
             else:
                 cleaned_args.append(arg)
         return paths.join(*cleaned_args)
@@ -500,7 +502,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         if group_id not in self._leader_locks:
             self._leader_locks[group_id] = self._coord.Lock(
                 self._path_group(group_id) + "/leader",
-                self._member_id.decode('ascii'))
+                encodeutils.safe_decode(self._member_id, incoming='ascii'))
         return self._leader_locks[group_id]
 
     def get_leader(self, group_id):
@@ -514,7 +516,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
     def get_lock(self, name):
         z_lock = self._coord.Lock(
             self._paths_join(b"/", self._namespace, b"locks", name),
-            self._member_id.decode('ascii'))
+            encodeutils.safe_decode(self._member_id, incoming='ascii'))
         return ZooKeeperLock(name, z_lock)
 
     def run_elect_coordinator(self):
