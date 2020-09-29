@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fixes AttributeError in the ``mysql`` driver with PyMySQL 0.10.0.
