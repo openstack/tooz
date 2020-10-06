@@ -15,10 +15,10 @@
 # under the License.
 
 import contextlib
-import hashlib
 import logging
 
 from oslo_utils import encodeutils
+from oslo_utils.secretutils import md5
 import psycopg2
 
 import tooz
@@ -98,7 +98,7 @@ class PostgresLock(locking.Lock):
         self._conn = None
         self._parsed_url = parsed_url
         self._options = options
-        h = hashlib.md5()
+        h = md5(usedforsecurity=False)
         h.update(name)
         self.key = h.digest()[0:2]
 

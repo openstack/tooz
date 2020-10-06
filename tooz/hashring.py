@@ -16,6 +16,8 @@
 import bisect
 import hashlib
 
+from oslo_utils.secretutils import md5
+
 import tooz
 from tooz import utils
 
@@ -80,7 +82,10 @@ class HashRing(object):
         """
         for node in nodes:
             key = utils.to_binary(node, 'utf-8')
-            key_hash = hashlib.new(self._hash_function, key)
+            if self._hash_function == 'md5':
+                key_hash = md5(key, usedforsecurity=False)
+            else:
+                key_hash = hashlib.new(self._hash_function, key)
             for r in range(self._partition_number * weight):
                 key_hash.update(key)
                 self._ring[self._hash2int(key_hash)] = node
@@ -102,7 +107,10 @@ class HashRing(object):
             raise UnknownNode(node)
 
         key = utils.to_binary(node, 'utf-8')
-        key_hash = hashlib.new(self._hash_function, key)
+        if self._hash_function == 'md5':
+            key_hash = md5(key, usedforsecurity=False)
+        else:
+            key_hash = hashlib.new(self._hash_function, key)
         for r in range(self._partition_number * weight):
             key_hash.update(key)
             del self._ring[self._hash2int(key_hash)]
@@ -114,7 +122,11 @@ class HashRing(object):
         return int(key.hexdigest(), 16)
 
     def _get_partition(self, data):
-        hashed_key = self._hash2int(hashlib.new(self._hash_function, data))
+        if self._hash_function == 'md5':
+            hashed_key = self._hash2int(md5(data, usedforsecurity=False))
+        else:
+            hashed_key = self._hash2int(
+                hashlib.new(self._hash_function, data))
         position = bisect.bisect(self._partitions, hashed_key)
         return position if position < len(self._partitions) else 0
 

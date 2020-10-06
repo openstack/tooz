@@ -14,12 +14,13 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import hashlib
 import struct
 import time
 
 import msgpack
 import sysv_ipc
+
+from oslo_utils.secretutils import md5
 
 import tooz
 from tooz import coordination
@@ -35,7 +36,7 @@ else:
 def ftok(name, project):
     # Similar to ftok & http://semanchuk.com/philip/sysv_ipc/#ftok_weakness
     # but hopefully without as many weaknesses...
-    h = hashlib.md5()
+    h = md5(usedforsecurity=False)
     if not isinstance(project, bytes):
         project = project.encode('ascii')
     h.update(project)
