@@ -28,7 +28,7 @@ repos:
       - id: check-yaml
         files: .*\.(yaml|yml)$
   - repo: https://gitlab.com/pycqa/flake8
-    rev: 181bb46098dddf7e2d45319ea654b4b4d58c2840 # 3.8.3
+    rev: aa792d2930b8f6dada3f6305e8a3704d2d191005 # 3.7.8
     hooks:
       - id: flake8
         additional_dependencies:
