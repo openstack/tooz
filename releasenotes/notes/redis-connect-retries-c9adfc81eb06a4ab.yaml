@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Redis driver retries actions for up to 15 times when met with error
+    connecting to Redis.
