@@ -34,7 +34,7 @@ from tooz import utils
 LOG = logging.getLogger(__name__)
 
 
-def _handle_failures(func=None, n_tries=15):
+def _handle_failures(n_tries=15):
 
     """Translates common redis exceptions into tooz exceptions.
 
@@ -43,37 +43,37 @@ def _handle_failures(func=None, n_tries=15):
     :param func: the function to act on
     :param n_tries: the number of retries
     """
+    def inner(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            ntries = n_tries
+            while ntries:
+                try:
+                    return func(*args, **kwargs)
+                except exceptions.ConnectionError as e:
+                    # retry ntries times and then raise a connection error
+                    ntries -= 1
+                    if not ntries:
+                        LOG.debug(
+                            "Redis connection error, "
+                            "retry limit has been reached, aborting - %s", e
+                        )
+                        utils.raise_with_cause(
+                            coordination.ToozConnectionError,
+                            encodeutils.exception_to_unicode(e),
+                            cause=e)
+                    LOG.debug("Redis connection error, will retry - %s", e)
 
-    if func is None:
-        return functools.partial(
-                _handle_failures,
-                n_tries=n_tries
-                )
-
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        ntries = n_tries
-        while ntries > 1:
-            try:
-                return func(*args, **kwargs)
-            except exceptions.ConnectionError as e:
-                # retry ntries times and then raise a connection error
-                ntries -= 1
-                if ntries >= 1:
+                except (exceptions.TimeoutError) as e:
                     utils.raise_with_cause(coordination.ToozConnectionError,
                                            encodeutils.exception_to_unicode(e),
                                            cause=e)
-
-            except (exceptions.TimeoutError) as e:
-                utils.raise_with_cause(coordination.ToozConnectionError,
-                                       encodeutils.exception_to_unicode(e),
-                                       cause=e)
-            except exceptions.RedisError as e:
-                utils.raise_with_cause(tooz.ToozError,
-                                       encodeutils.exception_to_unicode(e),
-                                       cause=e)
-        return func(*args, **kwargs)
-    return wrapper
+                except exceptions.RedisError as e:
+                    utils.raise_with_cause(tooz.ToozError,
+                                           encodeutils.exception_to_unicode(e),
+                                           cause=e)
+        return wrapper
+    return inner
 
 
 class RedisLock(locking.Lock):
@@ -89,7 +89,7 @@ class RedisLock(locking.Lock):
         self._coord = coord
         self._client = client
 
-    @_handle_failures
+    @_handle_failures()
     def is_still_owner(self):
         lock_tok = self._lock.local.token
         if not lock_tok:
@@ -97,11 +97,11 @@ class RedisLock(locking.Lock):
         owner_tok = self._client.get(self.name)
         return owner_tok == lock_tok
 
-    @_handle_failures
+    @_handle_failures()
     def break_(self):
         return bool(self._client.delete(self.name))
 
-    @_handle_failures
+    @_handle_failures()
     def acquire(self, blocking=True, shared=False):
         if shared:
             raise tooz.NotImplemented
@@ -113,7 +113,7 @@ class RedisLock(locking.Lock):
                 self._coord._acquired_locks.add(self)
         return acquired
 
-    @_handle_failures
+    @_handle_failures()
     def release(self):
         with self._exclusive_access:
             try:
@@ -125,7 +125,7 @@ class RedisLock(locking.Lock):
                 self._coord._acquired_locks.discard(self)
             return True
 
-    @_handle_failures
+    @_handle_failures()
     def heartbeat(self):
         with self._exclusive_access:
             if self.acquired:
@@ -459,7 +459,7 @@ return 1
             return master_client
         return redis.StrictRedis(**kwargs)
 
-    @_handle_failures
+    @_handle_failures()
     def _start(self):
         super(RedisDriver, self)._start()
         try:
@@ -532,7 +532,7 @@ return 1
     def _decode_group_id(self, group_id):
         return utils.to_binary(group_id, encoding=self._encoding)
 
-    @_handle_failures
+    @_handle_failures()
     def heartbeat(self):
         beat_id = self._encode_beat_id(self._member_id)
         expiry_ms = max(0, int(self.membership_timeout * 1000.0))
@@ -547,7 +547,7 @@ return 1
                             exc_info=True)
         return min(self.lock_timeout, self.membership_timeout)
 
-    @_handle_failures
+    @_handle_failures()
     def _stop(self):
         while self._acquired_locks:
             lock = self._acquired_locks.pop()
