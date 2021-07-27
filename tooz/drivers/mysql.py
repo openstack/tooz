@@ -116,9 +116,23 @@ class MySQLDriver(coordination.CoordinationDriver):
 
     The MySQL driver connection URI should look like::
 
-      mysql://USERNAME:PASSWORD@HOST[:PORT]/DBNAME[?unix_socket=SOCKET_PATH]
+      mysql://USERNAME:PASSWORD@HOST[:PORT]/DBNAME[?OPTION1=VALUE1[&OPTION2=VALUE2[&...]]]
 
     If not specified, PORT defaults to 3306.
+    Available options are:
+
+    ==================  =======
+    Name                Default
+    ==================  =======
+    ssl_ca              None
+    ssl_capath          None
+    ssl_cert            None
+    ssl_key             None
+    ssl_cipher          None
+    ssl_verify_mode     None
+    ssl_check_hostname  True
+    unix_socket         None
+    ==================  =======
 
     .. _MySQL: http://dev.mysql.com/
     """
@@ -182,6 +196,26 @@ class MySQLDriver(coordination.CoordinationDriver):
         username = parsed_url.username
         password = parsed_url.password
         unix_socket = options.get("unix_socket")
+        ssl_opt_names = (
+            "ca",
+            "capath",
+            "cert",
+            "key",
+            "cipher",
+            "verify_mode",
+        )
+        ssl_args = {}
+        for o in ssl_opt_names:
+            value = options.get("ssl_" + o)
+            if value:
+                ssl_args[o] = value
+        check_hostname = options.get("ssl_check_hostname")
+        if check_hostname is not None:
+            check_hostname = check_hostname.lower()
+            if check_hostname in ("true", "1", "yes"):
+                ssl_args["check_hostname"] = True
+            elif check_hostname in ("false", "0", "no"):
+                ssl_args["check_hostname"] = False
 
         try:
             if unix_socket:
@@ -190,6 +224,7 @@ class MySQLDriver(coordination.CoordinationDriver):
                                        user=username,
                                        passwd=password,
                                        database=dbname,
+                                       ssl=ssl_args,
                                        defer_connect=defer_connect)
             else:
                 return pymysql.Connect(host=host,
@@ -197,6 +232,7 @@ class MySQLDriver(coordination.CoordinationDriver):
                                        user=username,
                                        passwd=password,
                                        database=dbname,
+                                       ssl=ssl_args,
                                        defer_connect=defer_connect)
         except (pymysql.err.OperationalError, pymysql.err.InternalError) as e:
             utils.raise_with_cause(coordination.ToozConnectionError,

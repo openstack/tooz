@@ -14,6 +14,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from unittest import mock
 
 from oslo_utils import encodeutils
 from testtools import testcase
@@ -52,3 +53,35 @@ class TestMySQLDriver(testcase.TestCase):
     def test_connect_failure_invalid_hostname_and_port_provided(self):
         c = self._create_coordinator("mysql://invalidhost:54/test")
         self.assertRaises(coordination.ToozConnectionError, c.start)
+
+    @mock.patch("pymysql.Connect")
+    def test_parsing_tls_settings(self, sql_mock):
+        c = self._create_coordinator(
+            "mysql://invalidhost:54/test"
+            "?ssl_ca=/ca/not/there"
+            "&ssl_capath=/capath/not/there"
+            "&ssl_check_hostname=False"
+            "&ssl_verify_mode=yes"
+            "&ssl_cert=/cert/not/there"
+            "&ssl_key=/key/not/there"
+            "&ssl_cipher=spam,ham"
+        )
+        c.start()
+        sql_mock.assert_called_once_with(
+            host="invalidhost",
+            port=54,
+            user=None,
+            passwd=None,
+            database="test",
+            defer_connect=False,
+            ssl=dict(
+                ca="/ca/not/there",
+                capath="/capath/not/there",
+                check_hostname=False,
+                verify_mode="yes",
+                cert="/cert/not/there",
+                key="/key/not/there",
+                cipher="spam,ham"
+            )
+
+        )

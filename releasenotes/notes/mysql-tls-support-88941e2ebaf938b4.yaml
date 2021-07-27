@@ -1,0 +1,33 @@
+---
+features:
+  - |
+    Added TLS support for MySQL driver.
+
+    The following TLS-related options now can be specifed in the MySQL
+    connection URL as query parameters
+
+    ``ssl_ca``
+      path to the CA bundle to use for verifying server certificate
+
+    ``ssl_capath``
+      path to folder with CA bundle files
+
+    ``ssl_cert``
+      path to client public key certificate file
+
+    ``ssl_key``
+      path to client private key file
+
+    ``ssl_check_hostname``
+      verify server hostname against its certificate,
+      accepted values are "true", "1", "yes" or "false", "0", "no"
+      (default is "true")
+
+    ``ssl_verify_mode``
+      whether to verify TLS connection
+      accepted values are "true", "1", "yes", "required" or
+      "false", "0", "no", "none", or
+      "optional"
+
+    ``ssl_cipher``
+       list of permissible ciphers for connection encryption
