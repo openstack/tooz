@@ -548,9 +548,9 @@ class CoordinationDriver(object):
 
     @staticmethod
     def get_members(group_id):
-        """Return the set of all members ids of the specified group.
+        """Return the set of all member ids of a group asynchronously.
 
-        :returns: set of all created group ids
+        :returns: set of all member ids in the specified group
         :rtype: CoordAsyncResult
         """
         raise tooz.NotImplemented
