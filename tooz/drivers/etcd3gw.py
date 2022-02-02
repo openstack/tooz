@@ -177,6 +177,7 @@ class Etcd3Driver(coordination.CoordinationDriverWithExecutor):
     ==================  =======
     Name                Default
     ==================  =======
+    api_version         v3alpha
     ca_cert             None
     cert_key            None
     cert_cert           None
@@ -195,6 +196,9 @@ class Etcd3Driver(coordination.CoordinationDriverWithExecutor):
     #: Default port used if none provided (4001 or 2379 are the common ones).
     DEFAULT_PORT = 2379
 
+    #: Default api version if none provided
+    DEFAULT_API_VERSION = "v3alpha"
+
     GROUP_PREFIX = b"tooz/groups/"
 
     def __init__(self, member_id, parsed_url, options):
@@ -207,12 +211,14 @@ class Etcd3Driver(coordination.CoordinationDriverWithExecutor):
         cert_key = options.get('cert_key')
         cert_cert = options.get('cert_cert')
         timeout = int(options.get('timeout', self.DEFAULT_TIMEOUT))
+        api_version = options.get("api_version", self.DEFAULT_API_VERSION)
         self.client = etcd3gw.client(host=host,
                                      port=port,
                                      protocol=protocol,
                                      ca_cert=ca_cert,
                                      cert_key=cert_key,
                                      cert_cert=cert_cert,
+                                     api_path="/" + api_version + "/",
                                      timeout=timeout)
         self.lock_timeout = int(options.get('lock_timeout', timeout))
         self.membership_timeout = int(options.get(
