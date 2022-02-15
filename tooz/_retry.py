@@ -22,7 +22,7 @@ _default_wait = wait.wait_exponential(max=1)
 
 
 def retry(stop_max_delay=None, **kwargs):
-    k = {"wait": _default_wait, "retry": lambda x: False}
+    k = {"wait": _default_wait, "retry": tenacity.retry_never}
     if stop_max_delay not in (True, False, None):
         k['stop'] = stop.stop_after_delay(stop_max_delay)
     return tenacity.retry(**k)
