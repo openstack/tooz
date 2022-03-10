@@ -1,0 +1,5 @@
+---
+deprecations:
+  - |
+    The etcd3 driver is deprecated, it will be removed in a future
+    release. No testing is performed on this driver.

@@ -10,8 +10,6 @@
       jobs:
         - tooz-tox-py38-etcd
         - tooz-tox-py36-etcd
-        - tooz-tox-py38-etcd3
-        - tooz-tox-py36-etcd3
         - tooz-tox-py38-etcd3gw
         - tooz-tox-py36-etcd3gw
         - tooz-tox-py38-zookeeper
@@ -32,8 +30,6 @@
       jobs:
         - tooz-tox-py38-etcd
         - tooz-tox-py36-etcd
-        - tooz-tox-py38-etcd3
-        - tooz-tox-py36-etcd3
         - tooz-tox-py38-etcd3gw
         - tooz-tox-py36-etcd3gw
         - tooz-tox-py38-zookeeper
@@ -66,14 +62,6 @@
       Run tests using ``py38-etcd`` environment.
     vars:
       tox_envlist: py38-etcd
-
-- job:
-    name: tooz-tox-py38-etcd3
-    parent: openstack-tox-py38
-    description: |
-      Run tests using ``py38-etcd3`` environment.
-    vars:
-      tox_envlist: py38-etcd3
 
 - job:
     name: tooz-tox-py38-etcd3gw
@@ -150,14 +138,6 @@
       Run tests using ``py36-etcd`` environment.
     vars:
       tox_envlist: py36-etcd
-
-- job:
-    name: tooz-tox-py36-etcd3
-    parent: openstack-tox-py36
-    description: |
-      Run tests using ``py36-etcd3`` environment.
-    vars:
-      tox_envlist: py36-etcd3
 
 - job:
     name: tooz-tox-py36-etcd3gw

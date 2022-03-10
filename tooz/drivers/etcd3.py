@@ -25,6 +25,8 @@ from tooz import coordination
 from tooz import locking
 from tooz import utils
 
+import warnings
+
 
 @contextlib.contextmanager
 def _failure_translator():
@@ -143,6 +145,10 @@ class Etcd3Driver(coordination.CoordinationDriverCachedRunWatchers,
 
     def __init__(self, member_id, parsed_url, options):
         super(Etcd3Driver, self).__init__(member_id, parsed_url, options)
+        warnings.warn(
+            "The etcd3 tooz driver is deprecated, it will be removed in"
+            "a future release."
+        )
         host = parsed_url.hostname or self.DEFAULT_HOST
         port = parsed_url.port or self.DEFAULT_PORT
         options = utils.collapse(options)
