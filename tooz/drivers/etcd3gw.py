@@ -250,7 +250,7 @@ class Etcd3Driver(coordination.CoordinationDriverWithExecutor):
         return _encode(self._prefix_group(group_id))
 
     def _prefix_group(self, group_id):
-        return b"%s%s/" % (self.GROUP_PREFIX, group_id)
+        return b"%s%s/" % (self.GROUP_PREFIX, utils.to_binary(group_id))
 
     def create_group(self, group_id):
         @_translate_failures
