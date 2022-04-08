@@ -160,7 +160,8 @@ class Etcd3Lock(locking.Lock):
         return False
 
 
-class Etcd3Driver(coordination.CoordinationDriverWithExecutor):
+class Etcd3Driver(coordination.CoordinationDriverCachedRunWatchers,
+                  coordination.CoordinationDriverWithExecutor):
     """An etcd based driver.
 
     This driver uses etcd provide the coordination driver semantics and
@@ -233,18 +234,6 @@ class Etcd3Driver(coordination.CoordinationDriverWithExecutor):
         # TODO(kaifeng) use the same lease for locks?
         self._membership_lease.refresh()
         return min(self.lock_timeout, self.membership_timeout)
-
-    def watch_join_group(self, group_id, callback):
-        raise tooz.NotImplemented
-
-    def unwatch_join_group(self, group_id, callback):
-        raise tooz.NotImplemented
-
-    def watch_leave_group(self, group_id, callback):
-        raise tooz.NotImplemented
-
-    def unwatch_leave_group(self, group_id, callback):
-        raise tooz.NotImplemented
 
     def _encode_group_id(self, group_id):
         return _encode(self._prefix_group(group_id))
@@ -435,3 +424,11 @@ class Etcd3Driver(coordination.CoordinationDriverWithExecutor):
                 group[1]['key'][len(self.GROUP_PREFIX):-1] for group in groups]
         return coordination.CoordinatorResult(
             self._executor.submit(_get_groups))
+
+    @staticmethod
+    def watch_elected_as_leader(group_id, callback):
+        raise tooz.NotImplemented
+
+    @staticmethod
+    def unwatch_elected_as_leader(group_id, callback):
+        raise tooz.NotImplemented
