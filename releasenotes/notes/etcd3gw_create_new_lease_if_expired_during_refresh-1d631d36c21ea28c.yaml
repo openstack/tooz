@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    [etcd3gw] Membership lease can be already expired to the moment of lease
+    refreshing. In this case heartbeat will try to refresh expired lease
+    forever without success. The patch checks if lease is expired and creates
+    new one.
