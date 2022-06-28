@@ -61,12 +61,12 @@ class MySQLLock(locking.Lock):
             try:
                 if not self._conn.open:
                     self._conn.connect()
-                with self._conn as cur:
-                    cur.execute("SELECT GET_LOCK(%s, 0);", self.name)
-                    # Can return NULL on error
-                    if cur.fetchone()[0] is 1:
-                        self.acquired = True
-                        return True
+                cur = self._conn.cursor()
+                cur.execute("SELECT GET_LOCK(%s, 0);", self.name)
+                # Can return NULL on error
+                if cur.fetchone()[0] == 1:
+                    self.acquired = True
+                    return True
             except pymysql.MySQLError as e:
                 utils.raise_with_cause(
                     tooz.ToozError,
@@ -90,9 +90,9 @@ class MySQLLock(locking.Lock):
         if not self.acquired:
             return False
         try:
-            with self._conn as cur:
-                cur.execute("SELECT RELEASE_LOCK(%s);", self.name)
-                cur.fetchone()
+            cur = self._conn.cursor()
+            cur.execute("SELECT RELEASE_LOCK(%s);", self.name)
+            cur.fetchone()
             self.acquired = False
             self._conn.close()
             return True
