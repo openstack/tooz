@@ -150,11 +150,16 @@ class MemcachedLock(locking.Lock):
         # it being done in the client side (non-atomic).
         value = self.coord.client.get(self.name)
         if value != self.coord._member_id:
+            # NOTE(zhen): Although ``member_ id`` is different, self lock
+            # object needs to be removed from'_ acquired_locks' because it
+            # has the same key.
+            self.coord._acquired_locks.remove(self)
             return False
         else:
+            # NOTE(zhen): Whether 'was_deleted' was 'TRUE' or not,
+            # eventually we have to remove self from '_acquired_locks'.
             was_deleted = self.coord.client.delete(self.name, noreply=False)
-            if was_deleted:
-                self.coord._acquired_locks.remove(self)
+            self.coord._acquired_locks.remove(self)
             return was_deleted
 
     @_translate_failures

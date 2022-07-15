@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fixs inappropriate logic in memcachedlock.release()
