@@ -57,8 +57,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'tooz'
-copyright = u'%s, OpenStack Foundation' % datetime.date.today().year
+project = 'tooz'
+copyright = '%s, OpenStack Foundation' % datetime.date.today().year
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -88,8 +88,8 @@ latex_documents = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'tooz', u'tooz Documentation',
-   u'OpenStack Foundation', 'tooz', 'One line description of project.',
+  ('index', 'tooz', 'tooz Documentation',
+   'OpenStack Foundation', 'tooz', 'One line description of project.',
    'Miscellaneous'),
 ]
 
