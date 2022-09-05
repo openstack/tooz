@@ -34,16 +34,19 @@ class TestEtcd3Gw(testcase.TestCase):
                'ca_cert': None,
                'cert_key': None,
                'cert_cert': None,
+               'api_path': (
+                   "/" + etcd3gw_driver.Etcd3Driver.DEFAULT_API_VERSION + "/"),
                'timeout': etcd3gw_driver.Etcd3Driver.DEFAULT_TIMEOUT},
               {'coord_url': ('etcd3+https://my_host:666?ca_cert=/my/ca_cert&'
                              'cert_key=/my/cert_key&cert_cert=/my/cert_cert&'
-                             'timeout=42'),
+                             'timeout=42&api_version=v3'),
                'protocol': 'https',
                'host': 'my_host',
                'port': 666,
                'ca_cert': '/my/ca_cert',
                'cert_key': '/my/cert_key',
                'cert_cert': '/my/cert_cert',
+               'api_path': '/v3/',
                'timeout': 42})
     @ddt.unpack
     @mock.patch('etcd3gw.client')
@@ -56,6 +59,7 @@ class TestEtcd3Gw(testcase.TestCase):
                                  ca_cert,
                                  cert_key,
                                  cert_cert,
+                                 api_path,
                                  timeout):
         tooz.coordination.get_coordinator(coord_url, self.FAKE_MEMBER_ID)
         mock_etcd3gw_client.assert_called_with(host=host,
@@ -64,4 +68,5 @@ class TestEtcd3Gw(testcase.TestCase):
                                                ca_cert=ca_cert,
                                                cert_key=cert_key,
                                                cert_cert=cert_cert,
+                                               api_path=api_path,
                                                timeout=timeout)
