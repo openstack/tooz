@@ -454,10 +454,10 @@ return 1
             if 'sentinel_fallback' in kwargs:
                 del kwargs['sentinel_fallback']
             master_client = sentinel_server.master_for(sentinel_name, **kwargs)
-            # The master_client is a redis.StrictRedis using a
+            # The master_client is a redis.Redis using a
             # Sentinel managed connection pool.
             return master_client
-        return redis.StrictRedis(**kwargs)
+        return redis.Redis(**kwargs)
 
     @_handle_failures()
     def _start(self):
