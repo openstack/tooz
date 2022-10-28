@@ -32,7 +32,7 @@ Driver support
    * - :py:class:`~tooz.drivers.consul.ConsulDriver`
      - Yes
    * - :py:class:`~tooz.drivers.etcd.EtcdDriver`
-     - No
+     - Yes
    * - :py:class:`~tooz.drivers.file.FileDriver`
      - Yes
    * - :py:class:`~tooz.drivers.ipc.IPCDriver`

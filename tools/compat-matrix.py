@@ -74,7 +74,7 @@ print("")
 grouping_table = [
     [
         "Yes",  # Consul
-        "No",  # Etcd
+        "Yes",  # Etcd
         "Yes",  # File
         "No",  # IPC
         "Yes",  # Memcached
