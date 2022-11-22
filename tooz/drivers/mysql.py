@@ -58,11 +58,16 @@ class MySQLLock(locking.Lock):
                     raise _retry.TryAgain
                 return False
 
+            _, timeout = utils.convert_blocking(blocking)
             try:
                 if not self._conn.open:
                     self._conn.connect()
                 cur = self._conn.cursor()
-                cur.execute("SELECT GET_LOCK(%s, 0);", self.name)
+                cur.execute(
+                    ("SELECT GET_LOCK(%s, "
+                     f"{timeout if timeout is not None else '0'});"),
+                    self.name
+                )
                 # Can return NULL on error
                 if cur.fetchone()[0] == 1:
                     self.acquired = True
