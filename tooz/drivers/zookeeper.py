@@ -95,11 +95,17 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
     ================  ===============================  ====================
     Name              Source                           Default
     ================  ===============================  ====================
-    hosts             url netloc + 'hosts' option key  localhost:2181
-    timeout           'timeout' options key            10.0 (kazoo default)
+    ca                'ca' options key                 None
+    certfile          'certfile' options key           None
     connection_retry  'connection_retry' options key   None
     command_retry     'command_retry' options key      None
+    hosts             url netloc + 'hosts' option key  localhost:2181
+    keyfile           'keyfile' options key            None
+    keyfile_password  'keyfile_password' options key   None
     randomize_hosts   'randomize_hosts' options key    True
+    timeout           'timeout' options key            10.0 (kazoo default)
+    use_ssl           'use_ssl' options key            False
+    verify_certs      'verify_certs' options key       True
     ================  ===============================  ====================
 
     .. _kazoo: http://kazoo.readthedocs.org/
@@ -472,13 +478,19 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
             hosts = ['localhost:2181']
         randomize_hosts = options.get('randomize_hosts', True)
         client_kwargs = {
-            'hosts': ",".join(hosts),
-            'timeout': float(options.get('timeout', self.timeout)),
+            'auth_data': auth_data,
+            'ca': options.get('ca', None),
+            'certfile': options.get('certfile', None),
             'connection_retry': options.get('connection_retry'),
             'command_retry': options.get('command_retry'),
-            'randomize_hosts': strutils.bool_from_string(randomize_hosts),
-            'auth_data': auth_data,
             'default_acl': default_acl,
+            'hosts': ",".join(hosts),
+            'keyfile': options.get('keyfile', None),
+            'keyfile_password': options.get('keyfile_password', None),
+            'randomize_hosts': strutils.bool_from_string(randomize_hosts),
+            'timeout': float(options.get('timeout', self.timeout)),
+            'use_ssl': bool(options.get('use_ssl', False)),
+            'verify_certs': bool(options.get('verify_certs', True)),
         }
         handler_kind = options.get('handler')
         if handler_kind:

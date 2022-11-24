@@ -1,0 +1,17 @@
+---
+features:
+  - |
+    Added TLS support for Zookeeper.
+
+    TLS-related options can be defined in a connection URL as query parameters
+    and they will be passed to the Kazoo driver as client arguments.
+
+    * ``ca``: SSL CA file to use for authentication
+    * ``certfile``: SSL certfile to use for authentication
+    * ``keyfile``: SSL keyfile to use for authentication
+    * ``keyfile_password``: keyfile password
+    * ``use_ssl``: controls whether SSL is used or not. Default to False.
+    * ``verify_certs``: when use_ssl is True you can control whether to
+      complete certificate validation
+
+    This also bumps minimum kazoo version to >=2.6.0
