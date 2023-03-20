@@ -257,6 +257,7 @@ class RedisDriver(coordination.CoordinationDriverCachedRunWatchers,
         'retry_on_timeout',
         'socket_keepalive',
         'socket_timeout',
+        'socket_connect_timeout',
         'ssl',
         'ssl_certfile',
         'ssl_keyfile',
@@ -293,6 +294,7 @@ class RedisDriver(coordination.CoordinationDriverCachedRunWatchers,
     #: Client arguments that are expected to be float convertible.
     CLIENT_FLOAT_ARGS = frozenset([
         'socket_timeout',
+        'socket_connect_timeout',
     ])
 
     #: Default socket timeout to use when none is provided.
