@@ -92,7 +92,21 @@ class TestMySQLDriver(testcase.TestCase):
         c.start()
 
         name = tests.get_random_uuid()
-        blocking_value = 10.12
+        blocking_value = False
+        timeout = 10.1
+        lock = c.get_lock(name)
+        with mock.patch.object(lock, 'acquire', wraps=True, autospec=True) as \
+                mock_acquire:
+            with lock(blocking_value, timeout):
+                mock_acquire.assert_called_once_with(blocking_value, timeout)
+
+    @mock.patch("pymysql.Connect")
+    def test_parsing_blocking_settings(self, sql_mock):
+        c = self._create_coordinator("mysql://localhost:3306/test")
+        c.start()
+
+        name = tests.get_random_uuid()
+        blocking_value = True
         lock = c.get_lock(name)
         with mock.patch.object(lock, 'acquire', wraps=True, autospec=True) as \
                 mock_acquire:

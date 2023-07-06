@@ -37,7 +37,7 @@ class MySQLLock(locking.Lock):
         self.acquired = False
         self._conn = MySQLDriver.get_connection(parsed_url, options, True)
 
-    def acquire(self, blocking=True, shared=False):
+    def acquire(self, blocking=True, shared=False, timeout=0):
 
         if shared:
             raise tooz.NotImplemented
@@ -58,14 +58,12 @@ class MySQLLock(locking.Lock):
                     raise _retry.TryAgain
                 return False
 
-            _, timeout = utils.convert_blocking(blocking)
             try:
                 if not self._conn.open:
                     self._conn.connect()
                 cur = self._conn.cursor()
                 cur.execute(
-                    ("SELECT GET_LOCK(%s, "
-                     f"{timeout if timeout is not None else '0'});"),
+                    (f"SELECT GET_LOCK(%s, {timeout});"),
                     self.name
                 )
                 # Can return NULL on error
