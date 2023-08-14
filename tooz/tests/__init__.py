@@ -58,7 +58,10 @@ class TestWithCoordinator(testcase.TestCase, metaclass=SkipNotImplementedMeta):
         if os.getenv("TOOZ_TEST_ETCD3"):
             self.url = self.url.replace("etcd://", "etcd3://")
         if os.getenv("TOOZ_TEST_ETCD3GW"):
-            self.url = self.url.replace("etcd://", "etcd3+http://")
+            # TODO(jan.gutter): When pifpaf supports etcd 3.4 we should use the
+            # defaults
+            self.url = self.url.replace("etcd://", "etcd3+http://") + \
+                "?api_version=v3beta"
         self.useFixture(fixtures.NestedTempfile())
         self.group_id = get_random_uuid()
         self.member_id = get_random_uuid()

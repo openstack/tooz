@@ -1,0 +1,7 @@
+---
+upgrade:
+  - |
+    This version of tooz defaults to the `v3` endpoint for the `etcd3gw`
+    backend. The previous behavior can be restored by appending
+    `?api_version=v3alpha` to the coordination URL. The `v3alpha` and
+    `v3beta` endpoints have been deprecated by upstream etcd.

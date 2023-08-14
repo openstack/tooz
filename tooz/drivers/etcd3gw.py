@@ -181,7 +181,7 @@ class Etcd3Driver(coordination.CoordinationDriverCachedRunWatchers,
     ==================  =======
     Name                Default
     ==================  =======
-    api_version         v3alpha
+    api_version         v3
     ca_cert             None
     cert_key            None
     cert_cert           None
@@ -201,7 +201,7 @@ class Etcd3Driver(coordination.CoordinationDriverCachedRunWatchers,
     DEFAULT_PORT = 2379
 
     #: Default api version if none provided
-    DEFAULT_API_VERSION = "v3alpha"
+    DEFAULT_API_VERSION = "v3"
 
     GROUP_PREFIX = b"tooz/groups/"
 

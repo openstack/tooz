@@ -8,8 +8,6 @@
       - release-notes-jobs-python3
     check:
       jobs:
-        - tooz-tox-py38-etcd
-        - tooz-tox-py310-etcd
         - tooz-tox-py38-etcd3gw
         - tooz-tox-py310-etcd3gw
         - tooz-tox-py38-zookeeper
@@ -28,8 +26,6 @@
         - tooz-tox-py310-consul
     gate:
       jobs:
-        - tooz-tox-py38-etcd
-        - tooz-tox-py310-etcd
         - tooz-tox-py38-etcd3gw
         - tooz-tox-py310-etcd3gw
         - tooz-tox-py38-zookeeper
@@ -54,14 +50,6 @@
       Run tests using ``py38-consul`` environment.
     vars:
       tox_envlist: py38-consul
-
-- job:
-    name: tooz-tox-py38-etcd
-    parent: openstack-tox-py38
-    description: |
-      Run tests using ``py38-etcd`` environment.
-    vars:
-      tox_envlist: py38-etcd
 
 - job:
     name: tooz-tox-py38-etcd3gw
@@ -130,14 +118,6 @@
       Run tests using ``py310-consul`` environment.
     vars:
       tox_envlist: py310-consul
-
-- job:
-    name: tooz-tox-py310-etcd
-    parent: openstack-tox-py310
-    description: |
-      Run tests using ``py310-etcd`` environment.
-    vars:
-      tox_envlist: py310-etcd
 
 - job:
     name: tooz-tox-py310-etcd3gw

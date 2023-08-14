@@ -39,14 +39,14 @@ class TestEtcd3Gw(testcase.TestCase):
                'timeout': etcd3gw_driver.Etcd3Driver.DEFAULT_TIMEOUT},
               {'coord_url': ('etcd3+https://my_host:666?ca_cert=/my/ca_cert&'
                              'cert_key=/my/cert_key&cert_cert=/my/cert_cert&'
-                             'timeout=42&api_version=v3'),
+                             'timeout=42&api_version=v3alpha'),
                'protocol': 'https',
                'host': 'my_host',
                'port': 666,
                'ca_cert': '/my/ca_cert',
                'cert_key': '/my/cert_key',
                'cert_cert': '/my/cert_cert',
-               'api_path': '/v3/',
+               'api_path': '/v3alpha/',
                'timeout': 42})
     @ddt.unpack
     @mock.patch('etcd3gw.client')
