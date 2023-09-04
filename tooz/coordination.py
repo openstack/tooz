@@ -75,7 +75,7 @@ class Characteristics(enum.Enum):
     SEQUENTIAL = 'SEQUENTIAL'
     """The driver has the following properties:
 
-    * Operations can take effect before or after completion – but all
+    * Operations can take effect before or after completion - but all
       operations retain the constraint that operations from any given process
       must take place in that processes order.
     """
