@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Add `kubernetes` driver that support basic lock managements.
+    This is directly using kubernetes config paths from environment,
+    so no need to expose or set extra client settings for
+    authentication in tooz. Please reference [1] for more detail.
+    [1] https://github.com/kubernetes-client/python/blob/master/README.md

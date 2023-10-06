@@ -23,3 +23,6 @@ kazoo>=2.2 # Apache-2.0
 pymemcache>=1.2.9 # Apache 2.0 License
 ## ipc
 sysv-ipc>=0.6.8 # BSD License
+## kubernetes
+sherlock>=0.4.1 # MIT License
+kubernetes>=2.8.1 # Apache-2.0

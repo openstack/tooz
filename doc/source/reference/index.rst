@@ -38,6 +38,12 @@ IPC
 .. autoclass:: tooz.drivers.ipc.IPCDriver
    :members:
 
+Kubernetes
+~~~~~~~~~~
+
+.. autoclass:: tooz.drivers.kubernetes.SherlockDriver
+   :members:
+
 Memcached
 ~~~~~~~~~
 

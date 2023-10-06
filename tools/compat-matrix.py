@@ -35,6 +35,7 @@ driver_class_names = [
     "etcd.EtcdDriver",
     "file.FileDriver",
     "ipc.IPCDriver",
+    "kubernetes.SherlockDriver",
     "memcached.MemcachedDriver",
     "mysql.MySQLDriver",
     "pgsql.PostgresDriver",
@@ -75,6 +76,7 @@ grouping_table = [
         "Yes",  # Etcd
         "Yes",  # File
         "No",  # IPC
+        "No",  # Kubernetes
         "Yes",  # Memcached
         "No",  # MySQL
         "No",  # PostgreSQL
@@ -107,6 +109,7 @@ leader_table = [
         "No",  # Etcd
         "No",  # File
         "No",  # IPC
+        "No",  # Kubernetes
         "Yes",  # Memcached
         "No",  # MySQL
         "No",  # PostgreSQL
@@ -136,6 +139,7 @@ lock_table = [
         "Yes",  # Etcd
         "Yes",  # File
         "Yes",  # IPC
+        "Yes",  # Kubernetes
         "Yes",  # Memcached
         "Yes",  # MySQL
         "Yes",  # PostgreSQL
