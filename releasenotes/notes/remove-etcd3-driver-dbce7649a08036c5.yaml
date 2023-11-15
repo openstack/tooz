@@ -1,0 +1,4 @@
+---
+upgrade:
+  - |
+    The etcd3 driver has been removed.
