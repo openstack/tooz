@@ -288,6 +288,10 @@ class RedisDriver(coordination.CoordinationDriverCachedRunWatchers,
     CLIENT_INT_ARGS = frozenset([
         'db',
         'socket_keepalive',
+    ])
+
+    #: Client arguments that are expected to be float convertible.
+    CLIENT_FLOAT_ARGS = frozenset([
         'socket_timeout',
     ])
 
@@ -432,6 +436,8 @@ return 1
                 v = options[a]
             elif a in cls.CLIENT_INT_ARGS:
                 v = int(options[a])
+            elif a in cls.CLIENT_FLOAT_ARGS:
+                v = float(options[a])
             else:
                 v = options[a]
             kwargs[a] = v
