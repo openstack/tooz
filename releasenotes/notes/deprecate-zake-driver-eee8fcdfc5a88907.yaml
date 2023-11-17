@@ -1,0 +1,5 @@
+---
+deprecations:
+  - |
+    The zake driver has been deprecated and will be removed in a future
+    release.

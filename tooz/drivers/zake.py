@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import warnings
+
 from zake import fake_client
 from zake import fake_storage
 
@@ -46,6 +48,13 @@ class ZakeDriver(zookeeper.KazooDriver):
     # a thread-safe manner.
     fake_storage = fake_storage.FakeStorage(
         fake_client.k_threading.SequentialThreadingHandler())
+
+    def __init__(self, member_id, parsed_url, options):
+        super(ZakeDriver, self).__init__(member_id, parsed_url, options)
+        warnings.warn(
+            "The zake driver is deprecated, and will be removed in "
+            "a future release."
+        )
 
     @classmethod
     def _make_client(cls, parsed_url, options):
