@@ -55,8 +55,6 @@ class TestWithCoordinator(testcase.TestCase, metaclass=SkipNotImplementedMeta):
         super(TestWithCoordinator, self).setUp()
         if self.url is None:
             raise RuntimeError("No URL set for this driver")
-        if os.getenv("TOOZ_TEST_ETCD3"):
-            self.url = self.url.replace("etcd://", "etcd3://")
         if os.getenv("TOOZ_TEST_ETCD3GW"):
             # TODO(jan.gutter): When pifpaf supports etcd 3.4 we should use the
             # defaults

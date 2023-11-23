@@ -198,21 +198,6 @@ The etcd driver is a driver providing only distributed locks (for now)
 and is based on the `etcd server`_ supported key/value storage and
 associated primitives.
 
-Etcd3
------
-
-**Driver:**  :py:class:`tooz.drivers.etcd3.Etcd3Driver`
-
-**Characteristics:** :py:attr:`tooz.drivers.etcd3.Etcd3Driver.CHARACTERISTICS`
-
-**Entrypoint name:** ``etcd3``
-
-**Summary:**
-
-The etcd3 driver is a driver providing only distributed locks (for now)
-and is based on the `etcd server`_ supported key/value storage and
-associated primitives.
-
 Etcd3 Gateway
 -------------
 
