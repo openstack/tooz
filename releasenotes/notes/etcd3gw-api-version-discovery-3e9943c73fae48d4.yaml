@@ -1,0 +1,11 @@
+---
+features:
+  - |
+    The ``etcd3gw`` driver now automatically discovers available etcd API
+    version and determines the api path. The driver detects the appropriate api
+    path before sending its first request, and the path is reused for its
+    subsequent requests. Services may need to be restarted after its backend
+    etcd server is upgraded, so that the new api path is detected.
+    The detection is skipped if the coordination backend url contains
+    the ``api_version`` query parameter or the ``ETCD3GW_API_PATH``
+    environment is set.

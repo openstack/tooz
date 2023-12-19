@@ -34,8 +34,7 @@ class TestEtcd3Gw(testcase.TestCase):
                'ca_cert': None,
                'cert_key': None,
                'cert_cert': None,
-               'api_path': (
-                   "/" + etcd3gw_driver.Etcd3Driver.DEFAULT_API_VERSION + "/"),
+               'api_path': None,
                'timeout': etcd3gw_driver.Etcd3Driver.DEFAULT_TIMEOUT},
               {'coord_url': ('etcd3+https://my_host:666?ca_cert=/my/ca_cert&'
                              'cert_key=/my/cert_key&cert_cert=/my/cert_cert&'
