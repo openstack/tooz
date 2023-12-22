@@ -106,11 +106,11 @@ class EtcdLock(locking.Lock):
         reply = self.client.delete(self._lock_url, make_url=False)
         return reply.get('errorCode') is None
 
-    def acquire(self, blocking=True, shared=False):
+    def acquire(self, blocking=True, shared=False, timeout=None):
         if shared:
             raise tooz.NotImplemented
 
-        blocking, timeout = utils.convert_blocking(blocking)
+        blocking, timeout = utils.convert_blocking(blocking, timeout)
         if timeout is not None:
             watch = timeutils.StopWatch(duration=timeout)
             watch.start()

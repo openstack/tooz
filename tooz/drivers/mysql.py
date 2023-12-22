@@ -37,13 +37,13 @@ class MySQLLock(locking.Lock):
         self.acquired = False
         self._conn = MySQLDriver.get_connection(parsed_url, options, True)
 
-    def acquire(self, blocking=True, shared=False, timeout=0):
+    def acquire(self, blocking=True, shared=False, timeout=None):
 
         if shared:
             raise tooz.NotImplemented
 
         @_retry.retry(stop_max_delay=blocking)
-        def _lock():
+        def _lock(timeout):
             # NOTE(sileht): mysql-server (<5.7.5) allows only one lock per
             # connection at a time:
             #  select GET_LOCK("a", 0);
@@ -58,12 +58,14 @@ class MySQLLock(locking.Lock):
                     raise _retry.TryAgain
                 return False
 
+            _, timeout = utils.convert_blocking(blocking, timeout)
             try:
                 if not self._conn.open:
                     self._conn.connect()
                 cur = self._conn.cursor()
                 cur.execute(
-                    (f"SELECT GET_LOCK(%s, {timeout});"),
+                    ("SELECT GET_LOCK(%s, "
+                     f"{timeout if timeout is not None else '0'});"),
                     self.name
                 )
                 # Can return NULL on error
@@ -82,7 +84,7 @@ class MySQLLock(locking.Lock):
             return False
 
         try:
-            return _lock()
+            return _lock(timeout)
         except Exception:
             # Close the connection if we tried too much and finally failed, or
             # anything else bad happened.

@@ -114,8 +114,8 @@ class FileLock(locking.Lock):
     def is_still_owner(self):
         return self.acquired
 
-    def acquire(self, blocking=True, shared=False):
-        blocking, timeout = utils.convert_blocking(blocking)
+    def acquire(self, blocking=True, shared=False, timeout=None):
+        blocking, timeout = utils.convert_blocking(blocking, timeout)
         watch = timeutils.StopWatch(duration=timeout)
         watch.start()
 

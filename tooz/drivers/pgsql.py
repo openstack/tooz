@@ -102,9 +102,11 @@ class PostgresLock(locking.Lock):
         h.update(name)
         self.key = h.digest()[0:2]
 
-    def acquire(self, blocking=True, shared=False):
+    def acquire(self, blocking=True, shared=False, timeout=None):
 
         if shared:
+            raise tooz.NotImplemented
+        if timeout is not None:
             raise tooz.NotImplemented
 
         @_retry.retry(stop_max_delay=blocking)
