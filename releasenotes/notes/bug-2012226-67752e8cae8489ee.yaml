@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Now redis backend supports customizing path to CA certificates using
+    the ``ssl_ca_certs`` query parameter.
