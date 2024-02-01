@@ -1,6 +1,7 @@
 *.py[co]
 *.egg
 *.egg-info
+.eggs/*
 build
 !.coveragerc
 !.gitignore
