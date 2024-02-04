@@ -468,17 +468,15 @@ return 1
         if 'sentinel' in kwargs:
             sentinel_hosts = [
                 cls._parse_sentinel(fallback)
-                for fallback in kwargs.get('sentinel_fallback', [])
+                for fallback in kwargs.pop('sentinel_fallback', [])
             ]
             sentinel_hosts.insert(0, (kwargs['host'], kwargs['port']))
+            sentinel_name = kwargs.pop('sentinel')
             sentinel_server = sentinel.Sentinel(
                 sentinel_hosts,
-                socket_timeout=kwargs['socket_timeout'])
-            sentinel_name = kwargs['sentinel']
-            del kwargs['sentinel']
-            if 'sentinel_fallback' in kwargs:
-                del kwargs['sentinel_fallback']
-            master_client = sentinel_server.master_for(sentinel_name, **kwargs)
+                sentinel_kwargs=kwargs,
+                **kwargs)
+            master_client = sentinel_server.master_for(sentinel_name)
             # The master_client is a redis.Redis using a
             # Sentinel managed connection pool.
             return master_client
