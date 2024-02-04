@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    The redis coordination driver now parses ``username`` in coordination url
+    and use it in authentication requests to Redis.

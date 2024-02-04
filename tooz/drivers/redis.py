@@ -159,7 +159,8 @@ class RedisDriver(coordination.CoordinationDriverCachedRunWatchers,
 
     The Redis driver connection URI should look like::
 
-      redis://[:PASSWORD@]HOST:PORT[?OPTION=VALUE[&OPTION2=VALUE2[&...]]]
+      redis://[USERNAME:PASSWORD@]HOST:PORT
+          [?OPTION=VALUE[&OPTION2=VALUE2[&...]]]
 
     For a list of options recognized by this driver, see the documentation
     for the member CLIENT_ARGS, and to determine the expected types of those
@@ -428,6 +429,8 @@ return 1
             if not parsed_url.path:
                 raise ValueError("Expected socket path in parsed urls path")
             kwargs['unix_socket_path'] = parsed_url.path
+        if parsed_url.username:
+            kwargs['username'] = parsed_url.username
         if parsed_url.password:
             kwargs['password'] = parsed_url.password
         for a in cls.CLIENT_ARGS:
