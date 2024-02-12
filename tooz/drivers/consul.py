@@ -66,8 +66,10 @@ class ConsulLock(locking.Lock):
         self._client = client
         self.acquired = False
 
-    def acquire(self, blocking=True, shared=False):
+    def acquire(self, blocking=True, shared=False, timeout=None):
         if shared:
+            raise tooz.NotImplemented
+        if timeout:
             raise tooz.NotImplemented
 
         @_retry.retry(stop_max_delay=blocking)

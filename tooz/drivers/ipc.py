@@ -71,7 +71,7 @@ class IPCLock(locking.Lock):
         else:
             return True
 
-    def acquire(self, blocking=True, shared=False):
+    def acquire(self, blocking=True, shared=False, timeout=None):
         if shared:
             raise tooz.NotImplemented
 
@@ -79,7 +79,10 @@ class IPCLock(locking.Lock):
                 sysv_ipc.SEMAPHORE_TIMEOUT_SUPPORTED is False):
             raise tooz.NotImplemented("This system does not support"
                                       " semaphore timeouts")
-        blocking, timeout = utils.convert_blocking(blocking)
+        if blocking is False and timeout is not None:
+            raise tooz.NotImplemented("Timeout without blocking is not "
+                                      "implemented")
+        blocking, timeout = utils.convert_blocking(blocking, timeout)
         start_time = None
         if not blocking:
             timeout = 0

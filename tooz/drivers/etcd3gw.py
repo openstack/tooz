@@ -78,15 +78,17 @@ class Etcd3Lock(locking.Lock):
         self._exclusive_access = threading.Lock()
 
     @_translate_failures
-    def acquire(self, blocking=True, shared=False):
+    def acquire(self, blocking=True, shared=False, timeout=None):
         if shared:
             raise tooz.NotImplemented
+        if timeout is None:
+            timeout = self._timeout
 
         @_retry.retry(stop_max_delay=blocking)
         def _acquire():
             # TODO(jd): save the created revision so we can check it later to
             # make sure we still have the lock
-            self._lease = self._coord.client.lease(self._timeout)
+            self._lease = self._coord.client.lease(timeout)
             txn = {
                 'compare': [{
                     'key': self._key_b64,

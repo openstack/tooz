@@ -94,7 +94,7 @@ class Lock(object, metaclass=abc.ABCMeta):
         raise tooz.NotImplemented
 
     @abc.abstractmethod
-    def acquire(self, blocking=True, shared=False):
+    def acquire(self, blocking=True, shared=False, timeout=None):
         """Attempts to acquire the lock.
 
         :param blocking: If True, blocks until the lock is acquired. If False,
@@ -104,6 +104,7 @@ class Lock(object, metaclass=abc.ABCMeta):
         :param shared: If False, the lock is exclusive. If True, the lock can
                        be shareable or raises ``NotImplemented`` if not
                        implemented.
+        :param timeout: Timeout to acquire a lock.
         :returns: returns true if acquired (false if not)
         :rtype: bool
         """

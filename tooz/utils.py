@@ -129,9 +129,8 @@ def safe_abs_path(rooted_at, *pieces):
     return path
 
 
-def convert_blocking(blocking):
+def convert_blocking(blocking, timeout=None):
     """Converts a multi-type blocking variable into its derivatives."""
-    timeout = None
     if not isinstance(blocking, bool):
         timeout = float(blocking)
         blocking = True
