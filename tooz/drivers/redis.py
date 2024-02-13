@@ -17,6 +17,7 @@
 from distutils import version
 import functools
 import logging
+import re
 import string
 import threading
 
@@ -419,6 +420,18 @@ return 1
     _loads = staticmethod(utils.loads)
 
     @classmethod
+    def _parse_sentinel(cls, sentinel):
+        # IPv6 (eg. [::1]:6379 )
+        match = re.search(r'\[(\S+)\]:(\d+)', sentinel)
+        if match:
+            return (match[1], int(match[2]))
+        # IPv4 or hostname (eg. 127.0.0.1:6379 or localhost:6379)
+        match = re.search(r'(\S+):(\d+)', sentinel)
+        if match:
+            return (match[1], int(match[2]))
+        raise ValueError('Malformed sentinel server format')
+
+    @classmethod
     def _make_client(cls, parsed_url, options, default_socket_timeout):
         kwargs = {}
         if parsed_url.hostname:
@@ -454,7 +467,7 @@ return 1
         # sentinel arg.
         if 'sentinel' in kwargs:
             sentinel_hosts = [
-                tuple(fallback.split(':'))
+                cls._parse_sentinel(fallback)
                 for fallback in kwargs.get('sentinel_fallback', [])
             ]
             sentinel_hosts.insert(0, (kwargs['host'], kwargs['port']))
