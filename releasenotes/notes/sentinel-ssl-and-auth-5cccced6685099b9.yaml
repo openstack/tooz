@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    The redis coordination driver now applies the connection arguments to Redis
+    sentinel. This allows enabling SSL or authentication in Redis Sentinel.
+    Note that using different SSL certificates or different credentials is not
+    supported now.
