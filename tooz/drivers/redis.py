@@ -285,13 +285,13 @@ class RedisDriver(coordination.CoordinationDriverCachedRunWatchers,
     #: Client arguments that are expected to be boolean convertible.
     CLIENT_BOOL_ARGS = frozenset([
         'retry_on_timeout',
+        'socket_keepalive',
         'ssl',
     ])
 
     #: Client arguments that are expected to be int convertible.
     CLIENT_INT_ARGS = frozenset([
         'db',
-        'socket_keepalive',
     ])
 
     #: Client arguments that are expected to be float convertible.

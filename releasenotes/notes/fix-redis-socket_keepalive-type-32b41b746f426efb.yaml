@@ -1,0 +1,9 @@
+---
+upgrade:
+  - |
+    The ``socket_keepalive`` option of redis driver no longer accepts integers
+    other than 0 and 1.
+
+fixes:
+  - |
+    The ``socket_keepalive`` option of redis driver now accepts boolean values.
