@@ -260,6 +260,7 @@ class RedisDriver(coordination.CoordinationDriverCachedRunWatchers,
         'socket_keepalive',
         'socket_timeout',
         'socket_connect_timeout',
+        'health_check_interval',
         'ssl',
         'ssl_certfile',
         'ssl_keyfile',
@@ -298,6 +299,7 @@ class RedisDriver(coordination.CoordinationDriverCachedRunWatchers,
     CLIENT_FLOAT_ARGS = frozenset([
         'socket_timeout',
         'socket_connect_timeout',
+        'health_check_interval',
     ])
 
     #: Default socket timeout to use when none is provided.

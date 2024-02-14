@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Redis driver now supports the ``health_check_interval`` option.
