@@ -472,7 +472,7 @@ return 1
                 cls._parse_sentinel(fallback)
                 for fallback in kwargs.pop('sentinel_fallback', [])
             ]
-            sentinel_hosts.insert(0, (kwargs['host'], kwargs['port']))
+            sentinel_hosts.insert(0, (kwargs.pop('host'), kwargs.pop('port')))
             sentinel_name = kwargs.pop('sentinel')
             sentinel_server = sentinel.Sentinel(
                 sentinel_hosts,
