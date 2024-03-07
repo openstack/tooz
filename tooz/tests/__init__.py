@@ -60,6 +60,8 @@ class TestWithCoordinator(testcase.TestCase, metaclass=SkipNotImplementedMeta):
             # defaults
             self.url = self.url.replace("etcd://", "etcd3+http://") + \
                 "?api_version=v3beta"
+        if os.getenv("TOOZ_TEST_SENTINEL"):
+            self.url = self.url.replace(":6379", ":6380?sentinel=pifpaf")
         self.useFixture(fixtures.NestedTempfile())
         self.group_id = get_random_uuid()
         self.member_id = get_random_uuid()
