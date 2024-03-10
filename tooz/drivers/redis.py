@@ -267,6 +267,9 @@ class RedisDriver(coordination.CoordinationDriverCachedRunWatchers,
         'ssl_ca_certs',
         'sentinel',
         'sentinel_fallback',
+        'sentinel_username',
+        'sentinel_password',
+        'sentinel_ssl',
     ])
     """
     Keys that we allow to proxy from the coordinator configuration into the
@@ -288,6 +291,7 @@ class RedisDriver(coordination.CoordinationDriverCachedRunWatchers,
         'retry_on_timeout',
         'socket_keepalive',
         'ssl',
+        'sentinel_ssl',
     ])
 
     #: Client arguments that are expected to be int convertible.
@@ -474,9 +478,23 @@ return 1
             ]
             sentinel_hosts.insert(0, (kwargs.pop('host'), kwargs.pop('port')))
             sentinel_name = kwargs.pop('sentinel')
+            sentinel_kwargs = {}
+            # NOTE(tkajinam): Copy socket_* options, according to the logic
+            # in redis-py
+            for key in kwargs:
+                if key.startswith('socket_'):
+                    sentinel_kwargs[key] = kwargs[key]
+            if kwargs.pop('sentinel_ssl', False):
+                sentinel_kwargs['ssl'] = True
+                for key in ('ssl_certfile', 'ssl_keyfile', 'ssl_cafile'):
+                    if key in kwargs:
+                        sentinel_kwargs[key] = kwargs[key]
+            for key in ('username', 'password'):
+                if 'sentinel_' + key in kwargs:
+                    sentinel_kwargs[key] = kwargs.pop('sentinel_' + key)
             sentinel_server = sentinel.Sentinel(
                 sentinel_hosts,
-                sentinel_kwargs=kwargs,
+                sentinel_kwargs=sentinel_kwargs,
                 **kwargs)
             master_client = sentinel_server.master_for(sentinel_name)
             # The master_client is a redis.Redis using a

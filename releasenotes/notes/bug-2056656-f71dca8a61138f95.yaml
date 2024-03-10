@@ -1,0 +1,22 @@
+---
+features:
+  - |
+    The redis driver now supports the following options.
+
+    - ``sentinel_username``
+    - ``sentinel_parameters``
+    - ``sentinel_ssl``
+
+fixes:
+  - |
+    The redis driver no longer enables authentication for redis sentinel when
+    authentication is enabled in redis. This was the previous behavior before
+    6.0.0, and was already required by some deployment tools like kolla. Now
+    authentication for redis sentinel is controlled by a separate options
+    (``sentinel_username`` and ``sentinel_password``).
+
+  - |
+    The redis driver no longer enables SSL for redis sentinel when SSL is
+    enabled in redis, to restore the compatibility with older versions. Now
+    SSL for redis sentinel is controlled by the separate ``sentinel_ssl``
+    option.
