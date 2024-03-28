@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from distutils import version
 import functools
 import logging
 import re
@@ -23,6 +22,7 @@ import threading
 
 from oslo_utils import encodeutils
 from oslo_utils import strutils
+from packaging import version
 import redis
 from redis import exceptions
 from redis import sentinel
@@ -219,7 +219,7 @@ class RedisDriver(coordination.CoordinationDriverCachedRunWatchers,
     enum member(s) that can be used to interogate how this driver works.
     """
 
-    MIN_VERSION = version.LooseVersion("2.6.0")
+    MIN_VERSION = version.Version("2.6.0")
     """
     The min redis version that this driver requires to operate with...
     """
@@ -395,14 +395,13 @@ return 1
 
     def _check_fetch_redis_version(self, geq_version, not_existent=True):
         if isinstance(geq_version, str):
-            desired_version = version.LooseVersion(geq_version)
-        elif isinstance(geq_version, version.LooseVersion):
+            desired_version = version.Version(geq_version)
+        elif isinstance(geq_version, version.Version):
             desired_version = geq_version
         else:
             raise TypeError("Version check expects a string/version type")
         try:
-            redis_version = version.LooseVersion(
-                self._server_info['redis_version'])
+            redis_version = version.Version(self._server_info['redis_version'])
         except KeyError:
             return (not_existent, None)
         else:
