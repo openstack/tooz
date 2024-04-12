@@ -232,6 +232,15 @@ class EtcdDriver(coordination.CoordinationDriver):
     #: Class that will be used to encode lock names into a valid etcd url.
     lock_encoder_cls = utils.Base64LockEncoder
 
+    CHARACTERISTICS = (
+        coordination.Characteristics.NON_TIMEOUT_BASED,
+        coordination.Characteristics.DISTRIBUTED_ACROSS_THREADS,
+        coordination.Characteristics.DISTRIBUTED_ACROSS_PROCESSES,
+        # https://etcd.io/docs/v3.5/learning/api_guarantees/
+        coordination.Characteristics.LINEARIZABLE,
+        coordination.Characteristics.SERIALIZABLE,
+    )
+
     def __init__(self, member_id, parsed_url, options):
         super(EtcdDriver, self).__init__(member_id, parsed_url, options)
         host = parsed_url.hostname or self.DEFAULT_HOST
