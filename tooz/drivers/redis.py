@@ -485,7 +485,7 @@ return 1
                     sentinel_kwargs[key] = kwargs[key]
             if kwargs.pop('sentinel_ssl', False):
                 sentinel_kwargs['ssl'] = True
-                for key in ('ssl_certfile', 'ssl_keyfile', 'ssl_cafile'):
+                for key in ('ssl_certfile', 'ssl_keyfile', 'ssl_ca_certs'):
                     if key in kwargs:
                         sentinel_kwargs[key] = kwargs[key]
             for key in ('username', 'password'):
