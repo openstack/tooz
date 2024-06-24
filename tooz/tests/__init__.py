@@ -16,6 +16,7 @@
 
 import functools
 import os
+import unittest
 
 import fixtures
 from oslo_utils import uuidutils
@@ -34,7 +35,7 @@ def _skip_decorator(func):
         try:
             return func(*args, **kwargs)
         except tooz.NotImplemented as e:
-            raise testcase.TestSkipped(str(e))
+            raise unittest.SkipTest(str(e))
     return skip_if_not_implemented
 
 

@@ -16,6 +16,7 @@
 
 import threading
 import time
+import unittest
 from unittest import mock
 import urllib
 
@@ -304,15 +305,16 @@ class TestAPI(tests.TestWithCoordinator):
 
     def test_heartbeat(self):
         if not self._coord.requires_beating:
-            raise testcase.TestSkipped("Test not applicable (heartbeating"
-                                       " not required)")
+            raise unittest.SkipTest(
+                "Test not applicable (heartbeating not required)"
+            )
         self._coord.heartbeat()
 
     def test_heartbeat_loop(self):
         if not self._coord.requires_beating:
-            raise testcase.TestSkipped("Test not applicable (heartbeating"
-                                       " not required)")
-
+            raise unittest.SkipTest(
+                "Test not applicable (heartbeating not required)"
+            )
         heart = self._coord.heart
         self.assertFalse(heart.is_alive())
         heart.start()
