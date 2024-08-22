@@ -18,7 +18,9 @@ import errno
 import functools
 import logging
 import socket
+import ssl
 
+from oslo_utils import strutils
 from pymemcache import client as pymemcache_client
 
 import tooz
@@ -205,6 +207,13 @@ class MemcachedDriver(coordination.CoordinationDriverCachedRunWatchers,
     lock_timeout        30
     leader_timeout      30
     max_pool_size       None
+    use_ssl             False
+    ca_cert             None
+    ssl_key             None
+    ssl_key_password    None
+    ssl_cert            None
+    ssl_ciphers         None
+    ssl_check_hostname  False
     ==================  =======
 
     General recommendations/usage considerations:
@@ -263,6 +272,29 @@ class MemcachedDriver(coordination.CoordinationDriverCachedRunWatchers,
         else:
             self.max_pool_size = None
         self._acquired_locks = []
+        self.ssl_context = None
+        use_ssl = self._options.get('use_ssl', 'False')
+        use_ssl = strutils.bool_from_string(use_ssl,
+                                            strict=False,
+                                            default=False)
+        if use_ssl:
+            ca_cert = self._options.get('ca_cert')
+            ssl_key = self._options.get('ssl_key')
+            ssl_cert = self._options.get('ssl_cert')
+            ssl_key_password = self._options.get('ssl_key_password')
+            ciphers = self._options.get('ssl_ciphers')
+            check_hostname = self._options.get('ssl_check_hostname', 'False')
+            check_hostname = strutils.bool_from_string(check_hostname,
+                                                       strict=False,
+                                                       default=False)
+            self.ssl_context = ssl.create_default_context(
+                               ssl.Purpose.SERVER_AUTH, cafile=ca_cert)
+            if ciphers is not None:
+                self.ssl_context.set_ciphers(ciphers)
+            self.ssl_context.check_hostname = check_hostname
+            self.ssl_context.load_cert_chain(certfile=ssl_cert,
+                                             keyfile=ssl_key,
+                                             password=ssl_key_password)
 
     @staticmethod
     def _msgpack_serializer(key, value):
@@ -288,7 +320,8 @@ class MemcachedDriver(coordination.CoordinationDriverCachedRunWatchers,
             deserializer=self._msgpack_deserializer,
             timeout=self.timeout,
             connect_timeout=self.timeout,
-            max_pool_size=self.max_pool_size)
+            max_pool_size=self.max_pool_size,
+            tls_context=self.ssl_context)
         # Run heartbeat here because pymemcache use a lazy connection
         # method and only connect once you do an operation.
         self.heartbeat()
