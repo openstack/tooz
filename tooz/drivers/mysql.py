@@ -16,6 +16,7 @@
 import logging
 
 from oslo_utils import encodeutils
+from oslo_utils import strutils
 import pymysql
 
 import tooz
@@ -215,12 +216,10 @@ class MySQLDriver(coordination.CoordinationDriver):
             if value:
                 ssl_args[o] = value
         check_hostname = options.get("ssl_check_hostname")
+        check_hostname = strutils.bool_from_string(check_hostname,
+                                                   default=None)
         if check_hostname is not None:
-            check_hostname = check_hostname.lower()
-            if check_hostname in ("true", "1", "yes"):
-                ssl_args["check_hostname"] = True
-            elif check_hostname in ("false", "0", "no"):
-                ssl_args["check_hostname"] = False
+            ssl_args['check_hostname'] = check_hostname
 
         try:
             if unix_socket:
