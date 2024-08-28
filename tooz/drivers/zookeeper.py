@@ -477,6 +477,8 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         if not hosts:
             hosts = ['localhost:2181']
         randomize_hosts = options.get('randomize_hosts', True)
+        use_ssl = options.get('use_ssl', False)
+        verify_certs = options.get('verify_certs', True)
         client_kwargs = {
             'auth_data': auth_data,
             'ca': options.get('ca', None),
@@ -489,8 +491,8 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
             'keyfile_password': options.get('keyfile_password', None),
             'randomize_hosts': strutils.bool_from_string(randomize_hosts),
             'timeout': float(options.get('timeout', self.timeout)),
-            'use_ssl': bool(options.get('use_ssl', False)),
-            'verify_certs': bool(options.get('verify_certs', True)),
+            'use_ssl': strutils.bool_from_string(use_ssl),
+            'verify_certs': strutils.bool_from_string(verify_certs),
         }
         handler_kind = options.get('handler')
         if handler_kind:
