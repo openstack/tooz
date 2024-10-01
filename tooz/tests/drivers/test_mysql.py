@@ -88,6 +88,12 @@ class TestMySQLDriver(testcase.TestCase):
 
     @mock.patch("pymysql.Connect")
     def test_parsing_timeout_settings(self, sql_mock):
+        conn = mock.Mock()
+        conn.open = True
+        conn.cursor.return_value = mock.Mock()
+        conn.cursor.return_value.fetchone.return_value = (1, None)
+        sql_mock.return_value = conn
+
         c = self._create_coordinator("mysql://localhost:3306/test")
         c.start()
 
@@ -95,20 +101,28 @@ class TestMySQLDriver(testcase.TestCase):
         blocking_value = False
         timeout = 10.1
         lock = c.get_lock(name)
-        with mock.patch.object(lock, 'acquire', wraps=True, autospec=True) as \
-                mock_acquire:
-            with lock(blocking_value, timeout):
-                mock_acquire.assert_called_once_with(blocking_value, timeout)
+        with mock.patch.object(lock, 'acquire', wraps=lock.acquire,
+                               autospec=True) as mock_acquire:
+            with lock(blocking_value, timeout=timeout):
+                mock_acquire.assert_called_once_with(
+                    blocking_value, timeout=timeout)
 
     @mock.patch("pymysql.Connect")
     def test_parsing_blocking_settings(self, sql_mock):
+        conn = mock.Mock()
+        conn.open = True
+        conn.cursor.return_value = mock.Mock()
+        conn.cursor.return_value.fetchone.return_value = (1, None)
+        sql_mock.return_value = conn
+
         c = self._create_coordinator("mysql://localhost:3306/test")
         c.start()
 
         name = tests.get_random_uuid()
         blocking_value = True
         lock = c.get_lock(name)
-        with mock.patch.object(lock, 'acquire', wraps=True, autospec=True) as \
-                mock_acquire:
+        with mock.patch.object(lock, 'acquire', wraps=lock.acquire,
+                               autospec=True) as mock_acquire:
             with lock(blocking_value):
-                mock_acquire.assert_called_once_with(blocking_value)
+                mock_acquire.assert_called_once_with(
+                    blocking_value)
