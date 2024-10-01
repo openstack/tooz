@@ -16,11 +16,11 @@
 
 import functools
 import logging
-import re
 import string
 import threading
 
 from oslo_utils import encodeutils
+from oslo_utils import netutils
 from oslo_utils import strutils
 from packaging import version
 import redis
@@ -426,15 +426,10 @@ return 1
 
     @classmethod
     def _parse_sentinel(cls, sentinel):
-        # IPv6 (eg. [::1]:6379 )
-        match = re.search(r'^\[(\S+)\]:(\d+)$', sentinel)
-        if match:
-            return (match[1], int(match[2]))
-        # IPv4 or hostname (eg. 127.0.0.1:6379 or localhost:6379)
-        match = re.search(r'^(\S+):(\d+)$', sentinel)
-        if match:
-            return (match[1], int(match[2]))
-        raise ValueError('Malformed sentinel server format')
+        host, port = netutils.parse_host_port(sentinel)
+        if host is None or port is None:
+            raise ValueError('Malformed sentinel server format')
+        return (host, port)
 
     @classmethod
     def _make_client(cls, parsed_url, options, default_socket_timeout):
