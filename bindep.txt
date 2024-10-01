@@ -1,4 +1,4 @@
-redis-sentinel [platform:ubuntu !platform:ubuntu-trusty]
+redis-sentinel [platform:ubuntu]
 redis-server [platform:dpkg]
 libpq-dev [platform:dpkg]
 postgresql [platform:dpkg]
