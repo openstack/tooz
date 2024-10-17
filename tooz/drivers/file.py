@@ -20,9 +20,7 @@ import functools
 import hashlib
 import logging
 import os
-import re
 import shutil
-import sys
 import tempfile
 import threading
 import weakref
@@ -226,7 +224,7 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
     def __init__(self, member_id, parsed_url, options):
         """Initialize the file driver."""
         super().__init__(member_id, parsed_url, options)
-        self._dir = self._normalize_path(parsed_url.path)
+        self._dir = parsed_url.path
         self._group_dir = os.path.join(self._dir, 'groups')
         self._tmpdir = os.path.join(self._dir, 'tmp')
         self._driver_lock_path = os.path.join(self._dir, '.driver_lock')
@@ -237,19 +235,6 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
         self._reserved_paths.append(self._driver_lock_path)
         self._safe_member_id = self._make_filesystem_safe(member_id)
         self._timeout = int(self._options.get('timeout', 10))
-
-    @staticmethod
-    def _normalize_path(path):
-        if sys.platform == 'win32':
-            # Replace slashes with backslashes and make sure we don't
-            # have any at the beginning of paths that include drive letters.
-            #
-            # Expected url format:
-            # file:////share_address/share_name
-            # file:///C:/path
-            return re.sub(r'\\(?=\w:\\)', '',
-                          os.path.normpath(path))
-        return path
 
     @classmethod
     def _get_raw_lock(cls, path, member_id):

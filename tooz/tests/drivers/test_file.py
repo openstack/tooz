@@ -14,7 +14,6 @@
 #    under the License.
 
 import os
-from unittest import mock
 
 import fixtures
 from testtools import testcase
@@ -53,19 +52,3 @@ class TestFileDriver(testcase.TestCase):
                                safe_group_id, '.metadata'))
         self.assertRaises(tooz.ToozError,
                           coord.delete_group(b"my_group").get)
-
-    @mock.patch('os.path.normpath', lambda x: x.replace('/', '\\'))
-    @mock.patch('sys.platform', 'win32')
-    def test_base_dir_win32(self):
-        coord = coordination.get_coordinator(
-            'file:///C:/path/', self._FAKE_MEMBER_ID)
-        self.assertEqual('C:\\path\\', coord._dir)
-
-        coord = coordination.get_coordinator(
-            'file:////share_addr/share_path/', self._FAKE_MEMBER_ID)
-        self.assertEqual('\\\\share_addr\\share_path\\', coord._dir)
-
-        # Administrative shares should be handled properly.
-        coord = coordination.get_coordinator(
-            'file:////c$/path/', self._FAKE_MEMBER_ID)
-        self.assertEqual('\\\\c$\\path\\', coord._dir)

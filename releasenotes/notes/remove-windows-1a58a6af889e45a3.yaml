@@ -1,0 +1,4 @@
+---
+upgrade:
+  - |
+    Support for Windows operating systems has been removed.
