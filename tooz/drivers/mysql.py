@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright © 2014 eNovance
 #
@@ -34,7 +33,7 @@ class MySQLLock(locking.Lock):
     MYSQL_DEFAULT_PORT = 3306
 
     def __init__(self, name, parsed_url, options):
-        super(MySQLLock, self).__init__(name)
+        super().__init__(name)
         self.acquired = False
         self._conn = MySQLDriver.get_connection(parsed_url, options, True)
 
@@ -156,7 +155,7 @@ class MySQLDriver(coordination.CoordinationDriver):
 
     def __init__(self, member_id, parsed_url, options):
         """Initialize the MySQL driver."""
-        super(MySQLDriver, self).__init__(member_id, parsed_url, options)
+        super().__init__(member_id, parsed_url, options)
         self._parsed_url = parsed_url
         self._options = utils.collapse(options)
 

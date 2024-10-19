@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (C) 2020 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -60,8 +59,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'tooz Release Notes'
-copyright = u'2016, tooz Developers'
+project = 'tooz Release Notes'
+copyright = '2016, tooz Developers'
 
 # Release do not need a version number in the title, they
 # cover multiple versions.
@@ -208,8 +207,8 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     ('index', 'toozReleaseNotes.tex',
-     u'tooz Release Notes Documentation',
-     u'tooz Developers', 'manual'),
+     'tooz Release Notes Documentation',
+     'tooz Developers', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -239,8 +238,8 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'toozReleaseNotes',
-     u'tooz Release Notes Documentation',
-     [u'tooz Developers'], 1)
+     'tooz Release Notes Documentation',
+     ['tooz Developers'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -254,8 +253,8 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     ('index', 'toozReleaseNotes',
-     u'tooz Release Notes Documentation',
-     u'tooz Developers', 'toozReleaseNotes',
+     'tooz Release Notes Documentation',
+     'tooz Developers', 'toozReleaseNotes',
      'One line description of project.',
      'Miscellaneous'),
 ]

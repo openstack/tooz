@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 #    Copyright (C) 2014 eNovance Inc. All Rights Reserved.
 #
@@ -53,7 +52,7 @@ class TestWithCoordinator(testcase.TestCase, metaclass=SkipNotImplementedMeta):
     url = os.getenv("TOOZ_TEST_URL")
 
     def setUp(self):
-        super(TestWithCoordinator, self).setUp()
+        super().setUp()
         if self.url is None:
             raise RuntimeError("No URL set for this driver")
         if os.getenv("TOOZ_TEST_ETCD3GW"):
@@ -72,4 +71,4 @@ class TestWithCoordinator(testcase.TestCase, metaclass=SkipNotImplementedMeta):
 
     def tearDown(self):
         self._coord.stop()
-        super(TestWithCoordinator, self).tearDown()
+        super().tearDown()

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright © 2015 eNovance
 #
@@ -42,7 +41,7 @@ from tooz import utils
 LOG = logging.getLogger(__name__)
 
 
-class _Barrier(object):
+class _Barrier:
     def __init__(self):
         self.cond = threading.Condition()
         self.owner = None
@@ -54,7 +53,7 @@ class _Barrier(object):
 def _translate_failures():
     try:
         yield
-    except (EnvironmentError, voluptuous.Invalid) as e:
+    except (OSError, voluptuous.Invalid) as e:
         utils.raise_with_cause(tooz.ToozError,
                                encodeutils.exception_to_unicode(e),
                                cause=e)
@@ -74,7 +73,7 @@ def _convert_from_old_format(data):
     # {u"member_id": b"member"}
     # {u"member_id": u"member"}
     if b"member_id" in data or b"group_id" in data:
-        data = dict((k.decode("utf8"), v) for k, v in data.items())
+        data = {k.decode("utf8"): v for k, v in data.items()}
         # About member_id and group_id valuse if the file have been written
         # with python2 and in the old format, we can't known with python3
         # if we need to decode the value or not. Python3 see bytes blob
@@ -104,7 +103,7 @@ class FileLock(locking.Lock):
     """A file based lock."""
 
     def __init__(self, path, barrier, member_id):
-        super(FileLock, self).__init__(path)
+        super().__init__(path)
         self.acquired = False
         self._lock = fasteners.InterProcessLock(path)
         self._barrier = barrier
@@ -226,7 +225,7 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
 
     def __init__(self, member_id, parsed_url, options):
         """Initialize the file driver."""
-        super(FileDriver, self).__init__(member_id, parsed_url, options)
+        super().__init__(member_id, parsed_url, options)
         self._dir = self._normalize_path(parsed_url.path)
         self._group_dir = os.path.join(self._dir, 'groups')
         self._tmpdir = os.path.join(self._dir, 'tmp')
@@ -271,7 +270,7 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
         return hashlib.new(cls.HASH_ROUTINE, item).hexdigest()
 
     def _start(self):
-        super(FileDriver, self)._start()
+        super()._start()
         for a_dir in self._reserved_dirs:
             try:
                 fileutils.ensure_tree(a_dir)
@@ -280,9 +279,9 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
 
     def _update_group_metadata(self, path, group_id):
         details = {
-            u'group_id': utils.to_binary(group_id, encoding="utf8")
+            'group_id': utils.to_binary(group_id, encoding="utf8")
         }
-        details[u'encoded'] = details[u"group_id"] != group_id
+        details['encoded'] = details["group_id"] != group_id
         details_blob = utils.dumps(details)
         fd, name = tempfile.mkstemp("tooz", dir=self._tmpdir)
         with os.fdopen(fd, "wb") as fh:
@@ -321,12 +320,12 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
                 raise coordination.MemberAlreadyExist(group_id,
                                                       self._member_id)
             details = {
-                u'capabilities': capabilities,
-                u'joined_on': datetime.datetime.now(),
-                u'member_id': utils.to_binary(self._member_id,
-                                              encoding="utf-8")
+                'capabilities': capabilities,
+                'joined_on': datetime.datetime.now(),
+                'member_id': utils.to_binary(self._member_id,
+                                             encoding="utf-8")
             }
-            details[u'encoded'] = details[u"member_id"] != self._member_id
+            details['encoded'] = details["member_id"] != self._member_id
             details_blob = utils.dumps(details)
             with open(me_path, "wb") as fh:
                 fh.write(details_blob)
@@ -346,7 +345,7 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
                 raise coordination.GroupNotCreated(group_id)
             try:
                 os.unlink(me_path)
-            except EnvironmentError as e:
+            except OSError as e:
                 if e.errno != errno.ENOENT:
                     raise
                 else:
@@ -382,8 +381,8 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
         with open(path, 'rb') as fh:
             details = self._load_and_validate(fh.read(), 'member')
             if details.get("encoded"):
-                return details[u'member_id'].decode("utf-8")
-            return details[u'member_id']
+                return details['member_id'].decode("utf-8")
+            return details['member_id']
 
     def get_members(self, group_id):
         safe_group_id = self._make_filesystem_safe(group_id)
@@ -396,7 +395,7 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
             members = set()
             try:
                 entries = os.listdir(group_dir)
-            except EnvironmentError as e:
+            except OSError as e:
                 # Did someone manage to remove it before we got here...
                 if e.errno != errno.ENOENT:
                     raise
@@ -415,7 +414,7 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
                             member_id = self._read_member_id(entry_path)
                         else:
                             continue
-                    except EnvironmentError as e:
+                    except OSError as e:
                         if e.errno != errno.ENOENT:
                             raise
                     else:
@@ -436,7 +435,7 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
             try:
                 with open(member_path, "rb") as fh:
                     contents = fh.read()
-            except EnvironmentError as e:
+            except OSError as e:
                 if e.errno == errno.ENOENT:
                     if not os.path.isdir(group_dir):
                         raise coordination.GroupNotCreated(group_id)
@@ -447,7 +446,7 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
                     raise
             else:
                 details = self._load_and_validate(contents, 'member')
-                return details.get(u"capabilities")
+                return details.get("capabilities")
 
         fut = self._executor.submit(_do_get_member_capabilities)
         return FileFutureResult(fut)
@@ -460,7 +459,7 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
         def _do_delete_group():
             try:
                 entries = os.listdir(group_dir)
-            except EnvironmentError as e:
+            except OSError as e:
                 if e.errno == errno.ENOENT:
                     raise coordination.GroupNotCreated(group_id)
                 else:
@@ -476,7 +475,7 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
                 else:
                     try:
                         shutil.rmtree(group_dir)
-                    except EnvironmentError as e:
+                    except OSError as e:
                         if e.errno != errno.ENOENT:
                             raise
 
@@ -487,8 +486,8 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
         with open(path, 'rb') as fh:
             details = self._load_and_validate(fh.read(), 'group')
             if details.get("encoded"):
-                return details[u'group_id'].decode("utf-8")
-            return details[u'group_id']
+                return details['group_id'].decode("utf-8")
+            return details['group_id']
 
     def get_groups(self):
 
@@ -498,7 +497,7 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
                 path = os.path.join(self._group_dir, entry, '.metadata')
                 try:
                     groups.append(self._read_group_id(path))
-                except EnvironmentError as e:
+                except OSError as e:
                     if e.errno != errno.ENOENT:
                         raise
             return groups
@@ -517,7 +516,7 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
             def _do_heartbeat():
                 try:
                     os.utime(member_path, None)
-                except EnvironmentError as err:
+                except OSError as err:
                     if err.errno != errno.ENOENT:
                         raise
             _do_heartbeat()

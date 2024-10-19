@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 #    Copyright © 2013-2015 eNovance Inc. All Rights Reserved.
 #
@@ -988,7 +987,7 @@ class TestAPI(tests.TestWithCoordinator):
 
 class TestHook(testcase.TestCase):
     def setUp(self):
-        super(TestHook, self).setUp()
+        super().setUp()
         self.hooks = tooz.coordination.Hooks()
         self.triggered = False
 

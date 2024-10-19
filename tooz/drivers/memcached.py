@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright © 2014 eNovance
 #
@@ -45,15 +44,14 @@ def _failure_translator():
         utils.raise_with_cause(coordination.ToozConnectionError,
                                encodeutils.exception_to_unicode(e),
                                cause=e)
-    except (socket.timeout, socket.error,
-            socket.gaierror, socket.herror) as e:
+    except (socket.timeout, OSError, socket.gaierror, socket.herror) as e:
         # TODO(harlowja): get upstream pymemcache to produce a better
         # exception for these, using socket (vs. a memcache specific
         # error) seems sorta not right and/or the best approach...
         msg = encodeutils.exception_to_unicode(e)
         if e.errno is not None:
-            msg += " (with errno %s [%s])" % (errno.errorcode[e.errno],
-                                              e.errno)
+            msg += " (with errno {} [{}])".format(errno.errorcode[e.errno],
+                                                  e.errno)
         utils.raise_with_cause(coordination.ToozConnectionError,
                                msg, cause=e)
     except pymemcache_client.MemcacheError as e:
@@ -76,7 +74,7 @@ class MemcachedLock(locking.Lock):
     _LOCK_PREFIX = b'__TOOZ_LOCK_'
 
     def __init__(self, coord, name, timeout):
-        super(MemcachedLock, self).__init__(self._LOCK_PREFIX + name)
+        super().__init__(self._LOCK_PREFIX + name)
         self.coord = coord
         self.timeout = timeout
 
@@ -252,7 +250,7 @@ class MemcachedDriver(coordination.CoordinationDriverCachedRunWatchers,
     STILL_ALIVE = b"It's alive!"
 
     def __init__(self, member_id, parsed_url, options):
-        super(MemcachedDriver, self).__init__(member_id, parsed_url, options)
+        super().__init__(member_id, parsed_url, options)
         self.host = (parsed_url.hostname or "localhost",
                      parsed_url.port or 11211)
         default_timeout = self._options.get('timeout', self.DEFAULT_TIMEOUT)
@@ -287,7 +285,7 @@ class MemcachedDriver(coordination.CoordinationDriverCachedRunWatchers,
 
     @_translate_failures
     def _start(self):
-        super(MemcachedDriver, self)._start()
+        super()._start()
         self.client = pymemcache_client.PooledClient(
             self.host,
             serializer=self._msgpack_serializer,
@@ -301,7 +299,7 @@ class MemcachedDriver(coordination.CoordinationDriverCachedRunWatchers,
 
     @_translate_failures
     def _stop(self):
-        super(MemcachedDriver, self)._stop()
+        super()._stop()
         for lock in list(self._acquired_locks):
             lock.release()
         self.client.delete(self._encode_member_id(self._member_id))
@@ -529,7 +527,7 @@ class MemcachedDriver(coordination.CoordinationDriverCachedRunWatchers,
                     self._member_id))
 
     def run_watchers(self, timeout=None):
-        result = super(MemcachedDriver, self).run_watchers(timeout=timeout)
+        result = super().run_watchers(timeout=timeout)
         self.run_elect_coordinator()
         return result
 

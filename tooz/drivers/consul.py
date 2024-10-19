@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright © 2015 Yahoo! Inc.
 #
@@ -57,7 +56,7 @@ def _translate_failures(func):
 
 class ConsulLock(locking.Lock):
     def __init__(self, name, node, address, session_id, client, token=None):
-        super(ConsulLock, self).__init__(name)
+        super().__init__(name)
         self._name = name
         self._node = node
         self._address = address
@@ -218,7 +217,7 @@ class ConsulDriver(coordination.CoordinationDriverCachedRunWatchers,
     """
 
     def __init__(self, member_id, parsed_url, options):
-        super(ConsulDriver, self).__init__(member_id, parsed_url, options)
+        super().__init__(member_id, parsed_url, options)
         options = utils.collapse(options)
         self._host = parsed_url.hostname
         self._port = parsed_url.port or self.DEFAULT_PORT

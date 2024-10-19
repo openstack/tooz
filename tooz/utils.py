@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 #    Copyright (C) 2014 Yahoo! Inc. All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -28,7 +26,7 @@ from oslo_utils import excutils
 import tooz
 
 
-class Base64LockEncoder(object):
+class Base64LockEncoder:
     def __init__(self, keyspace_url, prefix=''):
         self.keyspace_url = keyspace_url
         if prefix:
@@ -52,7 +50,7 @@ class Base64LockEncoder(object):
         return self.keyspace_url + "/" + enc_name.decode("ascii")
 
 
-class ProxyExecutor(object):
+class ProxyExecutor:
     KIND_TO_FACTORY = {
         'threaded': (lambda:
                      futurist.ThreadPoolExecutor(max_workers=1)),

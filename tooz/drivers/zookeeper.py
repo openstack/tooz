@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 #    Copyright (C) 2013-2014 eNovance Inc. All Rights Reserved.
 #
@@ -34,7 +33,7 @@ from tooz import utils
 
 class ZooKeeperLock(locking.Lock):
     def __init__(self, name, lock):
-        super(ZooKeeperLock, self).__init__(name)
+        super().__init__(name)
         self._lock = lock
         self._client = lock.client
 
@@ -144,7 +143,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
     """
 
     def __init__(self, member_id, parsed_url, options):
-        super(KazooDriver, self).__init__(member_id, parsed_url, options)
+        super().__init__(member_id, parsed_url, options)
         options = utils.collapse(options, exclude=['hosts'])
         self.timeout = int(options.get('timeout', '10'))
         self._namespace = options.get('namespace', self.TOOZ_NAMESPACE)
@@ -317,7 +316,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
                                    encodeutils.exception_to_unicode(e),
                                    cause=e)
         else:
-            return set(m.encode('ascii') for m in members_ids)
+            return {m.encode('ascii') for m in members_ids}
 
     def get_members(self, group_id):
         group_path = self._paths_join("/", self._namespace, group_id)
@@ -427,7 +426,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
                                    encodeutils.exception_to_unicode(e),
                                    cause=e)
         else:
-            return set(g.encode('ascii') for g in group_ids)
+            return {g.encode('ascii') for g in group_ids}
 
     def get_groups(self):
         tooz_namespace = self._paths_join("/", self._namespace)
@@ -464,7 +463,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
             username = parsed_url.username
             password = parsed_url.password
 
-            digest_auth = "%s:%s" % (username, password)
+            digest_auth = "{}:{}".format(username, password)
             digest_acl = security.make_digest_acl(username, password, all=True)
             default_acl = (digest_acl,)
             auth_data = [('digest', digest_auth)]
@@ -547,7 +546,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
                         self._member_id))
 
     def run_watchers(self, timeout=None):
-        results = super(KazooDriver, self).run_watchers(timeout)
+        results = super().run_watchers(timeout)
         self.run_elect_coordinator()
         return results
 

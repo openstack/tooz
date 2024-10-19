@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 #    Copyright (C) 2016 Red Hat, Inc.
 #
@@ -17,7 +16,7 @@
 from tooz import hashring
 
 
-class Partitioner(object):
+class Partitioner:
     """Partition set of objects across several members.
 
     Objects to be partitioned should implement the __tooz_hash__ method to
