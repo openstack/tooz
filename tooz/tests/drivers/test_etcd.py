@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright 2016 Red Hat, Inc.
 #
@@ -26,7 +25,7 @@ class TestEtcd(testcase.TestCase):
     FAKE_MEMBER_ID = "mocked-not-really-member"
 
     def setUp(self):
-        super(TestEtcd, self).setUp()
+        super().setUp()
         self._coord = tooz.coordination.get_coordinator(self.FAKE_URL,
                                                         self.FAKE_MEMBER_ID)
 

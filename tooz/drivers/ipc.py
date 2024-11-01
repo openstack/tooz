@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Copyright © 2014 eNovance
 #
@@ -58,7 +57,7 @@ class IPCLock(locking.Lock):
     _LOCK_PROJECT = b'__TOOZ_LOCK_'
 
     def __init__(self, name):
-        super(IPCLock, self).__init__(name)
+        super().__init__(name)
         self.key = ftok(name, self._LOCK_PROJECT)
         self._lock = None
 
@@ -173,7 +172,7 @@ class IPCDriver(coordination.CoordinationDriverWithExecutor):
     _INTERNAL_LOCK_NAME = "TOOZ_INTERNAL_LOCK"
 
     def _start(self):
-        super(IPCDriver, self)._start()
+        super()._start()
         self._group_list = sysv_ipc.SharedMemory(
             ftok(self._GROUP_LIST_KEY, self._GROUP_PROJECT),
             sysv_ipc.IPC_CREAT,
@@ -181,7 +180,7 @@ class IPCDriver(coordination.CoordinationDriverWithExecutor):
         self._lock = self.get_lock(self._INTERNAL_LOCK_NAME)
 
     def _stop(self):
-        super(IPCDriver, self)._stop()
+        super()._stop()
         try:
             self._group_list.detach()
             self._group_list.remove()
@@ -230,12 +229,12 @@ class IPCDriver(coordination.CoordinationDriverWithExecutor):
     def watch_join_group(self, group_id, callback):
         # Check the group exist
         self.get_members(group_id).get()
-        super(IPCDriver, self).watch_join_group(group_id, callback)
+        super().watch_join_group(group_id, callback)
 
     def watch_leave_group(self, group_id, callback):
         # Check the group exist
         self.get_members(group_id).get()
-        super(IPCDriver, self).watch_leave_group(group_id, callback)
+        super().watch_leave_group(group_id, callback)
 
     def _get_groups_handler(self):
         with self._lock:

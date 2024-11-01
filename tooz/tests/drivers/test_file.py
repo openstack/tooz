@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright 2016 Cloudbase Solutions Srl
 # All Rights Reserved.
 #

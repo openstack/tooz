@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 #    Copyright (C) 2016 Red Hat, Inc.
 #    Copyright (C) 2013-2014 eNovance Inc. All Rights Reserved.
@@ -120,7 +119,7 @@ class Hooks(list):
         return list(map(lambda cb: cb(*args, **kwargs), self))
 
 
-class Event(object):
+class Event:
     """Base class for events."""
 
 
@@ -132,9 +131,9 @@ class MemberJoinedGroup(Event):
         self.member_id = member_id
 
     def __repr__(self):
-        return "<%s: group %s: +member %s>" % (self.__class__.__name__,
-                                               self.group_id,
-                                               self.member_id)
+        return "<{}: group {}: +member {}>".format(self.__class__.__name__,
+                                                   self.group_id,
+                                                   self.member_id)
 
 
 class MemberLeftGroup(Event):
@@ -145,9 +144,9 @@ class MemberLeftGroup(Event):
         self.member_id = member_id
 
     def __repr__(self):
-        return "<%s: group %s: -member %s>" % (self.__class__.__name__,
-                                               self.group_id,
-                                               self.member_id)
+        return "<{}: group {}: -member {}>".format(self.__class__.__name__,
+                                                   self.group_id,
+                                                   self.member_id)
 
 
 class LeaderElected(Event):
@@ -158,7 +157,7 @@ class LeaderElected(Event):
         self.member_id = member_id
 
 
-class Heart(object):
+class Heart:
     """Coordination drivers main liveness pump (its heart)."""
 
     def __init__(self, driver, thread_cls=threading.Thread,
@@ -228,7 +227,7 @@ class Heart(object):
         return self._runner.is_alive()
 
 
-class CoordinationDriver(object):
+class CoordinationDriver:
 
     requires_beating = False
     """
@@ -245,7 +244,7 @@ class CoordinationDriver(object):
     """
 
     def __init__(self, member_id, parsed_url, options):
-        super(CoordinationDriver, self).__init__()
+        super().__init__()
         self._member_id = member_id
         self._started = False
         self._hooks_join_group = collections.defaultdict(Hooks)
@@ -629,7 +628,7 @@ class CoordinationDriver(object):
         pass
 
 
-class CoordAsyncResult(object, metaclass=abc.ABCMeta):
+class CoordAsyncResult(metaclass=abc.ABCMeta):
     """Representation of an asynchronous task.
 
     Every call API returns an CoordAsyncResult object on which the result or
@@ -681,15 +680,15 @@ class CoordinationDriverWithExecutor(CoordinationDriver):
         self._options = utils.collapse(options, exclude=self.EXCLUDE_OPTIONS)
         self._executor = utils.ProxyExecutor.build(
             self.__class__.__name__, self._options)
-        super(CoordinationDriverWithExecutor, self).__init__(
+        super().__init__(
             member_id, parsed_url, options)
 
     def start(self, start_heart=False):
         self._executor.start()
-        super(CoordinationDriverWithExecutor, self).start(start_heart)
+        super().start(start_heart)
 
     def stop(self):
-        super(CoordinationDriverWithExecutor, self).stop()
+        super().stop()
         self._executor.stop()
 
 
@@ -703,7 +702,7 @@ class CoordinationDriverCachedRunWatchers(CoordinationDriver):
     """
 
     def __init__(self, member_id, parsed_url, options):
-        super(CoordinationDriverCachedRunWatchers, self).__init__(
+        super().__init__(
             member_id, parsed_url, options)
         # A cache for group members
         self._group_members = collections.defaultdict(set)
@@ -716,11 +715,11 @@ class CoordinationDriverCachedRunWatchers(CoordinationDriver):
 
     def watch_join_group(self, group_id, callback):
         self._init_watch_group(group_id)
-        super(CoordinationDriverCachedRunWatchers, self).watch_join_group(
+        super().watch_join_group(
             group_id, callback)
 
     def unwatch_join_group(self, group_id, callback):
-        super(CoordinationDriverCachedRunWatchers, self).unwatch_join_group(
+        super().unwatch_join_group(
             group_id, callback)
 
         if (not self._has_hooks_for_group(group_id) and
@@ -729,11 +728,11 @@ class CoordinationDriverCachedRunWatchers(CoordinationDriver):
 
     def watch_leave_group(self, group_id, callback):
         self._init_watch_group(group_id)
-        super(CoordinationDriverCachedRunWatchers, self).watch_leave_group(
+        super().watch_leave_group(
             group_id, callback)
 
     def unwatch_leave_group(self, group_id, callback):
-        super(CoordinationDriverCachedRunWatchers, self).unwatch_leave_group(
+        super().unwatch_leave_group(
             group_id, callback)
 
         if (not self._has_hooks_for_group(group_id) and
@@ -840,7 +839,7 @@ class GroupNotCreated(tooz.ToozError):
     """Exception raised when the caller request an nonexistent group."""
     def __init__(self, group_id):
         self.group_id = group_id
-        super(GroupNotCreated, self).__init__(
+        super().__init__(
             "Group %s does not exist" % group_id)
 
 
@@ -848,7 +847,7 @@ class GroupAlreadyExist(tooz.ToozError):
     """Exception raised trying to create an already existing group."""
     def __init__(self, group_id):
         self.group_id = group_id
-        super(GroupAlreadyExist, self).__init__(
+        super().__init__(
             "Group %s already exists" % group_id)
 
 
@@ -857,7 +856,7 @@ class MemberAlreadyExist(tooz.ToozError):
     def __init__(self, group_id, member_id):
         self.group_id = group_id
         self.member_id = member_id
-        super(MemberAlreadyExist, self).__init__(
+        super().__init__(
             "Member %s has already joined %s" %
             (member_id, group_id))
 
@@ -867,15 +866,15 @@ class MemberNotJoined(tooz.ToozError):
     def __init__(self, group_id, member_id):
         self.group_id = group_id
         self.member_id = member_id
-        super(MemberNotJoined, self).__init__("Member %s has not joined %s" %
-                                              (member_id, group_id))
+        super().__init__("Member %s has not joined %s" %
+                         (member_id, group_id))
 
 
 class GroupNotEmpty(tooz.ToozError):
     "Exception raised when the caller try to delete a group with members."
     def __init__(self, group_id):
         self.group_id = group_id
-        super(GroupNotEmpty, self).__init__("Group %s is not empty" % group_id)
+        super().__init__("Group %s is not empty" % group_id)
 
 
 class WatchCallbackNotFound(tooz.ToozError):
@@ -888,7 +887,7 @@ class WatchCallbackNotFound(tooz.ToozError):
     def __init__(self, group_id, callback):
         self.group_id = group_id
         self.callback = callback
-        super(WatchCallbackNotFound, self).__init__(
+        super().__init__(
             'Callback %s is not registered on group %s' %
             (callback.__name__, group_id))
 

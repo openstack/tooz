@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 #    Copyright (C) 2014 eNovance Inc. All Rights Reserved.
 #
@@ -28,7 +27,7 @@ class ToozError(Exception):
     """
 
     def __init__(self, message, cause=None):
-        super(ToozError, self).__init__(message)
+        super().__init__(message)
         self.cause = cause
 
 

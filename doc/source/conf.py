@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (C) 2020 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -80,8 +79,8 @@ latex_elements = {}
 # (source start file, target name, title, author,
 # documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'tooz.tex', u'tooz Documentation',
-   u'eNovance', 'manual'),
+  ('index', 'tooz.tex', 'tooz Documentation',
+   'eNovance', 'manual'),
 ]
 
 # Grouping the document tree into Texinfo files. List of tuples

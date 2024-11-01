@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 #    Copyright © 2016 Red Hat, Inc.
 #
@@ -21,13 +20,13 @@ from tooz import tests
 class TestPartitioner(tests.TestWithCoordinator):
 
     def setUp(self):
-        super(TestPartitioner, self).setUp()
+        super().setUp()
         self._extra_coords = []
 
     def tearDown(self):
         for c in self._extra_coords:
             c.stop()
-        super(TestPartitioner, self).tearDown()
+        super().tearDown()
 
     def _add_members(self, number_of_members, weight=1):
         groups = []
@@ -66,8 +65,8 @@ class TestPartitioner(tests.TestWithCoordinator):
         p = self._coord.join_partitioned_group(self.group_id, weight=5)
         self.assertEqual([5], list(p.ring.nodes.values()))
         p2 = self._add_members(1, weight=10)[0]
-        self.assertEqual(set([5, 10]), set(p.ring.nodes.values()))
-        self.assertEqual(set([5, 10]), set(p2.ring.nodes.values()))
+        self.assertEqual({5, 10}, set(p.ring.nodes.values()))
+        self.assertEqual({5, 10}, set(p2.ring.nodes.values()))
         p.stop()
 
     def test_stop(self):
@@ -79,7 +78,7 @@ class TestPartitioner(tests.TestWithCoordinator):
     def test_members_of_object_and_others(self):
         p = self._coord.join_partitioned_group(self.group_id)
         self._add_members(3)
-        o = str(u"чупакабра")
+        o = "чупакабра"
         m = p.members_for_object(o)
         self.assertEqual(1, len(m))
         m = m.pop()

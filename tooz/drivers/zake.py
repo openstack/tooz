@@ -50,7 +50,7 @@ class ZakeDriver(zookeeper.KazooDriver):
         fake_client.k_threading.SequentialThreadingHandler())
 
     def __init__(self, member_id, parsed_url, options):
-        super(ZakeDriver, self).__init__(member_id, parsed_url, options)
+        super().__init__(member_id, parsed_url, options)
         warnings.warn(
             "The zake driver is deprecated, and will be removed in "
             "a future release."

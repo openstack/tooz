@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 #    Copyright (C) 2014 eNovance Inc. All Rights Reserved.
 #
@@ -19,7 +18,7 @@ import tooz
 from tooz import coordination
 
 
-class _LockProxy(object):
+class _LockProxy:
     def __init__(self, lock, *args, **kwargs):
         self.lock = lock
         self.args = args
@@ -32,7 +31,7 @@ class _LockProxy(object):
         self.lock.__exit__(exc_type, exc_val, exc_tb)
 
 
-class Lock(object, metaclass=abc.ABCMeta):
+class Lock(metaclass=abc.ABCMeta):
     def __init__(self, name):
         if not name:
             raise ValueError("Locks must be provided a name")
@@ -48,7 +47,7 @@ class Lock(object, metaclass=abc.ABCMeta):
     def __enter__(self, *args, **kwargs):
         acquired = self.acquire(*args, **kwargs)
         if not acquired:
-            msg = u'Acquiring lock %s failed' % self.name
+            msg = 'Acquiring lock %s failed' % self.name
             raise coordination.LockAcquireFailed(msg)
 
         return self

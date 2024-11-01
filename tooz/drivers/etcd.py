@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -50,7 +49,7 @@ def _translate_failures(func):
     return wrapper
 
 
-class _Client(object):
+class _Client:
     def __init__(self, host, port, protocol):
         self.host = host
         self.port = port
@@ -88,7 +87,7 @@ class EtcdLock(locking.Lock):
     _TOOZ_LOCK_PREFIX = "tooz_locks"
 
     def __init__(self, lock_url, name, coord, client, ttl=60):
-        super(EtcdLock, self).__init__(name)
+        super().__init__(name)
         self.client = client
         self.coord = coord
         self.ttl = ttl
@@ -242,7 +241,7 @@ class EtcdDriver(coordination.CoordinationDriver):
     )
 
     def __init__(self, member_id, parsed_url, options):
-        super(EtcdDriver, self).__init__(member_id, parsed_url, options)
+        super().__init__(member_id, parsed_url, options)
         host = parsed_url.hostname or self.DEFAULT_HOST
         port = parsed_url.port or self.DEFAULT_PORT
         options = utils.collapse(options)

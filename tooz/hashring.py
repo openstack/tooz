@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 #    Copyright (C) 2016 Red Hat, Inc.
 #
@@ -23,11 +22,11 @@ from tooz import utils
 class UnknownNode(tooz.ToozError):
     """Node is unknown."""
     def __init__(self, node):
-        super(UnknownNode, self).__init__("Unknown node `%s'" % node)
+        super().__init__("Unknown node `%s'" % node)
         self.node = node
 
 
-class HashRing(object):
+class HashRing:
     """Map objects onto nodes based on their consistent hash."""
 
     DEFAULT_PARTITION_NUMBER = 2**5

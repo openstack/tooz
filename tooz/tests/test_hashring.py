@@ -83,8 +83,8 @@ class HashRingTestCase(testcase.TestCase):
         ring = hashring.HashRing(nodes)
         self.assertEqual(nodes, set(ring.nodes.keys()))
         self.assertEqual(2 ** 5 * len(nodes), len(ring))
-        nodes.add(u'\u0634\u0628\u06a9\u0647')
-        ring.add_node(u'\u0634\u0628\u06a9\u0647')
+        nodes.add('\u0634\u0628\u06a9\u0647')
+        ring.add_node('\u0634\u0628\u06a9\u0647')
         self.assertEqual(nodes, set(ring.nodes.keys()))
         self.assertEqual(2 ** 5 * len(nodes), len(ring))
 
@@ -105,7 +105,7 @@ class HashRingTestCase(testcase.TestCase):
         self.assertEqual(2 ** 5 * len(nodes), len(ring))
         nodes.add('baz')
         nodes.add('baz2')
-        ring.add_nodes(set(['baz', 'baz2']), weight=10)
+        ring.add_nodes({'baz', 'baz2'}, weight=10)
         self.assertEqual(nodes, set(ring.nodes.keys()))
         self.assertEqual(2 ** 5 * 22, len(ring))
 
