@@ -19,7 +19,6 @@ import uuid
 
 import etcd3gw
 from etcd3gw import exceptions as etcd3_exc
-from oslo_utils import encodeutils
 
 import tooz
 from tooz import _retry
@@ -44,16 +43,12 @@ def _translate_failures(func):
             return func(*args, **kwargs)
         except etcd3_exc.ConnectionFailedError as e:
             utils.raise_with_cause(coordination.ToozConnectionError,
-                                   encodeutils.exception_to_unicode(e),
-                                   cause=e)
+                                   str(e), cause=e)
         except etcd3_exc.ConnectionTimeoutError as e:
             utils.raise_with_cause(coordination.OperationTimedOut,
-                                   encodeutils.exception_to_unicode(e),
-                                   cause=e)
+                                   str(e), cause=e)
         except etcd3_exc.Etcd3Exception as e:
-            utils.raise_with_cause(coordination.ToozError,
-                                   encodeutils.exception_to_unicode(e),
-                                   cause=e)
+            utils.raise_with_cause(coordination.ToozError, str(e), cause=e)
 
     return wrapper
 

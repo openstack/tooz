@@ -35,13 +35,10 @@ def _failure_translator():
         yield
     except (consul.Timeout, requests.exceptions.RequestException) as e:
         utils.raise_with_cause(coordination.ToozConnectionError,
-                               encodeutils.exception_to_unicode(e),
-                               cause=e)
+                               str(e), cause=e)
     except (consul.ConsulException, ValueError) as e:
         # ValueError = Typically json decoding failed for some reason.
-        utils.raise_with_cause(tooz.ToozError,
-                               encodeutils.exception_to_unicode(e),
-                               cause=e)
+        utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
 
 
 def _translate_failures(func):

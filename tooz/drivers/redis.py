@@ -17,7 +17,6 @@ import logging
 import string
 import threading
 
-from oslo_utils import encodeutils
 from oslo_utils import netutils
 from oslo_utils import strutils
 from oslo_utils import versionutils
@@ -58,19 +57,14 @@ def _handle_failures(n_tries=15):
                             "retry limit has been reached, aborting - %s", e
                         )
                         utils.raise_with_cause(
-                            coordination.ToozConnectionError,
-                            encodeutils.exception_to_unicode(e),
-                            cause=e)
+                            coordination.ToozConnectionError, str(e), cause=e)
                     LOG.debug("Redis connection error, will retry - %s", e)
 
                 except (exceptions.TimeoutError) as e:
                     utils.raise_with_cause(coordination.ToozConnectionError,
-                                           encodeutils.exception_to_unicode(e),
-                                           cause=e)
+                                           str(e), cause=e)
                 except exceptions.RedisError as e:
-                    utils.raise_with_cause(tooz.ToozError,
-                                           encodeutils.exception_to_unicode(e),
-                                           cause=e)
+                    utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
         return wrapper
     return inner
 
@@ -496,8 +490,7 @@ return 1
                                              self.timeout)
         except exceptions.RedisError as e:
             utils.raise_with_cause(coordination.ToozConnectionError,
-                                   encodeutils.exception_to_unicode(e),
-                                   cause=e)
+                                   str(e), cause=e)
         else:
             # Ensure that the server is alive and not dead, this does not
             # ensure the server will always be alive, but does insure that it

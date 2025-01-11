@@ -19,7 +19,6 @@ import functools
 import logging
 import socket
 
-from oslo_utils import encodeutils
 from pymemcache import client as pymemcache_client
 
 import tooz
@@ -42,22 +41,19 @@ def _failure_translator():
         yield
     except pymemcache_client.MemcacheUnexpectedCloseError as e:
         utils.raise_with_cause(coordination.ToozConnectionError,
-                               encodeutils.exception_to_unicode(e),
-                               cause=e)
+                               str(e), cause=e)
     except (socket.timeout, OSError, socket.gaierror, socket.herror) as e:
         # TODO(harlowja): get upstream pymemcache to produce a better
         # exception for these, using socket (vs. a memcache specific
         # error) seems sorta not right and/or the best approach...
-        msg = encodeutils.exception_to_unicode(e)
+        msg = str(e)
         if e.errno is not None:
             msg += " (with errno {} [{}])".format(errno.errorcode[e.errno],
                                                   e.errno)
         utils.raise_with_cause(coordination.ToozConnectionError,
                                msg, cause=e)
     except pymemcache_client.MemcacheError as e:
-        utils.raise_with_cause(tooz.ToozError,
-                               encodeutils.exception_to_unicode(e),
-                               cause=e)
+        utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
 
 
 def _translate_failures(func):

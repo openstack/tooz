@@ -14,7 +14,6 @@
 
 from unittest import mock
 
-from oslo_utils import encodeutils
 import testtools
 from testtools import testcase
 
@@ -45,7 +44,7 @@ class TestPostgreSQLFailures(testcase.TestCase):
             except tooz.ToozError as e:
                 # TODO(harlowja): make this better, so that we don't have to
                 # do string checking...
-                message = encodeutils.exception_to_unicode(e)
+                message = str(e)
                 if (message != 'Can not stop a driver which has not'
                                ' been started'):
                     raise

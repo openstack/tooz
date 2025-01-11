@@ -22,7 +22,6 @@ import logging
 import threading
 import urllib
 
-from oslo_utils import encodeutils
 from oslo_utils import netutils
 from oslo_utils import timeutils
 from stevedore import driver
@@ -665,7 +664,7 @@ class CoordinatorResult(CoordAsyncResult):
                 return self._fut.result(timeout=timeout)
         except futures.TimeoutError as e:
             utils.raise_with_cause(OperationTimedOut,
-                                   encodeutils.exception_to_unicode(e),
+                                   str(e),
                                    cause=e)
 
     def done(self):

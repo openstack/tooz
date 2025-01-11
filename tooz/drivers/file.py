@@ -26,7 +26,6 @@ import threading
 import weakref
 
 import fasteners
-from oslo_utils import encodeutils
 from oslo_utils import fileutils
 from oslo_utils import timeutils
 import voluptuous
@@ -52,9 +51,7 @@ def _translate_failures():
     try:
         yield
     except (OSError, voluptuous.Invalid) as e:
-        utils.raise_with_cause(tooz.ToozError,
-                               encodeutils.exception_to_unicode(e),
-                               cause=e)
+        utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
 
 
 def _convert_from_old_format(data):
