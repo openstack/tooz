@@ -1,0 +1,11 @@
+---
+deprecations:
+  - |
+    Eventlet usages are deprecated and the removal of Eventlet from
+    OpenStack `is planned <https://governance.openstack.org/tc//goals/proposed/remove-eventlet.html>`_,
+    for this reason, using the ``eventlet`` handler from kazoo
+    available into  the zookeeper driver is now deprecated. The support of
+    Eventlet will be soon removed from tooz.
+
+    Please start considering removing your internal Eventlet usages and
+    start migrating your stack.

@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import debtcollector
 from kazoo import client
 from kazoo import exceptions
 from kazoo import security
@@ -494,6 +495,10 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
             'verify_certs': strutils.bool_from_string(verify_certs),
         }
         handler_kind = options.get('handler')
+        if handler_kind == "eventlet":
+            debtcollector.deprecate(
+                "Eventlet support is deprecated and will be removed. "
+                "Use threading handler instead.")
         if handler_kind:
             try:
                 handler_cls = self.HANDLERS[handler_kind]
