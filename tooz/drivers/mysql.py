@@ -14,7 +14,6 @@
 # under the License.
 import logging
 
-from oslo_utils import encodeutils
 from oslo_utils import strutils
 import pymysql
 
@@ -73,10 +72,7 @@ class MySQLLock(locking.Lock):
                     self.acquired = True
                     return True
             except pymysql.MySQLError as e:
-                utils.raise_with_cause(
-                    tooz.ToozError,
-                    encodeutils.exception_to_unicode(e),
-                    cause=e)
+                utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
 
             if blocking:
                 raise _retry.TryAgain
@@ -102,9 +98,7 @@ class MySQLLock(locking.Lock):
             self._conn.close()
             return True
         except pymysql.MySQLError as e:
-            utils.raise_with_cause(tooz.ToozError,
-                                   encodeutils.exception_to_unicode(e),
-                                   cause=e)
+            utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
 
     def __del__(self):
         if self.acquired:
@@ -239,5 +233,4 @@ class MySQLDriver(coordination.CoordinationDriver):
                                        defer_connect=defer_connect)
         except (pymysql.err.OperationalError, pymysql.err.InternalError) as e:
             utils.raise_with_cause(coordination.ToozConnectionError,
-                                   encodeutils.exception_to_unicode(e),
-                                   cause=e)
+                                   str(e), cause=e)

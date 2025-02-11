@@ -14,7 +14,6 @@
 #    under the License.
 from unittest import mock
 
-from oslo_utils import encodeutils
 from testtools import testcase
 
 import tooz
@@ -30,7 +29,7 @@ class TestMySQLDriver(testcase.TestCase):
             try:
                 coord.stop()
             except tooz.ToozError as e:
-                message = encodeutils.exception_to_unicode(e)
+                message = str(e)
                 if (message != 'Can not stop a driver which has not'
                                ' been started'):
                     raise

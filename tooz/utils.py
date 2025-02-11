@@ -20,7 +20,6 @@ import os
 import futurist
 import msgpack
 from oslo_serialization import msgpackutils
-from oslo_utils import encodeutils
 from oslo_utils import excutils
 
 import tooz
@@ -39,9 +38,8 @@ class Base64LockEncoder:
         try:
             return self.encode(name)
         except (UnicodeDecodeError, UnicodeEncodeError) as e:
-            raise ValueError("Invalid lock name due to encoding/decoding "
-                             " issue: %s"
-                             % encodeutils.exception_to_unicode(e))
+            raise ValueError(
+                "Invalid lock name due to encoding/decoding issue: %s" % e)
 
     def encode(self, name):
         if isinstance(name, str):
@@ -178,9 +176,7 @@ def dumps(data, excp_cls=SerializationError):
     try:
         return msgpackutils.dumps(data)
     except (msgpack.PackException, ValueError) as e:
-        raise_with_cause(excp_cls,
-                         encodeutils.exception_to_unicode(e),
-                         cause=e)
+        raise_with_cause(excp_cls, str(e), cause=e)
 
 
 def loads(blob, excp_cls=SerializationError):
@@ -188,9 +184,7 @@ def loads(blob, excp_cls=SerializationError):
     try:
         return msgpackutils.loads(blob)
     except (msgpack.UnpackException, ValueError) as e:
-        raise_with_cause(excp_cls,
-                         encodeutils.exception_to_unicode(e),
-                         cause=e)
+        raise_with_cause(excp_cls, str(e), cause=e)
 
 
 def millis_to_datetime(milliseconds):
