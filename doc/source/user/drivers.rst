@@ -234,6 +234,22 @@ primitives. When a lock is acquired it will release either when explicitly
 released or automatically when the consul session ends (for example if
 the program using the lock crashes).
 
+Kubernetes
+----------
+
+**Driver:**  :py:class:`tooz.drivers.kubernetes.SherlockDriver`
+
+**Characteristics:**
+
+:py:attr:`tooz.drivers.kubernetes.SherlockDriver.CHARACTERISTICS`
+
+**Entrypoint name:** ``kubernetes``
+
+**Summary:**
+
+The `sherlock`_ driver is a driver providing `kubernetes`_ distributed locking
+that based on Kubernetes Lease API.
+
 Characteristics
 ---------------
 
@@ -249,3 +265,5 @@ Characteristics
 .. _MySQL database server: http://mysql.org
 .. _redis-sentinel: http://redis.io/topics/sentinel
 .. _GRPC Gateway: https://github.com/grpc-ecosystem/grpc-gateway
+.. _kubernetes: https://kubernetes.io/
+.. _sherlock: https://sher-lock.readthedocs.io/en/latest/

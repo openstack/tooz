@@ -37,6 +37,8 @@ Driver support
      - Yes
    * - :py:class:`~tooz.drivers.ipc.IPCDriver`
      - No
+   * - :py:class:`~tooz.drivers.kubernetes.SherlockDriver`
+     - No
    * - :py:class:`~tooz.drivers.memcached.MemcachedDriver`
      - Yes
    * - :py:class:`~tooz.drivers.mysql.MySQLDriver`
@@ -77,6 +79,8 @@ Driver support
      - No
    * - :py:class:`~tooz.drivers.ipc.IPCDriver`
      - No
+   * - :py:class:`~tooz.drivers.kubernetes.SherlockDriver`
+     - No
    * - :py:class:`~tooz.drivers.memcached.MemcachedDriver`
      - Yes
    * - :py:class:`~tooz.drivers.mysql.MySQLDriver`
@@ -113,6 +117,8 @@ Driver support
    * - :py:class:`~tooz.drivers.file.FileDriver`
      - Yes
    * - :py:class:`~tooz.drivers.ipc.IPCDriver`
+     - Yes
+   * - :py:class:`~tooz.drivers.kubernetes.SherlockDriver`
      - Yes
    * - :py:class:`~tooz.drivers.memcached.MemcachedDriver`
      - Yes
