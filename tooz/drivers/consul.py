@@ -15,6 +15,7 @@
 
 import contextlib
 import functools
+import warnings
 
 import consul
 from oslo_utils import encodeutils
@@ -222,6 +223,12 @@ class ConsulDriver(
 
     def __init__(self, member_id, parsed_url, options):
         super().__init__(member_id, parsed_url, options)
+        warnings.warn(
+            'Consul driver is deprecated and will be removed in '
+            'a future release',
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
         options = utils.collapse(options)
         self._host = parsed_url.hostname
         self._port = parsed_url.port or self.DEFAULT_PORT

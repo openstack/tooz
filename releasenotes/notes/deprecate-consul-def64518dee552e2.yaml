@@ -1,0 +1,5 @@
+---
+deprecations:
+  - |
+    The consul driver has been deprecated, due to the archivement of
+    the python-consul2 library.
