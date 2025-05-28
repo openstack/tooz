@@ -1,0 +1,15 @@
+---
+features:
+  - |
+    Added TLS support for Memcached driver.
+
+    The following TLS-related options now can be specifed in the Memcached
+    connection URL as query parameters
+
+    - ``use_ssl``: enable SSL/TLS connection or not, default is "False"
+    - ``ca_cert``: CA file to use for authentication
+    - ``ssl_cert``: path to client public key certificate file
+    - ``ssl_key``: path to client private key file
+    - ``ssl_key_password``: password for decrypting the private key
+    - ``ssl_check_hostname``: verify server hostname against its certificate
+    - ``ssl_ciphers``: available ciphers, a string in the OpenSSL cipher list format
