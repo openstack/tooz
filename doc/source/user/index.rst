@@ -8,8 +8,3 @@ User Documentation
    tutorial/index
    drivers
    compatibility
-
-.. toctree::
-   :maxdepth: 1
-
-   history
