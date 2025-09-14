@@ -10,39 +10,39 @@
     check:
       jobs:
         - tooz-tox-py310-etcd3gw
-        - tooz-tox-py312-etcd3gw
+        - tooz-tox-py313-etcd3gw
         - tooz-tox-py310-zookeeper
-        - tooz-tox-py312-zookeeper
+        - tooz-tox-py313-zookeeper
         - tooz-tox-py310-redis
-        - tooz-tox-py312-redis
+        - tooz-tox-py313-redis
         - tooz-tox-py310-sentinel
-        - tooz-tox-py312-sentinel
+        - tooz-tox-py313-sentinel
         - tooz-tox-py310-memcached
-        - tooz-tox-py312-memcached
+        - tooz-tox-py313-memcached
         - tooz-tox-py310-postgresql
-        - tooz-tox-py312-postgresql
+        - tooz-tox-py313-postgresql
         - tooz-tox-py310-mysql
-        - tooz-tox-py312-mysql
+        - tooz-tox-py313-mysql
         - tooz-tox-py310-consul
-        - tooz-tox-py312-consul
+        - tooz-tox-py313-consul
     gate:
       jobs:
         - tooz-tox-py310-etcd3gw
-        - tooz-tox-py312-etcd3gw
+        - tooz-tox-py313-etcd3gw
         - tooz-tox-py310-zookeeper
-        - tooz-tox-py312-zookeeper
+        - tooz-tox-py313-zookeeper
         - tooz-tox-py310-redis
-        - tooz-tox-py312-redis
+        - tooz-tox-py313-redis
         - tooz-tox-py310-sentinel
-        - tooz-tox-py312-sentinel
+        - tooz-tox-py313-sentinel
         - tooz-tox-py310-memcached
-        - tooz-tox-py312-memcached
+        - tooz-tox-py313-memcached
         - tooz-tox-py310-postgresql
-        - tooz-tox-py312-postgresql
+        - tooz-tox-py313-postgresql
         - tooz-tox-py310-mysql
-        - tooz-tox-py312-mysql
+        - tooz-tox-py313-mysql
         - tooz-tox-py310-consul
-        - tooz-tox-py312-consul
+        - tooz-tox-py313-consul
 
 - job:
     name: tooz-tox-py310-consul
@@ -113,69 +113,69 @@
       tox_envlist: py310-zookeeper
 
 - job:
-    name: tooz-tox-py312-consul
-    parent: openstack-tox-py312
+    name: tooz-tox-py313-consul
+    parent: openstack-tox-py313
     description: |
-      Run tests using ``py312-consul`` environment.
+      Run tests using ``py313-consul`` environment.
     vars:
-      tox_envlist: py312-consul
+      tox_envlist: py313-consul
 
 - job:
-    name: tooz-tox-py312-etcd3gw
-    parent: openstack-tox-py312
+    name: tooz-tox-py313-etcd3gw
+    parent: openstack-tox-py313
     description: |
-      Run tests using ``py312-etcd3gw`` environment.
+      Run tests using ``py313-etcd3gw`` environment.
     vars:
-      tox_envlist: py312-etcd3gw
+      tox_envlist: py313-etcd3gw
 
 - job:
-    name: tooz-tox-py312-memcached
-    parent: openstack-tox-py312
+    name: tooz-tox-py313-memcached
+    parent: openstack-tox-py313
     description: |
-      Run tests using ``py312-memcached`` environment.
+      Run tests using ``py313-memcached`` environment.
     vars:
-      tox_envlist: py312-memcached
+      tox_envlist: py313-memcached
 
 - job:
-    name: tooz-tox-py312-mysql
-    parent: openstack-tox-py312
+    name: tooz-tox-py313-mysql
+    parent: openstack-tox-py313
     description: |
-      Run tests using ``py312-mysql`` environment.
+      Run tests using ``py313-mysql`` environment.
     vars:
-      tox_envlist: py312-mysql
+      tox_envlist: py313-mysql
 
 - job:
-    name: tooz-tox-py312-postgresql
-    parent: openstack-tox-py312
+    name: tooz-tox-py313-postgresql
+    parent: openstack-tox-py313
     description: |
-      Run tests using ``py312-postgresql`` environment.
+      Run tests using ``py313-postgresql`` environment.
     vars:
-      tox_envlist: py312-postgresql
+      tox_envlist: py313-postgresql
 
 - job:
-    name: tooz-tox-py312-redis
-    parent: openstack-tox-py312
+    name: tooz-tox-py313-redis
+    parent: openstack-tox-py313
     description: |
-      Run tests using ``py312-redis`` environment.
+      Run tests using ``py313-redis`` environment.
     vars:
-      tox_envlist: py312-redis
+      tox_envlist: py313-redis
     pre-run:
       - playbooks/stop-redis.yaml
 
 - job:
-    name: tooz-tox-py312-sentinel
-    parent: openstack-tox-py312
+    name: tooz-tox-py313-sentinel
+    parent: openstack-tox-py313
     description: |
-      Run tests using ``py312-sentinel`` environment.
+      Run tests using ``py313-sentinel`` environment.
     vars:
-      tox_envlist: py312-sentinel
+      tox_envlist: py313-sentinel
     pre-run:
       - playbooks/stop-redis.yaml
 
 - job:
-    name: tooz-tox-py312-zookeeper
-    parent: openstack-tox-py312
+    name: tooz-tox-py313-zookeeper
+    parent: openstack-tox-py313
     description: |
-      Run tests using ``py312-zookeeper`` environment.
+      Run tests using ``py313-zookeeper`` environment.
     vars:
-      tox_envlist: py312-zookeeper
+      tox_envlist: py313-zookeeper
