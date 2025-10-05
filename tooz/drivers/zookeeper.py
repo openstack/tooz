@@ -432,7 +432,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
             username = parsed_url.username
             password = parsed_url.password
 
-            digest_auth = "{}:{}".format(username, password)
+            digest_auth = f"{username}:{password}"
             digest_acl = security.make_digest_acl(username, password, all=True)
             default_acl = (digest_acl,)
             auth_data = [('digest', digest_auth)]

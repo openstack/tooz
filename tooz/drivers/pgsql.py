@@ -53,7 +53,7 @@ _DIAGNOSTICS_ATTRS = tuple([
 
 def _format_exception(e):
     lines = [
-        "{}: {}".format(type(e).__name__, str(e).strip()),
+        f"{type(e).__name__}: {str(e).strip()}",
     ]
     if hasattr(e, 'pgcode') and e.pgcode is not None:
         lines.append("Error code: %s" % e.pgcode)
@@ -68,7 +68,7 @@ def _format_exception(e):
             attr_value = getattr(e.diag, attr_name)
             if attr_value is None:
                 continue
-            diagnostic_lines.append("  {} = {}".format(attr_name, attr_value))
+            diagnostic_lines.append(f"  {attr_name} = {attr_value}")
         if diagnostic_lines:
             lines.append('Diagnostics:')
             lines.extend(diagnostic_lines)

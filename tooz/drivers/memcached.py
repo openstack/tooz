@@ -44,7 +44,7 @@ def _failure_translator():
     except pymemcache_client.MemcacheUnexpectedCloseError as e:
         utils.raise_with_cause(coordination.ToozConnectionError,
                                str(e), cause=e)
-    except (socket.timeout, OSError, socket.gaierror, socket.herror) as e:
+    except (TimeoutError, OSError, socket.gaierror, socket.herror) as e:
         # TODO(harlowja): get upstream pymemcache to produce a better
         # exception for these, using socket (vs. a memcache specific
         # error) seems sorta not right and/or the best approach...
