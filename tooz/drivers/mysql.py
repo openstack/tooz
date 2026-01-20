@@ -37,7 +37,6 @@ class MySQLLock(locking.Lock):
         self._conn = MySQLDriver.get_connection(parsed_url, options, True)
 
     def acquire(self, blocking=True, shared=False, timeout=None):
-
         if shared:
             raise tooz.NotImplemented
 
@@ -63,9 +62,11 @@ class MySQLLock(locking.Lock):
                     self._conn.connect()
                 cur = self._conn.cursor()
                 cur.execute(
-                    ("SELECT GET_LOCK(%s, "
-                     f"{timeout if timeout is not None else '0'});"),
-                    self.name
+                    (
+                        "SELECT GET_LOCK(%s, "
+                        f"{timeout if timeout is not None else '0'});"
+                    ),
+                    self.name,
                 )
                 # Can return NULL on error
                 if cur.fetchone()[0] == 1:
@@ -154,8 +155,9 @@ class MySQLDriver(coordination.CoordinationDriver):
         self._options = utils.collapse(options)
 
     def _start(self):
-        self._conn = MySQLDriver.get_connection(self._parsed_url,
-                                                self._options)
+        self._conn = MySQLDriver.get_connection(
+            self._parsed_url, self._options
+        )
 
     def _stop(self):
         self._conn.close()
@@ -209,28 +211,34 @@ class MySQLDriver(coordination.CoordinationDriver):
             if value:
                 ssl_args[o] = value
         check_hostname = options.get("ssl_check_hostname")
-        check_hostname = strutils.bool_from_string(check_hostname,
-                                                   default=None)
+        check_hostname = strutils.bool_from_string(
+            check_hostname, default=None
+        )
         if check_hostname is not None:
             ssl_args['check_hostname'] = check_hostname
 
         try:
             if unix_socket:
-                return pymysql.Connect(unix_socket=unix_socket,
-                                       port=port,
-                                       user=username,
-                                       passwd=password,
-                                       database=dbname,
-                                       ssl=ssl_args,
-                                       defer_connect=defer_connect)
+                return pymysql.Connect(
+                    unix_socket=unix_socket,
+                    port=port,
+                    user=username,
+                    passwd=password,
+                    database=dbname,
+                    ssl=ssl_args,
+                    defer_connect=defer_connect,
+                )
             else:
-                return pymysql.Connect(host=host,
-                                       port=port,
-                                       user=username,
-                                       passwd=password,
-                                       database=dbname,
-                                       ssl=ssl_args,
-                                       defer_connect=defer_connect)
+                return pymysql.Connect(
+                    host=host,
+                    port=port,
+                    user=username,
+                    passwd=password,
+                    database=dbname,
+                    ssl=ssl_args,
+                    defer_connect=defer_connect,
+                )
         except (pymysql.err.OperationalError, pymysql.err.InternalError) as e:
-            utils.raise_with_cause(coordination.ToozConnectionError,
-                                   str(e), cause=e)
+            utils.raise_with_cause(
+                coordination.ToozConnectionError, str(e), cause=e
+            )

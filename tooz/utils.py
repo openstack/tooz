@@ -33,13 +33,16 @@ class Base64LockEncoder:
 
     def check_and_encode(self, name):
         if not isinstance(name, (str, bytes)):
-            raise TypeError("Provided lock name is expected to be a string"
-                            " or binary type and not %s" % type(name))
+            raise TypeError(
+                "Provided lock name is expected to be a string"
+                f" or binary type and not {type(name)}"
+            )
         try:
             return self.encode(name)
         except (UnicodeDecodeError, UnicodeEncodeError) as e:
             raise ValueError(
-                "Invalid lock name due to encoding/decoding issue: %s" % e)
+                f"Invalid lock name due to encoding/decoding issue: {e}"
+            )
 
     def encode(self, name):
         if isinstance(name, str):
@@ -50,8 +53,7 @@ class Base64LockEncoder:
 
 class ProxyExecutor:
     KIND_TO_FACTORY = {
-        'threaded': (lambda:
-                     futurist.ThreadPoolExecutor(max_workers=1)),
+        'threaded': (lambda: futurist.ThreadPoolExecutor(max_workers=1)),
         'synchronous': lambda: futurist.SynchronousExecutor(),
     }
 
@@ -78,10 +80,11 @@ class ProxyExecutor:
                 default_executor_fact = cls.KIND_TO_FACTORY[executor_kind]
             except KeyError:
                 executors_known = sorted(list(cls.KIND_TO_FACTORY))
-                raise tooz.ToozError("Unknown executor"
-                                     " '%s' provided, accepted values"
-                                     " are %s" % (executor_kind,
-                                                  executors_known))
+                raise tooz.ToozError(
+                    "Unknown executor"
+                    f" '{executor_kind}' provided, accepted values"
+                    f" are {executors_known}"
+                )
         return cls(driver_name, default_executor_fact)
 
     def start(self):
@@ -99,14 +102,17 @@ class ProxyExecutor:
 
     def submit(self, cb, *args, **kwargs):
         if not self.started:
-            raise tooz.ToozError("%s driver asynchronous executor"
-                                 " has not been started"
-                                 % self.driver_name)
+            raise tooz.ToozError(
+                f"{self.driver_name} driver asynchronous executor"
+                " has not been started"
+            )
         try:
             return self.executor.submit(cb, *args, **kwargs)
         except RuntimeError:
-            raise tooz.ToozError("%s driver asynchronous executor has"
-                                 " been shutdown" % self.driver_name)
+            raise tooz.ToozError(
+                f"{self.driver_name} driver asynchronous executor has"
+                " been shutdown"
+            )
 
 
 def safe_abs_path(rooted_at, *pieces):
@@ -119,9 +125,10 @@ def safe_abs_path(rooted_at, *pieces):
     # '/'
     path = os.path.abspath(os.path.join(rooted_at, *pieces))
     if not path.startswith(rooted_at):
-        raise ValueError("Unable to create path that is outside of"
-                         " parent directory '%s' using segments %s"
-                         % (rooted_at, list(pieces)))
+        raise ValueError(
+            "Unable to create path that is outside of"
+            f" parent directory '{rooted_at}' using segments {list(pieces)}"
+        )
     return path
 
 
@@ -148,7 +155,7 @@ def collapse(config, exclude=None, item_selector=operator.itemgetter(-1)):
     if exclude is None:
         exclude = set()
     collapsed = {}
-    for (k, v) in config.items():
+    for k, v in config.items():
         if isinstance(v, (tuple, list)):
             if k in exclude:
                 collapsed[k] = v

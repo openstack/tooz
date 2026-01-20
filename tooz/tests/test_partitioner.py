@@ -18,7 +18,6 @@ from tooz import tests
 
 
 class TestPartitioner(tests.TestWithCoordinator):
-
     def setUp(self):
         super().setUp()
         self._extra_coords = []
@@ -34,8 +33,9 @@ class TestPartitioner(tests.TestWithCoordinator):
             m = tests.get_random_uuid()
             coord = coordination.get_coordinator(self.url, m)
             coord.start()
-            groups.append(coord.join_partitioned_group(
-                self.group_id, weight=weight))
+            groups.append(
+                coord.join_partitioned_group(self.group_id, weight=weight)
+            )
             self._extra_coords.append(coord)
         self._coord.run_watchers()
         return groups

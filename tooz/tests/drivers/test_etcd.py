@@ -26,15 +26,16 @@ class TestEtcd(testcase.TestCase):
 
     def setUp(self):
         super().setUp()
-        self._coord = tooz.coordination.get_coordinator(self.FAKE_URL,
-                                                        self.FAKE_MEMBER_ID)
+        self._coord = tooz.coordination.get_coordinator(
+            self.FAKE_URL, self.FAKE_MEMBER_ID
+        )
 
     def test_multiple_locks_etcd_wait_index(self):
         lock = self._coord.get_lock('mocked-not-really-random')
 
         return_values = [
             {'errorCode': {}, 'node': {}, 'index': 10},
-            {'errorCode': None, 'node': {}, 'index': 10}
+            {'errorCode': None, 'node': {}, 'index': 10},
         ]
         with mock.patch.object(lock.client, 'put', side_effect=return_values):
             with mock.patch.object(lock.client, 'get') as mocked_get:

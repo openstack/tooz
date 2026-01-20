@@ -39,8 +39,9 @@ def _translate_failures(func):
             # Typically json decoding failed for some reason.
             utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
         except requests.exceptions.RequestException as e:
-            utils.raise_with_cause(coordination.ToozConnectionError,
-                                   str(e), cause=e)
+            utils.raise_with_cause(
+                coordination.ToozConnectionError, str(e), cause=e
+            )
 
     return wrapper
 
@@ -79,7 +80,6 @@ class _Client:
 
 
 class EtcdLock(locking.Lock):
-
     _TOOZ_LOCK_PREFIX = "tooz_locks"
 
     def __init__(self, lock_url, name, coord, client, ttl=60):
@@ -123,8 +123,8 @@ class EtcdLock(locking.Lock):
                         self._lock_url,
                         make_url=False,
                         timeout=watch.leftover() if watch else None,
-                        data={"ttl": self.ttl,
-                              "prevExist": "false"})
+                        data={"ttl": self.ttl, "prevExist": "false"},
+                    )
                 except requests.exceptions.RequestException:
                     if not watch or watch.leftover() == 0:
                         return False
@@ -146,10 +146,10 @@ class EtcdLock(locking.Lock):
             # Ok, so let's wait a bit (or forever!)
             try:
                 reply = self.client.get(
-                    self._lock_url +
-                    "?wait=true&waitIndex=%d" % lastindex,
+                    self._lock_url + f"?wait=true&waitIndex={lastindex:d}",
                     make_url=False,
-                    timeout=watch.leftover() if watch else None)
+                    timeout=watch.leftover() if watch else None,
+                )
             except requests.exceptions.RequestException:
                 if not watch or watch.expired():
                     return False
@@ -159,7 +159,7 @@ class EtcdLock(locking.Lock):
     def release(self):
         if self.acquired:
             lock_url = self._lock_url
-            lock_url += "?prevIndex=%s" % self._node['modifiedIndex']
+            lock_url += "?prevIndex={}".format(self._node['modifiedIndex'])
             reply = self.client.delete(lock_url, make_url=False)
             errorcode = reply.get("errorCode")
             if errorcode is None:
@@ -167,8 +167,12 @@ class EtcdLock(locking.Lock):
                 self._node = None
                 return True
             else:
-                LOG.warning("Unable to release '%s' due to %d, %s",
-                            self.name, errorcode, reply.get('message'))
+                LOG.warning(
+                    "Unable to release '%s' due to %d, %s",
+                    self.name,
+                    errorcode,
+                    reply.get('message'),
+                )
         return False
 
     @property
@@ -180,16 +184,23 @@ class EtcdLock(locking.Lock):
     def heartbeat(self):
         """Keep the lock alive."""
         if self.acquired:
-            poked = self.client.put(self._lock_url,
-                                    data={"ttl": self.ttl,
-                                          "prevExist": "true"}, make_url=False)
+            poked = self.client.put(
+                self._lock_url,
+                data={"ttl": self.ttl, "prevExist": "true"},
+                make_url=False,
+            )
             self._node = poked['node']
             errorcode = poked.get("errorCode")
             if not errorcode:
                 return True
-            LOG.warning("Unable to heartbeat by updating key '%s' with "
-                        "extended expiry of %s seconds: %d, %s", self.name,
-                        self.ttl, errorcode, poked.get("message"))
+            LOG.warning(
+                "Unable to heartbeat by updating key '%s' with "
+                "extended expiry of %s seconds: %d, %s",
+                self.name,
+                self.ttl,
+                errorcode,
+                poked.get("message"),
+            )
         return False
 
 
@@ -241,8 +252,9 @@ class EtcdDriver(coordination.CoordinationDriver):
         host = parsed_url.hostname or self.DEFAULT_HOST
         port = parsed_url.port or self.DEFAULT_PORT
         options = utils.collapse(options)
-        self.client = _Client(host=host, port=port,
-                              protocol=options.get('protocol', 'http'))
+        self.client = _Client(
+            host=host, port=port, protocol=options.get('protocol', 'http')
+        )
         default_timeout = options.get('timeout', self.DEFAULT_TIMEOUT)
         self.lock_encoder = self.lock_encoder_cls(self.client.get_url("keys"))
         self.lock_timeout = int(options.get('lock_timeout', default_timeout))
@@ -255,8 +267,13 @@ class EtcdDriver(coordination.CoordinationDriver):
             raise coordination.ToozConnectionError(str(e))
 
     def get_lock(self, name):
-        return EtcdLock(self.lock_encoder.check_and_encode(name), name,
-                        self, self.client, self.lock_timeout)
+        return EtcdLock(
+            self.lock_encoder.check_and_encode(name),
+            name,
+            self,
+            self.client,
+            self.lock_timeout,
+        )
 
     def heartbeat(self):
         for lock in self._acquired_locks.copy():

@@ -21,10 +21,8 @@ from tooz import tests
 
 
 class TestSherlockDriver(testcase.TestCase):
-
     def _create_coordinator(self, url="kubernetes://?namespace=fake_name"):
-        return coordination.get_coordinator(
-            url, tests.get_random_uuid())
+        return coordination.get_coordinator(url, tests.get_random_uuid())
 
     def test_connect_k8s_driver(self):
         c = self._create_coordinator()
@@ -39,13 +37,17 @@ class TestSherlockDriver(testcase.TestCase):
         timeout = 10.1
         lock = c.get_lock(name)
         with mock.patch.object(
-            lock, 'acquire', wraps=True, autospec=True,
-            return_value=mock.Mock()
+            lock,
+            'acquire',
+            wraps=True,
+            autospec=True,
+            return_value=mock.Mock(),
         ) as mock_acquire:
             with lock(blocking_value, timeout):
                 mock_acquire.assert_called_once_with(blocking_value, timeout)
         k8s_mock.assert_called_once_with(
-            lock_name=mock.ANY, k8s_namespace='fake_name')
+            lock_name=mock.ANY, k8s_namespace='fake_name'
+        )
 
     @mock.patch("sherlock.KubernetesLock")
     def test_parsing_blocking_settings(self, k8s_mock):
@@ -55,13 +57,17 @@ class TestSherlockDriver(testcase.TestCase):
         blocking_value = True
         lock = c.get_lock(name)
         with mock.patch.object(
-            lock, 'acquire', wraps=True, autospec=True,
-            return_value=mock.Mock()
+            lock,
+            'acquire',
+            wraps=True,
+            autospec=True,
+            return_value=mock.Mock(),
         ) as mock_acquire:
             with lock(blocking_value):
                 mock_acquire.assert_called_once_with(blocking_value)
         k8s_mock.assert_called_once_with(
-            lock_name=mock.ANY, k8s_namespace='fake_name')
+            lock_name=mock.ANY, k8s_namespace='fake_name'
+        )
 
     @mock.patch("sherlock.KubernetesLock")
     @mock.patch("sherlock.configure")
@@ -74,7 +80,8 @@ class TestSherlockDriver(testcase.TestCase):
         lock = c.get_lock(name)
         lock.acquire(blocking=blocking_value, expire=expire_value)
         k8s_mock.assert_called_once_with(
-            lock_name=mock.ANY, k8s_namespace='fake_name')
+            lock_name=mock.ANY, k8s_namespace='fake_name'
+        )
         conf_mock.assert_called_once_with(
-            expire=expire_value,
-            timeout=blocking_value)
+            expire=expire_value, timeout=blocking_value
+        )

@@ -30,25 +30,27 @@ LOG = logging.getLogger(__name__)
 # See: psycopg/diagnostics_type.c for what kind of fields these
 # objects may have (things like 'schema_name', 'internal_query'
 # and so-on which are useful for figuring out what went wrong...)
-_DIAGNOSTICS_ATTRS = tuple([
-    'column_name',
-    'constraint_name',
-    'context',
-    'datatype_name',
-    'internal_position',
-    'internal_query',
-    'message_detail',
-    'message_hint',
-    'message_primary',
-    'schema_name',
-    'severity',
-    'source_file',
-    'source_function',
-    'source_line',
-    'sqlstate',
-    'statement_position',
-    'table_name',
-])
+_DIAGNOSTICS_ATTRS = tuple(
+    [
+        'column_name',
+        'constraint_name',
+        'context',
+        'datatype_name',
+        'internal_position',
+        'internal_query',
+        'message_detail',
+        'message_hint',
+        'message_primary',
+        'schema_name',
+        'severity',
+        'source_file',
+        'source_function',
+        'source_line',
+        'sqlstate',
+        'statement_position',
+        'table_name',
+    ]
+)
 
 
 def _format_exception(e):
@@ -56,7 +58,7 @@ def _format_exception(e):
         f"{type(e).__name__}: {str(e).strip()}",
     ]
     if hasattr(e, 'pgcode') and e.pgcode is not None:
-        lines.append("Error code: %s" % e.pgcode)
+        lines.append(f"Error code: {e.pgcode}")
     # The reason this hasattr check is done is that the 'diag' may not always
     # be present, depending on how new of a psycopg is installed... so better
     # to be safe than sorry...
@@ -81,9 +83,7 @@ def _translating_cursor(conn):
         with conn.cursor() as cur:
             yield cur
     except psycopg2.Error as e:
-        utils.raise_with_cause(tooz.ToozError,
-                               _format_exception(e),
-                               cause=e)
+        utils.raise_with_cause(tooz.ToozError, _format_exception(e), cause=e)
 
 
 class PostgresLock(locking.Lock):
@@ -100,7 +100,6 @@ class PostgresLock(locking.Lock):
         self.key = h.digest()[0:2]
 
     def acquire(self, blocking=True, shared=False, timeout=None):
-
         if shared:
             raise tooz.NotImplemented
         if timeout is not None:
@@ -116,19 +115,20 @@ class PostgresLock(locking.Lock):
                 return False
 
             if not self._conn or self._conn.closed:
-                self._conn = PostgresDriver.get_connection(self._parsed_url,
-                                                           self._options)
+                self._conn = PostgresDriver.get_connection(
+                    self._parsed_url, self._options
+                )
 
             with _translating_cursor(self._conn) as cur:
                 if blocking is True:
-                    cur.execute("SELECT pg_advisory_lock(%s, %s);",
-                                self.key)
+                    cur.execute("SELECT pg_advisory_lock(%s, %s);", self.key)
                     cur.fetchone()
                     self.acquired = True
                     return True
                 else:
-                    cur.execute("SELECT pg_try_advisory_lock(%s, %s);",
-                                self.key)
+                    cur.execute(
+                        "SELECT pg_try_advisory_lock(%s, %s);", self.key
+                    )
                     if cur.fetchone()[0] is True:
                         self.acquired = True
                         return True
@@ -238,11 +238,10 @@ class PostgresDriver(coordination.CoordinationDriver):
             kwargs["password"] = parsed_url.password
 
         try:
-            return psycopg2.connect(host=host,
-                                    port=port,
-                                    database=dbname,
-                                    **kwargs)
+            return psycopg2.connect(
+                host=host, port=port, database=dbname, **kwargs
+            )
         except psycopg2.Error as e:
-            utils.raise_with_cause(coordination.ToozConnectionError,
-                                   _format_exception(e),
-                                   cause=e)
+            utils.raise_with_cause(
+                coordination.ToozConnectionError, _format_exception(e), cause=e
+            )

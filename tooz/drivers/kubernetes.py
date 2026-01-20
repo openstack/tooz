@@ -40,9 +40,8 @@ class KubernetesLock(locking.Lock):
         except k8s_exc.ApiException as e:
             if "Reason: Not Found" not in str(e):
                 utils.raise_with_cause(
-                    tooz.ToozError,
-                    f"operation error: {str(e)}",
-                    cause=e)
+                    tooz.ToozError, f"operation error: {str(e)}", cause=e
+                )
         return False
 
     def acquire(self, blocking=True, shared=False, expire=None):
@@ -50,8 +49,7 @@ class KubernetesLock(locking.Lock):
             raise tooz.NotImplemented
         blocking, timeout = utils.convert_blocking(blocking)
         sherlock.configure(
-            expire=expire,
-            timeout=int(timeout) if timeout else timeout
+            expire=expire, timeout=int(timeout) if timeout else timeout
         )
         return self._lock.acquire(blocking=blocking)
 
@@ -71,7 +69,7 @@ class KubernetesLock(locking.Lock):
 
     @property
     def acquired(self):
-        return (self._lock.locked() and self.is_still_owner())
+        return self._lock.locked() and self.is_still_owner()
 
 
 class SherlockDriver(coordination.CoordinationDriverCachedRunWatchers):
@@ -92,6 +90,7 @@ class SherlockDriver(coordination.CoordinationDriverCachedRunWatchers):
     .. _kubernetes: https://kubernetes.io/
     .. _sherlock: https://sher-lock.readthedocs.io/en/latest/
     """
+
     #: Default namespace when none is provided.
     K8S_NAMESPACE = "openstack"
 
@@ -113,5 +112,6 @@ class SherlockDriver(coordination.CoordinationDriverCachedRunWatchers):
 
     def get_lock(self, name):
         lock = sherlock.KubernetesLock(
-            lock_name=name, k8s_namespace=self._namespace)
+            lock_name=name, k8s_namespace=self._namespace
+        )
         return KubernetesLock(name=name, namespace=self._namespace, lock=lock)

@@ -27,14 +27,17 @@ class Partitioner:
 
     DEFAULT_PARTITION_NUMBER = hashring.HashRing.DEFAULT_PARTITION_NUMBER
 
-    def __init__(self, coordinator, group_id,
-                 partitions=DEFAULT_PARTITION_NUMBER):
+    def __init__(
+        self, coordinator, group_id, partitions=DEFAULT_PARTITION_NUMBER
+    ):
         members = coordinator.get_members(group_id)
         self.partitions = partitions
         self.group_id = group_id
         self._coord = coordinator
-        caps = [(m, self._coord.get_member_capabilities(self.group_id, m))
-                for m in members.get()]
+        caps = [
+            (m, self._coord.get_member_capabilities(self.group_id, m))
+            for m in members.get()
+        ]
         self._coord.watch_join_group(self.group_id, self._on_member_join)
         self._coord.watch_leave_group(self.group_id, self._on_member_leave)
         self.ring = hashring.HashRing([], partitions=self.partitions)
@@ -42,8 +45,11 @@ class Partitioner:
             self.ring.add_node(m_id, cap.get().get("weight", 1))
 
     def _on_member_join(self, event):
-        weight = self._coord.get_member_capabilities(
-            self.group_id, event.member_id).get().get("weight", 1)
+        weight = (
+            self._coord.get_member_capabilities(self.group_id, event.member_id)
+            .get()
+            .get("weight", 1)
+        )
         self.ring.add_node(event.member_id, weight)
 
     def _on_member_leave(self, event):
@@ -63,12 +69,15 @@ class Partitioner:
         :param ignore_members: Group members to ignore.
         :param replicas: Number of replicas for the object.
         """
-        return self.ring.get_nodes(self._hash_object(obj),
-                                   ignore_nodes=ignore_members,
-                                   replicas=replicas)
+        return self.ring.get_nodes(
+            self._hash_object(obj),
+            ignore_nodes=ignore_members,
+            replicas=replicas,
+        )
 
-    def belongs_to_member(self, obj, member_id,
-                          ignore_members=None, replicas=1):
+    def belongs_to_member(
+        self, obj, member_id, ignore_members=None, replicas=1
+    ):
         """Return whether an object belongs to a member.
 
         :param obj: The object to check owning for.
@@ -77,7 +86,8 @@ class Partitioner:
         :param replicas: Number of replicas for the object.
         """
         return member_id in self.members_for_object(
-            obj, ignore_members=ignore_members, replicas=replicas)
+            obj, ignore_members=ignore_members, replicas=replicas
+        )
 
     def belongs_to_self(self, obj, ignore_members=None, replicas=1):
         """Return whether an object belongs to this coordinator.
@@ -86,9 +96,12 @@ class Partitioner:
         :param ignore_members: Group members to ignore.
         :param replicas: Number of replicas for the object.
         """
-        return self.belongs_to_member(obj, self._coord._member_id,
-                                      ignore_members=ignore_members,
-                                      replicas=replicas)
+        return self.belongs_to_member(
+            obj,
+            self._coord._member_id,
+            ignore_members=ignore_members,
+            replicas=replicas,
+        )
 
     def stop(self):
         """Stop the partitioner."""

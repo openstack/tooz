@@ -57,7 +57,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'tooz'
-copyright = '%s, OpenStack Foundation' % datetime.date.today().year
+copyright = f'{datetime.date.today().year}, OpenStack Foundation'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -79,21 +79,26 @@ latex_elements = {}
 # (source start file, target name, title, author,
 # documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'tooz.tex', 'tooz Documentation',
-   'eNovance', 'manual'),
+    ('index', 'tooz.tex', 'tooz Documentation', 'eNovance', 'manual'),
 ]
 
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'tooz', 'tooz Documentation',
-   'OpenStack Foundation', 'tooz', 'One line description of project.',
-   'Miscellaneous'),
+    (
+        'index',
+        'tooz',
+        'tooz Documentation',
+        'OpenStack Foundation',
+        'tooz',
+        'One line description of project.',
+        'Miscellaneous',
+    ),
 ]
 
 autodoc_default_options = {
     'members': None,
     'special-members': None,
     'show_inheritance': None,
-    }
+}

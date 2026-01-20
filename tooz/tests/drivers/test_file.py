@@ -28,7 +28,7 @@ class TestFileDriver(testcase.TestCase):
 
     def test_base_dir(self):
         file_path = '/fake/file/path'
-        url = 'file://%s' % file_path
+        url = f'file://{file_path}'
 
         coord = coordination.get_coordinator(url, self._FAKE_MEMBER_ID)
         self.assertEqual(file_path, coord._dir)
@@ -37,7 +37,7 @@ class TestFileDriver(testcase.TestCase):
         fixture = self.useFixture(fixtures.TempDir())
 
         file_path = fixture.path
-        url = 'file://%s' % file_path
+        url = f'file://{file_path}'
 
         coord = coordination.get_coordinator(url, self._FAKE_MEMBER_ID)
         coord.start()
@@ -45,10 +45,11 @@ class TestFileDriver(testcase.TestCase):
 
         coord.create_group(b"my_group").get()
         safe_group_id = coord._make_filesystem_safe(b"my_group")
-        with open(os.path.join(file_path, 'groups',
-                  safe_group_id, "junk.txt"), "wb"):
+        with open(
+            os.path.join(file_path, 'groups', safe_group_id, "junk.txt"), "wb"
+        ):
             pass
-        os.unlink(os.path.join(file_path, 'groups',
-                               safe_group_id, '.metadata'))
-        self.assertRaises(tooz.ToozError,
-                          coord.delete_group(b"my_group").get)
+        os.unlink(
+            os.path.join(file_path, 'groups', safe_group_id, '.metadata')
+        )
+        self.assertRaises(tooz.ToozError, coord.delete_group(b"my_group").get)

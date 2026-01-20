@@ -130,9 +130,10 @@ class MemberJoinedGroup(Event):
         self.member_id = member_id
 
     def __repr__(self):
-        return "<{}: group {}: +member {}>".format(self.__class__.__name__,
-                                                   self.group_id,
-                                                   self.member_id)
+        return (
+            f"<{self.__class__.__name__}: "
+            f"group {self.group_id}: +member {self.member_id}>"
+        )
 
 
 class MemberLeftGroup(Event):
@@ -143,9 +144,10 @@ class MemberLeftGroup(Event):
         self.member_id = member_id
 
     def __repr__(self):
-        return "<{}: group {}: -member {}>".format(self.__class__.__name__,
-                                                   self.group_id,
-                                                   self.member_id)
+        return (
+            f"<{self.__class__.__name__}: "
+            f"group {self.group_id}: -member {self.member_id}>"
+        )
 
 
 class LeaderElected(Event):
@@ -159,8 +161,9 @@ class LeaderElected(Event):
 class Heart:
     """Coordination drivers main liveness pump (its heart)."""
 
-    def __init__(self, driver, thread_cls=threading.Thread,
-                 event_cls=threading.Event):
+    def __init__(
+        self, driver, thread_cls=threading.Thread, event_cls=threading.Event
+    ):
         self._thread_cls = thread_cls
         self._dead = event_cls()
         self._runner = None
@@ -174,8 +177,7 @@ class Heart:
 
     def is_alive(self):
         """Returns if the heart is beating."""
-        return not (self._runner is None
-                    or not self._runner.is_alive())
+        return not (self._runner is None or not self._runner.is_alive())
 
     def _beat_forever_until_stopped(self):
         """Inner beating loop."""
@@ -194,8 +196,10 @@ class Heart:
                     " %0.2f seconds which is %0.2f seconds longer than"
                     " the next heartbeat idle time). This may cause"
                     " timeouts (in locks, leadership, ...) to"
-                    " happen (which will not end well).", ran_for,
-                    ran_for - wait_until_next_beat)
+                    " happen (which will not end well).",
+                    ran_for,
+                    ran_for - wait_until_next_beat,
+                )
             self._beats += 1
             # NOTE(harlowja): use the event object for waiting and
             # not a sleep function since doing that will allow this code
@@ -227,7 +231,6 @@ class Heart:
 
 
 class CoordinationDriver:
-
     requires_beating = False
     """
     Usage requirement that if true requires that the :py:meth:`~.heartbeat`
@@ -255,13 +258,17 @@ class CoordinationDriver:
         self.heart = Heart(self)
 
     def _has_hooks_for_group(self, group_id):
-        return (group_id in self._hooks_join_group or
-                group_id in self._hooks_leave_group)
+        return (
+            group_id in self._hooks_join_group
+            or group_id in self._hooks_leave_group
+        )
 
     def join_partitioned_group(
-            self, group_id,
-            weight=1,
-            partitions=partitioner.Partitioner.DEFAULT_PARTITION_NUMBER):
+        self,
+        group_id,
+        weight=1,
+        partitions=partitioner.Partitioner.DEFAULT_PARTITION_NUMBER,
+    ):
         """Join a group and get a partitioner.
 
         A partitioner allows to distribute a bunch of objects across several
@@ -420,7 +427,8 @@ class CoordinationDriver:
         """
         if self._started:
             raise tooz.ToozError(
-                "Can not start a driver which has not been stopped")
+                "Can not start a driver which has not been stopped"
+            )
         self._start()
         if self.requires_beating and start_heart:
             self.heart.start()
@@ -439,7 +447,8 @@ class CoordinationDriver:
         """
         if not self._started:
             raise tooz.ToozError(
-                "Can not stop a driver which has not been started")
+                "Can not stop a driver which has not been started"
+            )
         if self.heart.is_alive():
             self.heart.stop()
             self.heart.wait()
@@ -663,24 +672,21 @@ class CoordinatorResult(CoordAsyncResult):
             else:
                 return self._fut.result(timeout=timeout)
         except futures.TimeoutError as e:
-            utils.raise_with_cause(OperationTimedOut,
-                                   str(e),
-                                   cause=e)
+            utils.raise_with_cause(OperationTimedOut, str(e), cause=e)
 
     def done(self):
         return self._fut.done()
 
 
 class CoordinationDriverWithExecutor(CoordinationDriver):
-
     EXCLUDE_OPTIONS = None
 
     def __init__(self, member_id, parsed_url, options):
         self._options = utils.collapse(options, exclude=self.EXCLUDE_OPTIONS)
         self._executor = utils.ProxyExecutor.build(
-            self.__class__.__name__, self._options)
-        super().__init__(
-            member_id, parsed_url, options)
+            self.__class__.__name__, self._options
+        )
+        super().__init__(member_id, parsed_url, options)
 
     def start(self, start_heart=False):
         self._executor.start()
@@ -701,8 +707,7 @@ class CoordinationDriverCachedRunWatchers(CoordinationDriver):
     """
 
     def __init__(self, member_id, parsed_url, options):
-        super().__init__(
-            member_id, parsed_url, options)
+        super().__init__(member_id, parsed_url, options)
         # A cache for group members
         self._group_members = collections.defaultdict(set)
         self._joined_groups = set()
@@ -714,59 +719,68 @@ class CoordinationDriverCachedRunWatchers(CoordinationDriver):
 
     def watch_join_group(self, group_id, callback):
         self._init_watch_group(group_id)
-        super().watch_join_group(
-            group_id, callback)
+        super().watch_join_group(group_id, callback)
 
     def unwatch_join_group(self, group_id, callback):
-        super().unwatch_join_group(
-            group_id, callback)
+        super().unwatch_join_group(group_id, callback)
 
-        if (not self._has_hooks_for_group(group_id) and
-           group_id in self._group_members):
+        if (
+            not self._has_hooks_for_group(group_id)
+            and group_id in self._group_members
+        ):
             del self._group_members[group_id]
 
     def watch_leave_group(self, group_id, callback):
         self._init_watch_group(group_id)
-        super().watch_leave_group(
-            group_id, callback)
+        super().watch_leave_group(group_id, callback)
 
     def unwatch_leave_group(self, group_id, callback):
-        super().unwatch_leave_group(
-            group_id, callback)
+        super().unwatch_leave_group(group_id, callback)
 
-        if (not self._has_hooks_for_group(group_id) and
-           group_id in self._group_members):
+        if (
+            not self._has_hooks_for_group(group_id)
+            and group_id in self._group_members
+        ):
             del self._group_members[group_id]
 
     def run_watchers(self, timeout=None):
         with timeutils.StopWatch(duration=timeout) as w:
             result = []
             group_with_hooks = set(self._hooks_join_group.keys()).union(
-                set(self._hooks_leave_group.keys()))
+                set(self._hooks_leave_group.keys())
+            )
             for group_id in group_with_hooks:
                 try:
                     group_members = self.get_members(group_id).get(
-                        timeout=w.leftover(return_none=True))
+                        timeout=w.leftover(return_none=True)
+                    )
                 except GroupNotCreated:
                     group_members = set()
-                if (group_id in self._joined_groups and
-                        self._member_id not in group_members):
+                if (
+                    group_id in self._joined_groups
+                    and self._member_id not in group_members
+                ):
                     self._joined_groups.discard(group_id)
                 old_group_members = self._group_members.get(group_id, set())
-                for member_id in (group_members - old_group_members):
+                for member_id in group_members - old_group_members:
                     result.extend(
                         self._hooks_join_group[group_id].run(
-                            MemberJoinedGroup(group_id, member_id)))
-                for member_id in (old_group_members - group_members):
+                            MemberJoinedGroup(group_id, member_id)
+                        )
+                    )
+                for member_id in old_group_members - group_members:
                     result.extend(
                         self._hooks_leave_group[group_id].run(
-                            MemberLeftGroup(group_id, member_id)))
+                            MemberLeftGroup(group_id, member_id)
+                        )
+                    )
                 self._group_members[group_id] = group_members
             return result
 
 
-def get_coordinator(backend_url, member_id,
-                    characteristics=frozenset(), **kwargs):
+def get_coordinator(
+    backend_url, member_id, characteristics=frozenset(), **kwargs
+):
     """Initialize and load the backend.
 
     :param backend_url: the backend URL to use
@@ -786,9 +800,9 @@ def get_coordinator(backend_url, member_id,
     parsed_qs = urllib.parse.parse_qs(parsed_url.query)
     if kwargs:
         options = {}
-        for (k, v) in kwargs.items():
+        for k, v in kwargs.items():
             options[k] = [v]
-        for (k, v) in parsed_qs.items():
+        for k, v in parsed_qs.items():
             if k not in options:
                 options[k] = v
     else:
@@ -797,18 +811,17 @@ def get_coordinator(backend_url, member_id,
         namespace=TOOZ_BACKENDS_NAMESPACE,
         name=parsed_url.scheme,
         invoke_on_load=True,
-        invoke_args=(member_id, parsed_url, options)).driver
+        invoke_args=(member_id, parsed_url, options),
+    ).driver
     characteristics = set(characteristics)
     driver_characteristics = set(getattr(d, 'CHARACTERISTICS', set()))
     missing_characteristics = characteristics - driver_characteristics
     if missing_characteristics:
-        raise ToozDriverChosenPoorly("Desired characteristics %s"
-                                     " is not a strict subset of driver"
-                                     " characteristics %s, %s"
-                                     " characteristics were not found"
-                                     % (characteristics,
-                                        driver_characteristics,
-                                        missing_characteristics))
+        raise ToozDriverChosenPoorly(
+            f"Desired characteristics {characteristics} is not a strict "
+            f"subset of driver characteristics {driver_characteristics},"
+            f" {missing_characteristics} characteristics were not found"
+        )
     return d
 
 
@@ -836,44 +849,44 @@ class LockAcquireFailed(tooz.ToozError):
 
 class GroupNotCreated(tooz.ToozError):
     """Exception raised when the caller request an nonexistent group."""
+
     def __init__(self, group_id):
         self.group_id = group_id
-        super().__init__(
-            "Group %s does not exist" % group_id)
+        super().__init__(f"Group {group_id} does not exist")
 
 
 class GroupAlreadyExist(tooz.ToozError):
     """Exception raised trying to create an already existing group."""
+
     def __init__(self, group_id):
         self.group_id = group_id
-        super().__init__(
-            "Group %s already exists" % group_id)
+        super().__init__(f"Group {group_id} already exists")
 
 
 class MemberAlreadyExist(tooz.ToozError):
     """Exception raised trying to join a group already joined."""
+
     def __init__(self, group_id, member_id):
         self.group_id = group_id
         self.member_id = member_id
-        super().__init__(
-            "Member %s has already joined %s" %
-            (member_id, group_id))
+        super().__init__(f"Member {member_id} has already joined {group_id}")
 
 
 class MemberNotJoined(tooz.ToozError):
     """Exception raised trying to access a member not in a group."""
+
     def __init__(self, group_id, member_id):
         self.group_id = group_id
         self.member_id = member_id
-        super().__init__("Member %s has not joined %s" %
-                         (member_id, group_id))
+        super().__init__(f"Member {member_id} has not joined {group_id}")
 
 
 class GroupNotEmpty(tooz.ToozError):
     "Exception raised when the caller try to delete a group with members."
+
     def __init__(self, group_id):
         self.group_id = group_id
-        super().__init__("Group %s is not empty" % group_id)
+        super().__init__(f"Group {group_id} is not empty")
 
 
 class WatchCallbackNotFound(tooz.ToozError):
@@ -883,12 +896,14 @@ class WatchCallbackNotFound(tooz.ToozError):
     does not exist.
 
     """
+
     def __init__(self, group_id, callback):
         self.group_id = group_id
         self.callback = callback
         super().__init__(
-            'Callback %s is not registered on group %s' %
-            (callback.__name__, group_id))
+            f"Callback {callback.__name__} is not registered on group "
+            f"{group_id}"
+        )
 
 
 # TODO(harlowja,jd): We'll have to figure out a way to remove this 'alias' at

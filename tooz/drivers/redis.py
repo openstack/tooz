@@ -33,7 +33,6 @@ LOG = logging.getLogger(__name__)
 
 
 def _handle_failures(n_tries=15):
-
     """Translates common redis exceptions into tooz exceptions.
 
     This also enables retrying on certain exceptions.
@@ -41,6 +40,7 @@ def _handle_failures(n_tries=15):
     :param func: the function to act on
     :param n_tries: the number of retries
     """
+
     def inner(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -54,18 +54,23 @@ def _handle_failures(n_tries=15):
                     if not ntries:
                         LOG.debug(
                             "Redis connection error, "
-                            "retry limit has been reached, aborting - %s", e
+                            "retry limit has been reached, aborting - %s",
+                            e,
                         )
                         utils.raise_with_cause(
-                            coordination.ToozConnectionError, str(e), cause=e)
+                            coordination.ToozConnectionError, str(e), cause=e
+                        )
                     LOG.debug("Redis connection error, will retry - %s", e)
 
-                except (exceptions.TimeoutError) as e:
-                    utils.raise_with_cause(coordination.ToozConnectionError,
-                                           str(e), cause=e)
+                except exceptions.TimeoutError as e:
+                    utils.raise_with_cause(
+                        coordination.ToozConnectionError, str(e), cause=e
+                    )
                 except exceptions.RedisError as e:
                     utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
+
         return wrapper
+
     return inner
 
 
@@ -76,9 +81,7 @@ class RedisLock(locking.Lock):
         # NOTE(jd) Make sure we don't release and heartbeat at the same time by
         # using a exclusive access lock (LP#1557593)
         self._exclusive_access = threading.Lock()
-        self._lock = client.lock(name,
-                                 timeout=timeout,
-                                 thread_local=False)
+        self._lock = client.lock(name, timeout=timeout, thread_local=False)
         self._coord = coord
         self._client = client
 
@@ -100,7 +103,8 @@ class RedisLock(locking.Lock):
             raise tooz.NotImplemented
         blocking, timeout = utils.convert_blocking(blocking, timeout)
         acquired = self._lock.acquire(
-            blocking=blocking, blocking_timeout=timeout)
+            blocking=blocking, blocking_timeout=timeout
+        )
         if acquired:
             with self._exclusive_access:
                 self._coord._acquired_locks.add(self)
@@ -131,8 +135,10 @@ class RedisLock(locking.Lock):
         return self in self._coord._acquired_locks
 
 
-class RedisDriver(coordination.CoordinationDriverCachedRunWatchers,
-                  coordination.CoordinationDriverWithExecutor):
+class RedisDriver(
+    coordination.CoordinationDriverCachedRunWatchers,
+    coordination.CoordinationDriverWithExecutor,
+):
     """Redis provides a few nice benefits that act as a poormans zookeeper.
 
     It **is** fully functional and implements all of the coordination
@@ -245,24 +251,26 @@ class RedisDriver(coordination.CoordinationDriverCachedRunWatchers,
     string is provided).
     """
 
-    CLIENT_ARGS = frozenset([
-        'db',
-        'encoding',
-        'retry_on_timeout',
-        'socket_keepalive',
-        'socket_timeout',
-        'socket_connect_timeout',
-        'health_check_interval',
-        'ssl',
-        'ssl_certfile',
-        'ssl_keyfile',
-        'ssl_ca_certs',
-        'sentinel',
-        'sentinel_fallback',
-        'sentinel_username',
-        'sentinel_password',
-        'sentinel_ssl',
-    ])
+    CLIENT_ARGS = frozenset(
+        [
+            'db',
+            'encoding',
+            'retry_on_timeout',
+            'socket_keepalive',
+            'socket_timeout',
+            'socket_connect_timeout',
+            'health_check_interval',
+            'ssl',
+            'ssl_certfile',
+            'ssl_keyfile',
+            'ssl_ca_certs',
+            'sentinel',
+            'sentinel_fallback',
+            'sentinel_username',
+            'sentinel_password',
+            'sentinel_ssl',
+        ]
+    )
     """
     Keys that we allow to proxy from the coordinator configuration into the
     redis client (used to configure the redis client internals so that
@@ -274,29 +282,37 @@ class RedisDriver(coordination.CoordinationDriverCachedRunWatchers,
     """
 
     #: Client arguments that are expected/allowed to be lists.
-    CLIENT_LIST_ARGS = frozenset([
-        'sentinel_fallback',
-    ])
+    CLIENT_LIST_ARGS = frozenset(
+        [
+            'sentinel_fallback',
+        ]
+    )
 
     #: Client arguments that are expected to be boolean convertible.
-    CLIENT_BOOL_ARGS = frozenset([
-        'retry_on_timeout',
-        'socket_keepalive',
-        'ssl',
-        'sentinel_ssl',
-    ])
+    CLIENT_BOOL_ARGS = frozenset(
+        [
+            'retry_on_timeout',
+            'socket_keepalive',
+            'ssl',
+            'sentinel_ssl',
+        ]
+    )
 
     #: Client arguments that are expected to be int convertible.
-    CLIENT_INT_ARGS = frozenset([
-        'db',
-    ])
+    CLIENT_INT_ARGS = frozenset(
+        [
+            'db',
+        ]
+    )
 
     #: Client arguments that are expected to be float convertible.
-    CLIENT_FLOAT_ARGS = frozenset([
-        'socket_timeout',
-        'socket_connect_timeout',
-        'health_check_interval',
-    ])
+    CLIENT_FLOAT_ARGS = frozenset(
+        [
+            'socket_timeout',
+            'socket_connect_timeout',
+            'health_check_interval',
+        ]
+    )
 
     #: Default socket timeout to use when none is provided.
     CLIENT_DEFAULT_SOCKET_TO = 30
@@ -370,8 +386,9 @@ return 1
         self._encoding = self._options.get('encoding', self.DEFAULT_ENCODING)
         timeout = self._options.get('timeout', self.CLIENT_DEFAULT_SOCKET_TO)
         self.timeout = int(timeout)
-        self.membership_timeout = float(self._options.get(
-            'membership_timeout', timeout))
+        self.membership_timeout = float(
+            self._options.get('membership_timeout', timeout)
+        )
         lock_timeout = self._options.get('lock_timeout', self.timeout)
         self.lock_timeout = int(lock_timeout)
         namespace = self._options.get('namespace', self.DEFAULT_NAMESPACE)
@@ -391,8 +408,9 @@ return 1
         except KeyError:
             return (not_existent, None)
 
-        if versionutils.is_compatible(desired_version, redis_version,
-                                      same_major=False):
+        if versionutils.is_compatible(
+            desired_version, redis_version, same_major=False
+        ):
             return (True, redis_version)
         return (False, redis_version)
 
@@ -473,9 +491,8 @@ return 1
                 if 'sentinel_' + key in kwargs:
                     sentinel_kwargs[key] = kwargs.pop('sentinel_' + key)
             sentinel_server = sentinel.Sentinel(
-                sentinel_hosts,
-                sentinel_kwargs=sentinel_kwargs,
-                **kwargs)
+                sentinel_hosts, sentinel_kwargs=sentinel_kwargs, **kwargs
+            )
             master_client = sentinel_server.master_for(sentinel_name)
             # The master_client is a redis.Redis using a
             # Sentinel managed connection pool.
@@ -486,11 +503,13 @@ return 1
     def _start(self):
         super()._start()
         try:
-            self._client = self._make_client(self._parsed_url, self._options,
-                                             self.timeout)
+            self._client = self._make_client(
+                self._parsed_url, self._options, self.timeout
+            )
         except exceptions.RedisError as e:
-            utils.raise_with_cause(coordination.ToozConnectionError,
-                                   str(e), cause=e)
+            utils.raise_with_cause(
+                coordination.ToozConnectionError, str(e), cause=e
+            )
         else:
             # Ensure that the server is alive and not dead, this does not
             # ensure the server will always be alive, but does insure that it
@@ -500,14 +519,16 @@ return 1
             # to so that the basic set of features we support will actually
             # work (instead of blowing up).
             new_enough, redis_version = self._check_fetch_redis_version(
-                self.MIN_VERSION)
+                self.MIN_VERSION
+            )
             if not new_enough:
-                raise tooz.NotImplemented("Redis version greater than or"
-                                          " equal to '%s' is required"
-                                          " to use this driver; '%s' is"
-                                          " being used which is not new"
-                                          " enough" % (self.MIN_VERSION,
-                                                       redis_version))
+                raise tooz.NotImplemented(
+                    "Redis version greater than or"
+                    f" equal to '{self.MIN_VERSION}' is required"
+                    f" to use this driver; '{redis_version}' is"
+                    " being used which is not new"
+                    " enough"
+                )
             tpl_params = {
                 'group_existence_value': self.GROUP_EXISTS_VALUE,
                 'group_existence_key': self.GROUP_EXISTS,
@@ -515,7 +536,7 @@ return 1
             # For py3.x ensure these are unicode since the string template
             # replacement will expect unicode (and we don't want b'' as a
             # prefix which will happen in py3.x if this is not done).
-            for (k, v) in tpl_params.copy().items():
+            for k, v in tpl_params.copy().items():
                 if isinstance(v, bytes):
                     v = v.decode('ascii')
                 tpl_params[k] = v
@@ -558,15 +579,15 @@ return 1
     def heartbeat(self):
         beat_id = self._encode_beat_id(self._member_id)
         expiry_ms = max(0, int(self.membership_timeout * 1000.0))
-        self._client.psetex(beat_id, time_ms=expiry_ms,
-                            value=self.STILL_ALIVE)
+        self._client.psetex(beat_id, time_ms=expiry_ms, value=self.STILL_ALIVE)
 
         for lock in self._acquired_locks.copy():
             try:
                 lock.heartbeat()
             except tooz.ToozError:
-                LOG.warning("Unable to heartbeat lock '%s'", lock,
-                            exc_info=True)
+                LOG.warning(
+                    "Unable to heartbeat lock '%s'", lock, exc_info=True
+                )
         return min(self.lock_timeout, self.membership_timeout)
 
     @_handle_failures()
@@ -586,8 +607,11 @@ return 1
                 # exist in the first place, which is fine/expected/desired...
                 self._client.delete(beat_id)
             except tooz.ToozError:
-                LOG.warning("Unable to delete heartbeat key '%s'", beat_id,
-                            exc_info=True)
+                LOG.warning(
+                    "Unable to delete heartbeat key '%s'",
+                    beat_id,
+                    exc_info=True,
+                )
             self._client = None
         self._server_info = {}
         self._scripts.clear()
@@ -657,9 +681,14 @@ return 1
             else:
                 self._joined_groups.discard(group_id)
 
-        return RedisFutureResult(self._submit(self._client.transaction,
-                                              _leave_group, encoded_group,
-                                              value_from_callable=True))
+        return RedisFutureResult(
+            self._submit(
+                self._client.transaction,
+                _leave_group,
+                encoded_group,
+                value_from_callable=True,
+            )
+        )
 
     def get_members(self, group_id):
         encoded_group = self._encode_group_id(group_id)
@@ -676,10 +705,12 @@ return 1
                 return set()
             # Ok now we need to see which members have passed away...
             gone_members = set()
-            member_values = p.mget(map(self._encode_beat_id,
-                                       potential_members))
-            for (potential_member, value) in zip(potential_members,
-                                                 member_values):
+            member_values = p.mget(
+                map(self._encode_beat_id, potential_members)
+            )
+            for potential_member, value in zip(
+                potential_members, member_values
+            ):
                 # Always preserve self (just incase we haven't heartbeated
                 # while this call/s was being made...), this does *not* prevent
                 # another client from removing this though...
@@ -690,17 +721,22 @@ return 1
             # Trash all the members that no longer are with us... RIP...
             if gone_members:
                 p.multi()
-                encoded_gone_members = list(self._encode_member_id(m)
-                                            for m in gone_members)
+                encoded_gone_members = list(
+                    self._encode_member_id(m) for m in gone_members
+                )
                 p.hdel(encoded_group, *encoded_gone_members)
                 p.execute()
-                return {m for m in potential_members
-                        if m not in gone_members}
+                return {m for m in potential_members if m not in gone_members}
             return potential_members
 
-        return RedisFutureResult(self._submit(self._client.transaction,
-                                              _get_members, encoded_group,
-                                              value_from_callable=True))
+        return RedisFutureResult(
+            self._submit(
+                self._client.transaction,
+                _get_members,
+                encoded_group,
+                value_from_callable=True,
+            )
+        )
 
     def get_member_capabilities(self, group_id, member_id):
         encoded_group = self._encode_group_id(group_id)
@@ -714,10 +750,14 @@ return 1
                 raise coordination.MemberNotJoined(group_id, member_id)
             return self._loads(capabilities)
 
-        return RedisFutureResult(self._submit(self._client.transaction,
-                                              _get_member_capabilities,
-                                              encoded_group,
-                                              value_from_callable=True))
+        return RedisFutureResult(
+            self._submit(
+                self._client.transaction,
+                _get_member_capabilities,
+                encoded_group,
+                value_from_callable=True,
+            )
+        )
 
     def join_group(self, group_id, capabilities=b""):
         encoded_group = self._encode_group_id(group_id)
@@ -727,20 +767,24 @@ return 1
             if not p.exists(encoded_group):
                 raise coordination.GroupNotCreated(group_id)
             p.multi()
-            p.hset(encoded_group, encoded_member_id,
-                   self._dumps(capabilities))
+            p.hset(encoded_group, encoded_member_id, self._dumps(capabilities))
             c = p.execute()[0]
             if c == 0:
                 # Field already exists...
-                raise coordination.MemberAlreadyExist(group_id,
-                                                      self._member_id)
+                raise coordination.MemberAlreadyExist(
+                    group_id, self._member_id
+                )
             else:
                 self._joined_groups.add(group_id)
 
-        return RedisFutureResult(self._submit(self._client.transaction,
-                                              _join_group,
-                                              encoded_group,
-                                              value_from_callable=True))
+        return RedisFutureResult(
+            self._submit(
+                self._client.transaction,
+                _join_group,
+                encoded_group,
+                value_from_callable=True,
+            )
+        )
 
     def delete_group(self, group_id):
         script = self._get_script('delete_group')
@@ -759,13 +803,15 @@ return 1
             if result == -3:
                 raise coordination.GroupNotEmpty(group_id)
             if result == -4:
-                raise tooz.ToozError("Unable to remove '%s' key"
-                                     " from set located at '%s'"
-                                     % (args[0], keys[-1]))
+                raise tooz.ToozError(
+                    f"Unable to remove '{args[0]}' key"
+                    f" from set located at '{keys[-1]}'"
+                )
             if result != 1:
-                raise tooz.ToozError("Internal error, unable"
-                                     " to complete group '%s' removal"
-                                     % (group_id))
+                raise tooz.ToozError(
+                    "Internal error, unable"
+                    f" to complete group '{group_id}' removal"
+                )
 
         return RedisFutureResult(self._submit(_delete_group, script))
 
@@ -774,7 +820,6 @@ return 1
         self._client.delete(self._encode_group_id(group_id))
 
     def get_groups(self):
-
         def _get_groups():
             results = []
             for g in self._client.smembers(self._groups):
@@ -792,8 +837,9 @@ return 1
             leader_lock = self._get_leader_lock(group_id)
             if leader_lock.acquire(blocking=False):
                 # We got the lock
-                hooks.run(coordination.LeaderElected(group_id,
-                                                     self._member_id))
+                hooks.run(
+                    coordination.LeaderElected(group_id, self._member_id)
+                )
 
     def run_watchers(self, timeout=None):
         result = super().run_watchers(timeout=timeout)

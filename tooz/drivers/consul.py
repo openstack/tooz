@@ -29,20 +29,19 @@ from tooz import utils
 
 @contextlib.contextmanager
 def _failure_translator():
-
     """Translates common consul exceptions into tooz exceptions."""
     try:
         yield
     except (consul.Timeout, requests.exceptions.RequestException) as e:
-        utils.raise_with_cause(coordination.ToozConnectionError,
-                               str(e), cause=e)
+        utils.raise_with_cause(
+            coordination.ToozConnectionError, str(e), cause=e
+        )
     except (consul.ConsulException, ValueError) as e:
         # ValueError = Typically json decoding failed for some reason.
         utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
 
 
 def _translate_failures(func):
-
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         with _failure_translator():
@@ -74,8 +73,9 @@ class ConsulLock(locking.Lock):
             # Check if we are the owner and if we are simulate
             # blocking (because consul will not block a second
             # acquisition attempt by the same owner).
-            _index, value = self._client.kv.get(key=self._name,
-                                                token=self._acl_token)
+            _index, value = self._client.kv.get(
+                key=self._name, token=self._acl_token
+            )
             if value and value.get('Session') == self._session_id:
                 if blocking is False:
                     return False
@@ -83,10 +83,12 @@ class ConsulLock(locking.Lock):
                     raise _retry.TryAgain
             else:
                 # The value can be anything.
-                gotten = self._client.kv.put(key=self._name,
-                                             value="I got it!",
-                                             acquire=self._session_id,
-                                             token=self._acl_token)
+                gotten = self._client.kv.put(
+                    key=self._name,
+                    value="I got it!",
+                    acquire=self._session_id,
+                    token=self._acl_token,
+                )
                 if gotten:
                     self.acquired = True
                     return True
@@ -101,24 +103,29 @@ class ConsulLock(locking.Lock):
         if not self.acquired:
             return False
         # Get the lock to verify the session ID's are same
-        _index, contents = self._client.kv.get(key=self._name,
-                                               token=self._acl_token)
+        _index, contents = self._client.kv.get(
+            key=self._name, token=self._acl_token
+        )
         if not contents:
             return False
         owner = contents.get('Session')
         if owner == self._session_id:
-            removed = self._client.kv.put(key=self._name,
-                                          value=self._session_id,
-                                          release=self._session_id,
-                                          token=self._acl_token)
+            removed = self._client.kv.put(
+                key=self._name,
+                value=self._session_id,
+                release=self._session_id,
+                token=self._acl_token,
+            )
             if removed:
                 self.acquired = False
                 return True
         return False
 
 
-class ConsulDriver(coordination.CoordinationDriverCachedRunWatchers,
-                   coordination.CoordinationDriverWithExecutor):
+class ConsulDriver(
+    coordination.CoordinationDriverCachedRunWatchers,
+    coordination.CoordinationDriverWithExecutor,
+):
     """This driver uses `python-consul`_ client against `consul`_ servers.
 
     The ConsulDriver implements the coordination driver API(s) so that Consul
@@ -232,8 +239,9 @@ class ConsulDriver(coordination.CoordinationDriverCachedRunWatchers,
         """Create a client, register a node and create a session."""
         # Create a consul client
         if self._client is None:
-            self._client = consul.Consul(host=self._host, port=self._port,
-                                         token=self._acl_token)
+            self._client = consul.Consul(
+                host=self._host, port=self._port, token=self._acl_token
+            )
 
         local_agent = self._client.agent.self()
         self._node = local_agent['Member']['Name']
@@ -241,22 +249,24 @@ class ConsulDriver(coordination.CoordinationDriverCachedRunWatchers,
         # implicitly uses the agent's datacenter (set in consul agent config)
 
         # Register a Node
-        self._client.catalog.register(node=self._node,
-                                      address=self._address,
-                                      token=self._acl_token)
+        self._client.catalog.register(
+            node=self._node, address=self._address, token=self._acl_token
+        )
 
         # Create a session
         self._session_id = self._client.session.create(
-                                        name=self._session_name,
-                                        node=self._node,
-                                        ttl=self._ttl,
-                                        token=self._acl_token)
+            name=self._session_name,
+            node=self._node,
+            ttl=self._ttl,
+            token=self._acl_token,
+        )
 
     def _stop(self):
         if self._client is not None:
             if self._session_id is not None:
-                self._client.session.destroy(self._session_id,
-                                             token=self._acl_token)
+                self._client.session.destroy(
+                    self._session_id, token=self._acl_token
+                )
                 self._session_id = None
             self._client = None
 
@@ -274,9 +284,14 @@ class ConsulDriver(coordination.CoordinationDriverCachedRunWatchers,
         return sleep_sec
 
     def _get_lock(self, real_name):
-        return ConsulLock(real_name, self._node, self._address,
-                          session_id=self._session_id,
-                          client=self._client, token=self._acl_token)
+        return ConsulLock(
+            real_name,
+            self._node,
+            self._address,
+            session_id=self._session_id,
+            client=self._client,
+            token=self._acl_token,
+        )
 
     def get_lock(self, name):
         real_name = self._path_lock(name)
@@ -305,9 +320,7 @@ class ConsulDriver(coordination.CoordinationDriverCachedRunWatchers,
         return self._paths_join(self._namespace, "groups", group_id) + "/"
 
     def _path_member(self, group_id, member_id):
-        return self._paths_join(
-            self._namespace, "groups", group_id, member_id
-        )
+        return self._paths_join(self._namespace, "groups", group_id, member_id)
 
     def _group_path_to_id(self, base_path, group_path):
         """Translates a path into a group name.
@@ -320,7 +333,7 @@ class ConsulDriver(coordination.CoordinationDriverCachedRunWatchers,
            print(group_id) # "helloworld"
         """
         if group_path.startswith(base_path):
-            group_id = group_path[len(base_path):]
+            group_id = group_path[len(base_path) :]
         else:
             group_id = group_path
         # if a group has members (sub-keys) it will contain a trailing /
@@ -333,7 +346,7 @@ class ConsulDriver(coordination.CoordinationDriverCachedRunWatchers,
         index, data = self._client.kv.get(group_path, recurse=True)
         group = None
         members = []
-        for kv in (data or []):
+        for kv in data or []:
             if kv["Key"] == group_path:
                 group = kv
             else:
@@ -341,13 +354,13 @@ class ConsulDriver(coordination.CoordinationDriverCachedRunWatchers,
         return (group, members)
 
     def get_groups(self):
-
         @_translate_failures
         def _get_groups():
             groups = []
-            index, data = self._client.kv.get(self._groups_prefix, keys=True,
-                                              separator="/")
-            for key in (data or []):
+            index, data = self._client.kv.get(
+                self._groups_prefix, keys=True, separator="/"
+            )
+            for key in data or []:
                 if key != self._groups_prefix:
                     group_id = self._group_path_to_id(self._groups_prefix, key)
                     groups.append(group_id)
@@ -356,7 +369,6 @@ class ConsulDriver(coordination.CoordinationDriverCachedRunWatchers,
         return ConsulFutureResult(self._executor.submit(_get_groups))
 
     def create_group(self, group_id):
-
         @_translate_failures
         def _create_group():
             group_path = self._path_group(group_id)
@@ -377,7 +389,6 @@ class ConsulDriver(coordination.CoordinationDriverCachedRunWatchers,
             self._client.kv.delete(lock._name)
 
     def delete_group(self, group_id):
-
         @_translate_failures
         def _delete_group():
             # create a lock for the group so that other operations on this
@@ -401,7 +412,6 @@ class ConsulDriver(coordination.CoordinationDriverCachedRunWatchers,
         return ConsulFutureResult(self._executor.submit(_delete_group))
 
     def join_group(self, group_id, capabilities=b""):
-
         @_translate_failures
         def _join_group():
             # lock the group so that it doesn't get deleted while we join
@@ -414,19 +424,20 @@ class ConsulDriver(coordination.CoordinationDriverCachedRunWatchers,
 
                 for m in members:
                     if m["Key"] == member_path:
-                        raise coordination.MemberAlreadyExist(group_id,
-                                                              self._member_id)
+                        raise coordination.MemberAlreadyExist(
+                            group_id, self._member_id
+                        )
 
                 # create with Check-And-Set index 0 will only succeed if the
                 # key doesn't exit
-                self._client.kv.put(member_path, utils.dumps(capabilities),
-                                    cas=0)
+                self._client.kv.put(
+                    member_path, utils.dumps(capabilities), cas=0
+                )
                 self._joined_groups.add(group_id)
 
         return ConsulFutureResult(self._executor.submit(_join_group))
 
     def leave_group(self, group_id):
-
         @_translate_failures
         def _leave_group():
             # NOTE: We do NOT have to lock the group here because deletes in
@@ -452,7 +463,6 @@ class ConsulDriver(coordination.CoordinationDriverCachedRunWatchers,
         return ConsulFutureResult(self._executor.submit(_leave_group))
 
     def get_members(self, group_id):
-
         @_translate_failures
         def _get_members():
             group_path = self._path_group(group_id)
@@ -469,7 +479,6 @@ class ConsulDriver(coordination.CoordinationDriverCachedRunWatchers,
         return ConsulFutureResult(self._executor.submit(_get_members))
 
     def get_member_capabilities(self, group_id, member_id):
-
         @_translate_failures
         def _get_member_capabilities():
             member_path = self._path_member(group_id, member_id)
@@ -479,10 +488,10 @@ class ConsulDriver(coordination.CoordinationDriverCachedRunWatchers,
             return utils.loads(data["Value"])
 
         return ConsulFutureResult(
-            self._executor.submit(_get_member_capabilities))
+            self._executor.submit(_get_member_capabilities)
+        )
 
     def update_capabilities(self, group_id, capabilities):
-
         @_translate_failures
         def _update_capabilities():
             member_path = self._path_member(group_id, self._member_id)
@@ -503,5 +512,6 @@ class ConsulDriver(coordination.CoordinationDriverCachedRunWatchers,
         raise tooz.NotImplemented
 
 
-ConsulFutureResult = functools.partial(coordination.CoordinatorResult,
-                                       failure_translator=_failure_translator)
+ConsulFutureResult = functools.partial(
+    coordination.CoordinatorResult, failure_translator=_failure_translator
+)

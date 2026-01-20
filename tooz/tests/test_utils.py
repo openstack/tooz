@@ -44,43 +44,46 @@ class TestProxyExecutor(testcase.TestCase):
         executor = utils.ProxyExecutor.build("test", {})
         executor.start()
         try:
-            self.assertIsInstance(executor.executor,
-                                  futurist.ThreadPoolExecutor)
+            self.assertIsInstance(
+                executor.executor, futurist.ThreadPoolExecutor
+            )
         finally:
             executor.stop()
 
     def test_fetch_unknown_executor(self):
         options = {'executor': 'huh'}
-        self.assertRaises(tooz.ToozError,
-                          utils.ProxyExecutor.build, 'test',
-                          options)
+        self.assertRaises(
+            tooz.ToozError, utils.ProxyExecutor.build, 'test', options
+        )
 
     def test_no_submit_stopped(self):
         executor = utils.ProxyExecutor.build("test", {})
-        self.assertRaises(tooz.ToozError,
-                          executor.submit, lambda: None)
+        self.assertRaises(tooz.ToozError, executor.submit, lambda: None)
 
 
 class TestUtilsSafePath(testcase.TestCase):
     base = tempfile.gettempdir()
 
     def test_join(self):
-        self.assertEqual(os.path.join(self.base, 'b'),
-                         utils.safe_abs_path(self.base, "b"))
-        self.assertEqual(os.path.join(self.base, 'b', 'c'),
-                         utils.safe_abs_path(self.base, "b", 'c'))
-        self.assertEqual(self.base,
-                         utils.safe_abs_path(self.base, "b", 'c', '../..'))
+        self.assertEqual(
+            os.path.join(self.base, 'b'), utils.safe_abs_path(self.base, "b")
+        )
+        self.assertEqual(
+            os.path.join(self.base, 'b', 'c'),
+            utils.safe_abs_path(self.base, "b", 'c'),
+        )
+        self.assertEqual(
+            self.base, utils.safe_abs_path(self.base, "b", 'c', '../..')
+        )
 
     def test_unsafe_join(self):
-        self.assertRaises(ValueError, utils.safe_abs_path,
-                          self.base, "../b")
-        self.assertRaises(ValueError, utils.safe_abs_path,
-                          self.base, "b", 'c', '../../../')
+        self.assertRaises(ValueError, utils.safe_abs_path, self.base, "../b")
+        self.assertRaises(
+            ValueError, utils.safe_abs_path, self.base, "b", 'c', '../../../'
+        )
 
 
 class TestUtilsCollapse(testcase.TestCase):
-
     def test_bad_type(self):
         self.assertRaises(TypeError, utils.collapse, "")
         self.assertRaises(TypeError, utils.collapse, [])
@@ -117,8 +120,7 @@ class TestUtilsCollapse(testcase.TestCase):
         ex = {
             'a': [1, 2, 3],
         }
-        c_ex = utils.collapse(ex,
-                              item_selector=lambda items: items[0])
+        c_ex = utils.collapse(ex, item_selector=lambda items: items[0])
         self.assertEqual({'a': 1}, c_ex)
 
     def test_empty_lists(self):

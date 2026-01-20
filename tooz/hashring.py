@@ -21,8 +21,9 @@ from tooz import utils
 
 class UnknownNode(tooz.ToozError):
     """Node is unknown."""
+
     def __init__(self, node):
-        super().__init__("Unknown node `%s'" % node)
+        super().__init__(f"Unknown node `{node}'")
         self.node = node
 
 
@@ -33,8 +34,12 @@ class HashRing:
 
     DEFAULT_HASH_FUNCTION = 'md5'
 
-    def __init__(self, nodes, partitions=DEFAULT_PARTITION_NUMBER,
-                 hash_function=DEFAULT_HASH_FUNCTION):
+    def __init__(
+        self,
+        nodes,
+        partitions=DEFAULT_PARTITION_NUMBER,
+        hash_function=DEFAULT_HASH_FUNCTION,
+    ):
         """Create a new hashring.
 
         :param nodes: List of nodes where objects will be mapped onto.
@@ -43,10 +48,12 @@ class HashRing:
         :raises: ValueError if `hash_function` is not supported.
         """
         if hash_function not in hashlib.algorithms_available:
-            raise ValueError('Hash function %s is not supported on this '
-                             'system, supported are %s'
-                             % (hash_function,
-                                ', '.join(hashlib.algorithms_available)))
+            raise ValueError(
+                'Hash function {} is not supported on this '
+                'system, supported are {}'.format(
+                    hash_function, ', '.join(hashlib.algorithms_available)
+                )
+            )
 
         self.nodes = {}
         self._ring = dict()
@@ -121,10 +128,10 @@ class HashRing:
     def _get_partition(self, data):
         if self._hash_function == 'md5':
             hashed_key = self._hash2int(
-                hashlib.md5(data, usedforsecurity=False))
+                hashlib.md5(data, usedforsecurity=False)
+            )
         else:
-            hashed_key = self._hash2int(
-                hashlib.new(self._hash_function, data))
+            hashed_key = self._hash2int(hashlib.new(self._hash_function, data))
         position = bisect.bisect(self._partitions, hashed_key)
         return position if position < len(self._partitions) else 0
 
@@ -151,8 +158,9 @@ class HashRing:
             node = self._get_node(partition)
             if node not in ignore_nodes:
                 nodes.add(node)
-            partition = (partition + 1
-                         if partition + 1 < len(self._partitions) else 0)
+            partition = (
+                partition + 1 if partition + 1 < len(self._partitions) else 0
+            )
         return nodes
 
     def __getitem__(self, key):

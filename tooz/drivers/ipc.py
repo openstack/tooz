@@ -53,6 +53,7 @@ class IPCLock(locking.Lock):
     that you do not reach that limit it is recommended to use destroy() at
     the correct program exit/entry points.
     """
+
     _LOCK_PROJECT = b'__TOOZ_LOCK_'
 
     def __init__(self, name):
@@ -73,13 +74,17 @@ class IPCLock(locking.Lock):
         if shared:
             raise tooz.NotImplemented
 
-        if (blocking is not True and
-                sysv_ipc.SEMAPHORE_TIMEOUT_SUPPORTED is False):
-            raise tooz.NotImplemented("This system does not support"
-                                      " semaphore timeouts")
+        if (
+            blocking is not True
+            and sysv_ipc.SEMAPHORE_TIMEOUT_SUPPORTED is False
+        ):
+            raise tooz.NotImplemented(
+                "This system does not support semaphore timeouts"
+            )
         if blocking is False and timeout is not None:
-            raise tooz.NotImplemented("Timeout without blocking is not "
-                                      "implemented")
+            raise tooz.NotImplemented(
+                "Timeout without blocking is not implemented"
+            )
         blocking, timeout = utils.convert_blocking(blocking, timeout)
         start_time = None
         if not blocking:
@@ -89,9 +94,9 @@ class IPCLock(locking.Lock):
         while True:
             tmplock = None
             try:
-                tmplock = sysv_ipc.Semaphore(self.key,
-                                             flags=sysv_ipc.IPC_CREX,
-                                             initial_value=1)
+                tmplock = sysv_ipc.Semaphore(
+                    self.key, flags=sysv_ipc.IPC_CREX, initial_value=1
+                )
                 tmplock.undo = True
             except sysv_ipc.ExistentialError:
                 # We failed to create it because it already exists, then try to
@@ -175,7 +180,8 @@ class IPCDriver(coordination.CoordinationDriverWithExecutor):
         self._group_list = sysv_ipc.SharedMemory(
             ftok(self._GROUP_LIST_KEY, self._GROUP_PROJECT),
             sysv_ipc.IPC_CREAT,
-            size=self._SEGMENT_SIZE)
+            size=self._SEGMENT_SIZE,
+        )
         self._lock = self.get_lock(self._INTERNAL_LOCK_NAME)
 
     def _stop(self):
@@ -211,7 +217,8 @@ class IPCDriver(coordination.CoordinationDriverWithExecutor):
                 self._write_group_list(group_list)
 
         return coordination.CoordinatorResult(
-            self._executor.submit(_create_group))
+            self._executor.submit(_create_group)
+        )
 
     def delete_group(self, group_id):
         def _delete_group():
@@ -223,7 +230,8 @@ class IPCDriver(coordination.CoordinationDriverWithExecutor):
                 self._write_group_list(group_list)
 
         return coordination.CoordinatorResult(
-            self._executor.submit(_delete_group))
+            self._executor.submit(_delete_group)
+        )
 
     def watch_join_group(self, group_id, callback):
         # Check the group exist
@@ -240,8 +248,9 @@ class IPCDriver(coordination.CoordinationDriverWithExecutor):
             return self._read_group_list()
 
     def get_groups(self):
-        return coordination.CoordinatorResult(self._executor.submit(
-            self._get_groups_handler))
+        return coordination.CoordinatorResult(
+            self._executor.submit(self._get_groups_handler)
+        )
 
     @staticmethod
     def get_lock(name):

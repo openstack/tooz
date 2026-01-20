@@ -24,6 +24,7 @@ from tooz import tests
 # Handle the case gracefully where the driver is not installed.
 try:
     import psycopg2
+
     PGSQL_AVAILABLE = True
 except ImportError:
     PGSQL_AVAILABLE = False
@@ -31,13 +32,11 @@ except ImportError:
 
 @testtools.skipUnless(PGSQL_AVAILABLE, 'psycopg2 is not available')
 class TestPostgreSQLFailures(testcase.TestCase):
-
     # Not actually used (but required none the less), since we mock out
     # the connect() method...
     FAKE_URL = "postgresql://localhost:1"
 
     def _create_coordinator(self):
-
         def _safe_stop(coord):
             try:
                 coord.stop()
@@ -45,12 +44,15 @@ class TestPostgreSQLFailures(testcase.TestCase):
                 # TODO(harlowja): make this better, so that we don't have to
                 # do string checking...
                 message = str(e)
-                if (message != 'Can not stop a driver which has not'
-                               ' been started'):
+                if (
+                    message != 'Can not stop a driver which has not'
+                    ' been started'
+                ):
                     raise
 
-        coord = coordination.get_coordinator(self.FAKE_URL,
-                                             tests.get_random_uuid())
+        coord = coordination.get_coordinator(
+            self.FAKE_URL, tests.get_random_uuid()
+        )
         self.addCleanup(_safe_stop, coord)
         return coord
 

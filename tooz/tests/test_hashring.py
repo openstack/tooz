@@ -23,7 +23,6 @@ from tooz import hashring
 
 
 class HashRingTestCase(testcase.TestCase):
-
     # NOTE(deva): the mapping used in these tests is as follows:
     #             if nodes = [foo, bar]:
     #                fake -> foo, bar
@@ -50,105 +49,107 @@ class HashRingTestCase(testcase.TestCase):
         nodes = {'foo', 'bar'}
         ring = hashring.HashRing(nodes)
         self.assertEqual(nodes, set(ring.nodes.keys()))
-        self.assertEqual(2 ** 5 * 2, len(ring))
+        self.assertEqual(2**5 * 2, len(ring))
 
     def test_wrong_hash_function(self):
         nodes = {'foo', 'bar'}
-        self.assertRaisesRegex(ValueError, 'is not supported',
-                               hashring.HashRing, nodes,
-                               hash_function='fold twice and leave to dry')
+        self.assertRaisesRegex(
+            ValueError,
+            'is not supported',
+            hashring.HashRing,
+            nodes,
+            hash_function='fold twice and leave to dry',
+        )
 
     def test_add_node(self):
         nodes = {'foo', 'bar'}
         ring = hashring.HashRing(nodes)
         self.assertEqual(nodes, set(ring.nodes.keys()))
-        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+        self.assertEqual(2**5 * len(nodes), len(ring))
         nodes.add('baz')
         ring.add_node('baz')
         self.assertEqual(nodes, set(ring.nodes.keys()))
-        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+        self.assertEqual(2**5 * len(nodes), len(ring))
 
     def test_add_node_bytes(self):
         nodes = {'foo', 'bar'}
         ring = hashring.HashRing(nodes)
         self.assertEqual(nodes, set(ring.nodes.keys()))
-        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+        self.assertEqual(2**5 * len(nodes), len(ring))
         nodes.add(b'Z\xe2\xfa\x90\x17EC\xac\xae\x88\xa7[\xa1}:E')
         ring.add_node(b'Z\xe2\xfa\x90\x17EC\xac\xae\x88\xa7[\xa1}:E')
         self.assertEqual(nodes, set(ring.nodes.keys()))
-        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+        self.assertEqual(2**5 * len(nodes), len(ring))
 
     def test_add_node_unicode(self):
         nodes = {'foo', 'bar'}
         ring = hashring.HashRing(nodes)
         self.assertEqual(nodes, set(ring.nodes.keys()))
-        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+        self.assertEqual(2**5 * len(nodes), len(ring))
         nodes.add('\u0634\u0628\u06a9\u0647')
         ring.add_node('\u0634\u0628\u06a9\u0647')
         self.assertEqual(nodes, set(ring.nodes.keys()))
-        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+        self.assertEqual(2**5 * len(nodes), len(ring))
 
     def test_add_node_weight(self):
         nodes = {'foo', 'bar'}
         ring = hashring.HashRing(nodes)
         self.assertEqual(nodes, set(ring.nodes.keys()))
-        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+        self.assertEqual(2**5 * len(nodes), len(ring))
         nodes.add('baz')
         ring.add_node('baz', weight=10)
         self.assertEqual(nodes, set(ring.nodes.keys()))
-        self.assertEqual(2 ** 5 * 12, len(ring))
+        self.assertEqual(2**5 * 12, len(ring))
 
     def test_add_nodes_weight(self):
         nodes = {'foo', 'bar'}
         ring = hashring.HashRing(nodes)
         self.assertEqual(nodes, set(ring.nodes.keys()))
-        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+        self.assertEqual(2**5 * len(nodes), len(ring))
         nodes.add('baz')
         nodes.add('baz2')
         ring.add_nodes({'baz', 'baz2'}, weight=10)
         self.assertEqual(nodes, set(ring.nodes.keys()))
-        self.assertEqual(2 ** 5 * 22, len(ring))
+        self.assertEqual(2**5 * 22, len(ring))
 
     def test_remove_node(self):
         nodes = {'foo', 'bar'}
         ring = hashring.HashRing(nodes)
         self.assertEqual(nodes, set(ring.nodes.keys()))
-        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+        self.assertEqual(2**5 * len(nodes), len(ring))
         nodes.discard('bar')
         ring.remove_node('bar')
         self.assertEqual(nodes, set(ring.nodes.keys()))
-        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+        self.assertEqual(2**5 * len(nodes), len(ring))
 
     def test_remove_node_bytes(self):
         nodes = {'foo', b'Z\xe2\xfa\x90\x17EC\xac\xae\x88\xa7[\xa1}:E'}
         ring = hashring.HashRing(nodes)
         self.assertEqual(nodes, set(ring.nodes.keys()))
-        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+        self.assertEqual(2**5 * len(nodes), len(ring))
         nodes.discard(b'Z\xe2\xfa\x90\x17EC\xac\xae\x88\xa7[\xa1}:E')
         ring.remove_node(b'Z\xe2\xfa\x90\x17EC\xac\xae\x88\xa7[\xa1}:E')
         self.assertEqual(nodes, set(ring.nodes.keys()))
-        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+        self.assertEqual(2**5 * len(nodes), len(ring))
 
     def test_remove_node_unknown(self):
         nodes = ['foo', 'bar']
         ring = hashring.HashRing(nodes)
-        self.assertRaises(
-            hashring.UnknownNode,
-            ring.remove_node, 'biz')
+        self.assertRaises(hashring.UnknownNode, ring.remove_node, 'biz')
 
     def test_add_then_removenode(self):
         nodes = {'foo', 'bar'}
         ring = hashring.HashRing(nodes)
         self.assertEqual(nodes, set(ring.nodes.keys()))
-        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+        self.assertEqual(2**5 * len(nodes), len(ring))
         nodes.add('baz')
         ring.add_node('baz')
         self.assertEqual(nodes, set(ring.nodes.keys()))
-        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+        self.assertEqual(2**5 * len(nodes), len(ring))
         nodes.discard('bar')
         ring.remove_node('bar')
         self.assertEqual(nodes, set(ring.nodes.keys()))
-        self.assertEqual(2 ** 5 * len(nodes), len(ring))
+        self.assertEqual(2**5 * len(nodes), len(ring))
 
     def test_distribution_one_replica(self):
         nodes = ['foo', 'bar', 'baz']
@@ -180,14 +181,15 @@ class HashRingTestCase(testcase.TestCase):
         nodes = ['foo', 'bar', 'baz']
         ring = hashring.HashRing(nodes)
         equals_bar_or_baz = matchers.MatchesAny(
-            matchers.Equals({'bar'}),
-            matchers.Equals({'baz'}))
+            matchers.Equals({'bar'}), matchers.Equals({'baz'})
+        )
         self.assertThat(
-            ring.get_nodes(b'fake', ignore_nodes=['foo']),
-            equals_bar_or_baz)
+            ring.get_nodes(b'fake', ignore_nodes=['foo']), equals_bar_or_baz
+        )
         self.assertThat(
             ring.get_nodes(b'fake', ignore_nodes=['foo', 'bar']),
-            equals_bar_or_baz)
+            equals_bar_or_baz,
+        )
         self.assertEqual(set(), ring.get_nodes(b'fake', ignore_nodes=nodes))
 
     @staticmethod
@@ -220,8 +222,12 @@ class HashRingTestCase(testcase.TestCase):
         services = [str(x) for x in range(num_services)]
         new_services = services + ['new']
         delta = self._compare_rings(
-            nodes, services, hashring.HashRing(services),
-            new_services, hashring.HashRing(new_services))
+            nodes,
+            services,
+            hashring.HashRing(services),
+            new_services,
+            hashring.HashRing(new_services),
+        )
 
         self.assertLess(len(delta), num_nodes * redistribution_factor)
 
@@ -238,13 +244,18 @@ class HashRingTestCase(testcase.TestCase):
         new_services = services[:]
         new_services.pop()
         delta = self._compare_rings(
-            nodes, services, hashring.HashRing(services),
-            new_services, hashring.HashRing(new_services))
+            nodes,
+            services,
+            hashring.HashRing(services),
+            new_services,
+            hashring.HashRing(new_services),
+        )
 
         self.assertLess(len(delta), num_nodes * redistribution_factor)
 
     def test_ignore_non_existent_node(self):
         nodes = ['foo', 'bar']
         ring = hashring.HashRing(nodes)
-        self.assertEqual({'foo'}, ring.get_nodes(b'fake',
-                                                 ignore_nodes=['baz']))
+        self.assertEqual(
+            {'foo'}, ring.get_nodes(b'fake', ignore_nodes=['baz'])
+        )

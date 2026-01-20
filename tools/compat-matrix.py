@@ -24,7 +24,7 @@ def print_methods(methods):
     driver_tpl = ":py:meth:`~tooz.coordination.CoordinationDriver.%s`"
     for api_name in methods:
         method_name = driver_tpl % api_name
-        print("* %s" % method_name)
+        print(f"* {method_name}")
     if methods:
         print("")
 

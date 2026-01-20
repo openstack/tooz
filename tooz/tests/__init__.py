@@ -35,6 +35,7 @@ def _skip_decorator(func):
             return func(*args, **kwargs)
         except tooz.NotImplemented as e:
             raise unittest.SkipTest(str(e))
+
     return skip_if_not_implemented
 
 
@@ -43,7 +44,8 @@ class SkipNotImplementedMeta(type):
         for attr in local:
             value = local[attr]
             if callable(value) and (
-                    attr.startswith('test_') or attr == 'setUp'):
+                attr.startswith('test_') or attr == 'setUp'
+            ):
                 local[attr] = _skip_decorator(value)
         return type.__new__(cls, name, bases, local)
 
@@ -58,15 +60,18 @@ class TestWithCoordinator(testcase.TestCase, metaclass=SkipNotImplementedMeta):
         if os.getenv("TOOZ_TEST_ETCD3GW"):
             # TODO(jan.gutter): When pifpaf supports etcd 3.4 we should use the
             # defaults
-            self.url = self.url.replace("etcd://", "etcd3+http://") + \
-                "?api_version=v3beta"
+            self.url = (
+                self.url.replace("etcd://", "etcd3+http://")
+                + "?api_version=v3beta"
+            )
         if os.getenv("TOOZ_TEST_SENTINEL"):
             self.url = self.url.replace(":6379", ":6380?sentinel=pifpaf")
         self.useFixture(fixtures.NestedTempfile())
         self.group_id = get_random_uuid()
         self.member_id = get_random_uuid()
-        self._coord = tooz.coordination.get_coordinator(self.url,
-                                                        self.member_id)
+        self._coord = tooz.coordination.get_coordinator(
+            self.url, self.member_id
+        )
         self._coord.start()
 
     def tearDown(self):

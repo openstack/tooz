@@ -22,20 +22,19 @@ from tooz import tests
 
 
 class TestMySQLDriver(testcase.TestCase):
-
     def _create_coordinator(self, url):
-
         def _safe_stop(coord):
             try:
                 coord.stop()
             except tooz.ToozError as e:
                 message = str(e)
-                if (message != 'Can not stop a driver which has not'
-                               ' been started'):
+                if (
+                    message != 'Can not stop a driver which has not'
+                    ' been started'
+                ):
                     raise
 
-        coord = coordination.get_coordinator(url,
-                                             tests.get_random_uuid())
+        coord = coordination.get_coordinator(url, tests.get_random_uuid())
         self.addCleanup(_safe_stop, coord)
         return coord
 
@@ -78,9 +77,8 @@ class TestMySQLDriver(testcase.TestCase):
                 verify_mode="yes",
                 cert="/cert/not/there",
                 key="/key/not/there",
-                cipher="spam,ham"
-            )
-
+                cipher="spam,ham",
+            ),
         )
 
     @mock.patch("pymysql.Connect")
@@ -98,11 +96,13 @@ class TestMySQLDriver(testcase.TestCase):
         blocking_value = False
         timeout = 10.1
         lock = c.get_lock(name)
-        with mock.patch.object(lock, 'acquire', wraps=lock.acquire,
-                               autospec=True) as mock_acquire:
+        with mock.patch.object(
+            lock, 'acquire', wraps=lock.acquire, autospec=True
+        ) as mock_acquire:
             with lock(blocking_value, timeout=timeout):
                 mock_acquire.assert_called_once_with(
-                    blocking_value, timeout=timeout)
+                    blocking_value, timeout=timeout
+                )
 
     @mock.patch("pymysql.Connect")
     def test_parsing_blocking_settings(self, sql_mock):
@@ -118,8 +118,8 @@ class TestMySQLDriver(testcase.TestCase):
         name = tests.get_random_uuid()
         blocking_value = True
         lock = c.get_lock(name)
-        with mock.patch.object(lock, 'acquire', wraps=lock.acquire,
-                               autospec=True) as mock_acquire:
+        with mock.patch.object(
+            lock, 'acquire', wraps=lock.acquire, autospec=True
+        ) as mock_acquire:
             with lock(blocking_value):
-                mock_acquire.assert_called_once_with(
-                    blocking_value)
+                mock_acquire.assert_called_once_with(blocking_value)

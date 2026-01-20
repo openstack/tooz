@@ -81,9 +81,7 @@ def _convert_from_old_format(data):
 
 
 def _lock_me(lock):
-
     def wrapper(func):
-
         @functools.wraps(func)
         def decorator(*args, **kwargs):
             with lock:
@@ -116,13 +114,16 @@ class FileLock(locking.Lock):
         # Make the shared barrier ours first.
         with self._barrier.cond:
             while self._barrier.owner is not None:
-                if (shared and self._barrier.shared):
+                if shared and self._barrier.shared:
                     break
                 if not blocking or watch.expired():
                     return False
                 self._barrier.cond.wait(watch.leftover(return_none=True))
-            self._barrier.owner = (threading.current_thread().ident,
-                                   os.getpid(), self._member_id)
+            self._barrier.owner = (
+                threading.current_thread().ident,
+                os.getpid(),
+                self._member_id,
+            )
             self._barrier.shared = shared
             self._barrier.ref += 1
             self.ref += 1
@@ -136,7 +137,8 @@ class FileLock(locking.Lock):
                 # Since the barrier waiting may have
                 # taken a long time, we have to use
                 # the leftover (and not the original).
-                timeout=watch.leftover(return_none=True))
+                timeout=watch.leftover(return_none=True),
+            )
         finally:
             # NOTE(harlowja): do this in a finally block to **ensure** that
             # we release the barrier if something bad happens...
@@ -170,8 +172,10 @@ class FileLock(locking.Lock):
             LOG.warning("Unreleased lock %s garbage collected", self.name)
 
 
-class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
-                 coordination.CoordinationDriverWithExecutor):
+class FileDriver(
+    coordination.CoordinationDriverCachedRunWatchers,
+    coordination.CoordinationDriverWithExecutor,
+):
     """A file based driver.
 
     This driver uses files and directories (and associated file locks) to
@@ -225,8 +229,9 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
         self._group_dir = os.path.join(self._dir, 'groups')
         self._tmpdir = os.path.join(self._dir, 'tmp')
         self._driver_lock_path = os.path.join(self._dir, '.driver_lock')
-        self._driver_lock = self._get_raw_lock(self._driver_lock_path,
-                                               self._member_id)
+        self._driver_lock = self._get_raw_lock(
+            self._driver_lock_path, self._member_id
+        )
         self._reserved_dirs = [self._dir, self._group_dir, self._tmpdir]
         self._reserved_paths = list(self._reserved_dirs)
         self._reserved_paths.append(self._driver_lock_path)
@@ -241,9 +246,11 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
     def get_lock(self, name):
         path = utils.safe_abs_path(self._dir, name.decode())
         if path in self._reserved_paths:
-            raise ValueError("Unable to create a lock using"
-                             " reserved path '%s' for lock"
-                             " with name '%s'" % (path, name))
+            raise ValueError(
+                "Unable to create a lock using"
+                f" reserved path '{path}' for lock"
+                f" with name '{name}'"
+            )
         return self._get_raw_lock(path, self._member_id)
 
     @classmethod
@@ -260,9 +267,7 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
                 raise coordination.ToozConnectionError(e)
 
     def _update_group_metadata(self, path, group_id):
-        details = {
-            'group_id': utils.to_binary(group_id, encoding="utf8")
-        }
+        details = {'group_id': utils.to_binary(group_id, encoding="utf8")}
         details['encoded'] = details["group_id"] != group_id
         details_blob = utils.dumps(details)
         fd, name = tempfile.mkstemp("tooz", dir=self._tmpdir)
@@ -286,26 +291,29 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
             else:
                 fileutils.ensure_tree(group_dir)
                 self._update_group_metadata(group_meta_path, group_id)
+
         fut = self._executor.submit(_do_create_group)
         return FileFutureResult(fut)
 
     def join_group(self, group_id, capabilities=b""):
         safe_group_id = self._make_filesystem_safe(group_id)
         group_dir = os.path.join(self._group_dir, safe_group_id)
-        me_path = os.path.join(group_dir, "%s.raw" % self._safe_member_id)
+        me_path = os.path.join(group_dir, f"{self._safe_member_id}.raw")
 
         @_lock_me(self._driver_lock)
         def _do_join_group():
             if not os.path.exists(os.path.join(group_dir, ".metadata")):
                 raise coordination.GroupNotCreated(group_id)
             if os.path.isfile(me_path):
-                raise coordination.MemberAlreadyExist(group_id,
-                                                      self._member_id)
+                raise coordination.MemberAlreadyExist(
+                    group_id, self._member_id
+                )
             details = {
                 'capabilities': capabilities,
                 'joined_on': datetime.datetime.now(),
-                'member_id': utils.to_binary(self._member_id,
-                                             encoding="utf-8")
+                'member_id': utils.to_binary(
+                    self._member_id, encoding="utf-8"
+                ),
             }
             details['encoded'] = details["member_id"] != self._member_id
             details_blob = utils.dumps(details)
@@ -319,7 +327,7 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
     def leave_group(self, group_id):
         safe_group_id = self._make_filesystem_safe(group_id)
         group_dir = os.path.join(self._group_dir, safe_group_id)
-        me_path = os.path.join(group_dir, "%s.raw" % self._safe_member_id)
+        me_path = os.path.join(group_dir, f"{self._safe_member_id}.raw")
 
         @_lock_me(self._driver_lock)
         def _do_leave_group():
@@ -331,8 +339,9 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
                 if e.errno != errno.ENOENT:
                     raise
                 else:
-                    raise coordination.MemberNotJoined(group_id,
-                                                       self._member_id)
+                    raise coordination.MemberNotJoined(
+                        group_id, self._member_id
+                    )
             else:
                 self._joined_groups.discard(group_id)
 
@@ -340,17 +349,22 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
         return FileFutureResult(fut)
 
     _SCHEMAS = {
-        'group': voluptuous.Schema({
-            voluptuous.Required('group_id'): voluptuous.Any(str, bytes),
-            # NOTE(sileht): tooz <1.36 was creating file without this
-            voluptuous.Optional('encoded'): bool,
-        }),
-        'member': voluptuous.Schema({
-            voluptuous.Required('member_id'): voluptuous.Any(str, bytes),
-            voluptuous.Required('joined_on'): datetime.datetime,
-            # NOTE(sileht): tooz <1.36 was creating file without this
-            voluptuous.Optional('encoded'): bool,
-        }, extra=voluptuous.ALLOW_EXTRA),
+        'group': voluptuous.Schema(
+            {
+                voluptuous.Required('group_id'): voluptuous.Any(str, bytes),
+                # NOTE(sileht): tooz <1.36 was creating file without this
+                voluptuous.Optional('encoded'): bool,
+            }
+        ),
+        'member': voluptuous.Schema(
+            {
+                voluptuous.Required('member_id'): voluptuous.Any(str, bytes),
+                voluptuous.Required('joined_on'): datetime.datetime,
+                # NOTE(sileht): tooz <1.36 was creating file without this
+                voluptuous.Optional('encoded'): bool,
+            },
+            extra=voluptuous.ALLOW_EXTRA,
+        ),
     }
 
     def _load_and_validate(self, blob, schema_key):
@@ -388,10 +402,12 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
                     entry_path = os.path.join(group_dir, entry)
                     try:
                         m_time = datetime.datetime.fromtimestamp(
-                            os.stat(entry_path).st_mtime)
+                            os.stat(entry_path).st_mtime
+                        )
                         current_time = datetime.datetime.now()
-                        delta_time = timeutils.delta_seconds(m_time,
-                                                             current_time)
+                        delta_time = timeutils.delta_seconds(
+                            m_time, current_time
+                        )
                         if delta_time >= 0 and delta_time <= self._timeout:
                             member_id = self._read_member_id(entry_path)
                         else:
@@ -410,7 +426,7 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
         safe_group_id = self._make_filesystem_safe(group_id)
         group_dir = os.path.join(self._group_dir, safe_group_id)
         safe_member_id = self._make_filesystem_safe(member_id)
-        member_path = os.path.join(group_dir, "%s.raw" % safe_member_id)
+        member_path = os.path.join(group_dir, f"{safe_member_id}.raw")
 
         @_lock_me(self._driver_lock)
         def _do_get_member_capabilities():
@@ -422,8 +438,7 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
                     if not os.path.isdir(group_dir):
                         raise coordination.GroupNotCreated(group_id)
                     else:
-                        raise coordination.MemberNotJoined(group_id,
-                                                           member_id)
+                        raise coordination.MemberNotJoined(group_id, member_id)
                 else:
                     raise
             else:
@@ -451,9 +466,10 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
                     raise coordination.GroupNotEmpty(group_id)
                 elif len(entries) == 1 and entries != ['.metadata']:
                     raise tooz.ToozError(
-                        "Unexpected path '%s' found in"
-                        " group directory '%s' (expected to only find"
-                        " a '.metadata' path)" % (entries[0], group_dir))
+                        f"Unexpected path '{entries[0]}' found in group "
+                        f"directory '{group_dir}' (expected to only find a "
+                        "'.metadata' path)"
+                    )
                 else:
                     try:
                         shutil.rmtree(group_dir)
@@ -472,7 +488,6 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
             return details['group_id']
 
     def get_groups(self):
-
         def _do_get_groups():
             groups = []
             for entry in os.listdir(self._group_dir):
@@ -491,8 +506,9 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
         for group_id in self._joined_groups:
             safe_group_id = self._make_filesystem_safe(group_id)
             group_dir = os.path.join(self._group_dir, safe_group_id)
-            member_path = os.path.join(group_dir, "%s.raw" %
-                                       self._safe_member_id)
+            member_path = os.path.join(
+                group_dir, f"{self._safe_member_id}.raw"
+            )
 
             @_lock_me(self._driver_lock)
             def _do_heartbeat():
@@ -501,6 +517,7 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
                 except OSError as err:
                     if err.errno != errno.ENOENT:
                         raise
+
             _do_heartbeat()
         return self._timeout
 
@@ -513,5 +530,6 @@ class FileDriver(coordination.CoordinationDriverCachedRunWatchers,
         raise tooz.NotImplemented
 
 
-FileFutureResult = functools.partial(coordination.CoordinatorResult,
-                                     failure_translator=_translate_failures)
+FileFutureResult = functools.partial(
+    coordination.CoordinatorResult, failure_translator=_translate_failures
+)

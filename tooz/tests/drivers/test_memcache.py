@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import socket
 from unittest import mock
 
 from testtools import testcase
@@ -27,7 +26,7 @@ class TestMemcacheDriverFailures(testcase.TestCase):
 
     @mock.patch('pymemcache.client.PooledClient')
     def test_client_failure_start(self, mock_client_cls):
-        mock_client_cls.side_effect = socket.timeout('timed-out')
+        mock_client_cls.side_effect = TimeoutError('timed-out')
         member_id = tests.get_random_uuid()
         coord = coordination.get_coordinator(self.FAKE_URL, member_id)
         self.assertRaises(coordination.ToozConnectionError, coord.start)
@@ -39,7 +38,7 @@ class TestMemcacheDriverFailures(testcase.TestCase):
         member_id = tests.get_random_uuid()
         coord = coordination.get_coordinator(self.FAKE_URL, member_id)
         coord.start()
-        mock_client.gets.side_effect = socket.timeout('timed-out')
+        mock_client.gets.side_effect = TimeoutError('timed-out')
         fut = coord.join_group(tests.get_random_uuid())
         self.assertRaises(coordination.ToozConnectionError, fut.get)
 
@@ -50,7 +49,7 @@ class TestMemcacheDriverFailures(testcase.TestCase):
         member_id = tests.get_random_uuid()
         coord = coordination.get_coordinator(self.FAKE_URL, member_id)
         coord.start()
-        mock_client.gets.side_effect = socket.timeout('timed-out')
+        mock_client.gets.side_effect = TimeoutError('timed-out')
         fut = coord.leave_group(tests.get_random_uuid())
         self.assertRaises(coordination.ToozConnectionError, fut.get)
 
@@ -61,15 +60,17 @@ class TestMemcacheDriverFailures(testcase.TestCase):
         member_id = tests.get_random_uuid()
         coord = coordination.get_coordinator(self.FAKE_URL, member_id)
         coord.start()
-        mock_client.set.side_effect = socket.timeout('timed-out')
+        mock_client.set.side_effect = TimeoutError('timed-out')
         self.assertRaises(coordination.ToozConnectionError, coord.heartbeat)
 
     @mock.patch(
         'tooz.coordination.CoordinationDriverCachedRunWatchers.run_watchers',
-        autospec=True)
+        autospec=True,
+    )
     @mock.patch('pymemcache.client.PooledClient')
-    def test_client_run_watchers_mixin(self, mock_client_cls,
-                                       mock_run_watchers):
+    def test_client_run_watchers_mixin(
+        self, mock_client_cls, mock_run_watchers
+    ):
         mock_client = mock.MagicMock()
         mock_client_cls.return_value = mock_client
         member_id = tests.get_random_uuid()

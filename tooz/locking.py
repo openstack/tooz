@@ -47,7 +47,7 @@ class Lock(metaclass=abc.ABCMeta):
     def __enter__(self, *args, **kwargs):
         acquired = self.acquire(*args, **kwargs)
         if not acquired:
-            msg = 'Acquiring lock %s failed' % self.name
+            msg = f'Acquiring lock {self.name} failed'
             raise coordination.LockAcquireFailed(msg)
 
         return self

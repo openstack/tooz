@@ -47,7 +47,8 @@ class ZakeDriver(zookeeper.KazooDriver):
     # it among active clients to simulate zookeeper's consistent storage in
     # a thread-safe manner.
     fake_storage = fake_storage.FakeStorage(
-        fake_client.k_threading.SequentialThreadingHandler())
+        fake_client.k_threading.SequentialThreadingHandler()
+    )
 
     def __init__(self, member_id, parsed_url, options):
         super().__init__(member_id, parsed_url, options)

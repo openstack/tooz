@@ -42,11 +42,13 @@ def _translate_failures(func):
         try:
             return func(*args, **kwargs)
         except etcd3_exc.ConnectionFailedError as e:
-            utils.raise_with_cause(coordination.ToozConnectionError,
-                                   str(e), cause=e)
+            utils.raise_with_cause(
+                coordination.ToozConnectionError, str(e), cause=e
+            )
         except etcd3_exc.ConnectionTimeoutError as e:
-            utils.raise_with_cause(coordination.OperationTimedOut,
-                                   str(e), cause=e)
+            utils.raise_with_cause(
+                coordination.OperationTimedOut, str(e), cause=e
+            )
         except etcd3_exc.Etcd3Exception as e:
             utils.raise_with_cause(coordination.ToozError, str(e), cause=e)
 
@@ -84,24 +86,24 @@ class Etcd3Lock(locking.Lock):
             # make sure we still have the lock
             self._lease = self._coord.client.lease(timeout)
             txn = {
-                'compare': [{
-                    'key': self._key_b64,
-                    'result': 'EQUAL',
-                    'target': 'CREATE',
-                    'create_revision': 0
-                }],
-                'success': [{
-                    'request_put': {
+                'compare': [
+                    {
                         'key': self._key_b64,
-                        'value': self._uuid,
-                        'lease': self._lease.id
+                        'result': 'EQUAL',
+                        'target': 'CREATE',
+                        'create_revision': 0,
                     }
-                }],
-                'failure': [{
-                    'request_range': {
-                        'key': self._key_b64
+                ],
+                'success': [
+                    {
+                        'request_put': {
+                            'key': self._key_b64,
+                            'value': self._uuid,
+                            'lease': self._lease.id,
+                        }
                     }
-                }]
+                ],
+                'failure': [{'request_range': {'key': self._key_b64}}],
             }
             result = self._coord.client.transaction(txn)
             success = result.get('succeeded', False)
@@ -118,17 +120,15 @@ class Etcd3Lock(locking.Lock):
     @_translate_failures
     def release(self):
         txn = {
-            'compare': [{
-                'key': self._key_b64,
-                'result': 'EQUAL',
-                'target': 'VALUE',
-                'value': self._uuid
-            }],
-            'success': [{
-                'request_delete_range': {
-                    'key': self._key_b64
+            'compare': [
+                {
+                    'key': self._key_b64,
+                    'result': 'EQUAL',
+                    'target': 'VALUE',
+                    'value': self._uuid,
                 }
-            }]
+            ],
+            'success': [{'request_delete_range': {'key': self._key_b64}}],
         }
 
         with self._exclusive_access:
@@ -159,8 +159,10 @@ class Etcd3Lock(locking.Lock):
         return False
 
 
-class Etcd3Driver(coordination.CoordinationDriverCachedRunWatchers,
-                  coordination.CoordinationDriverWithExecutor):
+class Etcd3Driver(
+    coordination.CoordinationDriverCachedRunWatchers,
+    coordination.CoordinationDriverWithExecutor,
+):
     """An etcd based driver.
 
     This driver uses etcd provide the coordination driver semantics and
@@ -222,17 +224,20 @@ class Etcd3Driver(coordination.CoordinationDriverCachedRunWatchers,
             api_path = "/" + api_version + "/"
         else:
             api_path = None
-        self.client = etcd3gw.client(host=host,
-                                     port=port,
-                                     protocol=protocol,
-                                     ca_cert=ca_cert,
-                                     cert_key=cert_key,
-                                     cert_cert=cert_cert,
-                                     api_path=api_path,
-                                     timeout=timeout)
+        self.client = etcd3gw.client(
+            host=host,
+            port=port,
+            protocol=protocol,
+            ca_cert=ca_cert,
+            cert_key=cert_key,
+            cert_cert=cert_cert,
+            api_path=api_path,
+            timeout=timeout,
+        )
         self.lock_timeout = int(options.get('lock_timeout', timeout))
-        self.membership_timeout = int(options.get(
-            'membership_timeout', timeout))
+        self.membership_timeout = int(
+            options.get('membership_timeout', timeout)
+        )
         self._acquired_locks = set()
         self._membership_lease = None
 
@@ -248,8 +253,11 @@ class Etcd3Driver(coordination.CoordinationDriverCachedRunWatchers,
         if self._membership_lease.refresh() == -1:
             expired_lease = self._membership_lease.id
             self._membership_lease = self.client.lease(self.membership_timeout)
-            LOG.debug('Created new lease %s after previous lease %s expired.',
-                      self._membership_lease.id, expired_lease)
+            LOG.debug(
+                'Created new lease %s after previous lease %s expired.',
+                self._membership_lease.id,
+                expired_lease,
+            )
         # NOTE(jaypipes): Copying because set can mutate during iteration
         for lock in self._acquired_locks.copy():
             lock.heartbeat()
@@ -266,28 +274,33 @@ class Etcd3Driver(coordination.CoordinationDriverCachedRunWatchers,
         def _create_group():
             encoded_group = self._encode_group_id(group_id)
             txn = {
-                'compare': [{
-                    'key': encoded_group,
-                    'result': 'EQUAL',
-                    'target': 'VERSION',
-                    'version': 0
-                }],
-                'success': [{
-                    'request_put': {
+                'compare': [
+                    {
                         'key': encoded_group,
-                        # We shouldn't need a value, but etcd3gw needs it for
-                        # now
-                        'value': encoded_group
+                        'result': 'EQUAL',
+                        'target': 'VERSION',
+                        'version': 0,
                     }
-                }],
-                'failure': []
+                ],
+                'success': [
+                    {
+                        'request_put': {
+                            'key': encoded_group,
+                            # We shouldn't need a value, but etcd3gw
+                            # needs it for now
+                            'value': encoded_group,
+                        }
+                    }
+                ],
+                'failure': [],
             }
             result = self.client.transaction(txn)
             if not result.get("succeeded"):
                 raise coordination.GroupAlreadyExist(group_id)
 
         return coordination.CoordinatorResult(
-            self._executor.submit(_create_group))
+            self._executor.submit(_create_group)
+        )
 
     def _destroy_group(self, group_id):
         self.client.delete(group_id)
@@ -302,18 +315,22 @@ class Etcd3Driver(coordination.CoordinationDriverCachedRunWatchers,
 
             encoded_group = self._encode_group_id(group_id)
             txn = {
-                'compare': [{
-                    'key': encoded_group,
-                    'result': 'NOT_EQUAL',
-                    'target': 'VERSION',
-                    'version': 0
-                }],
-                'success': [{
-                    'request_delete_range': {
+                'compare': [
+                    {
                         'key': encoded_group,
+                        'result': 'NOT_EQUAL',
+                        'target': 'VERSION',
+                        'version': 0,
                     }
-                }],
-                'failure': []
+                ],
+                'success': [
+                    {
+                        'request_delete_range': {
+                            'key': encoded_group,
+                        }
+                    }
+                ],
+                'failure': [],
             }
             result = self.client.transaction(txn)
 
@@ -321,7 +338,8 @@ class Etcd3Driver(coordination.CoordinationDriverCachedRunWatchers,
                 raise coordination.GroupNotCreated(group_id)
 
         return coordination.CoordinatorResult(
-            self._executor.submit(_delete_group))
+            self._executor.submit(_delete_group)
+        )
 
     def join_group(self, group_id, capabilities=b""):
         @_retry.retry()
@@ -336,8 +354,9 @@ class Etcd3Driver(coordination.CoordinationDriverCachedRunWatchers,
             group_metadata = None
             for cap, metadata in members:
                 if metadata['key'] == prefix_member:
-                    raise coordination.MemberAlreadyExist(group_id,
-                                                          self._member_id)
+                    raise coordination.MemberAlreadyExist(
+                        group_id, self._member_id
+                    )
                 if metadata['key'] == prefix_group:
                     group_metadata = metadata
 
@@ -346,20 +365,24 @@ class Etcd3Driver(coordination.CoordinationDriverCachedRunWatchers,
 
             encoded_group = self._encode_group_id(group_id)
             txn = {
-                'compare': [{
-                    'key': encoded_group,
-                    'result': 'EQUAL',
-                    'target': 'VERSION',
-                    'version': int(group_metadata['version'])
-                }],
-                'success': [{
-                    'request_put': {
-                        'key': encoded_member,
-                        'value': _encode(utils.dumps(capabilities)),
-                        'lease': self._membership_lease.id
+                'compare': [
+                    {
+                        'key': encoded_group,
+                        'result': 'EQUAL',
+                        'target': 'VERSION',
+                        'version': int(group_metadata['version']),
                     }
-                }],
-                'failure': []
+                ],
+                'success': [
+                    {
+                        'request_put': {
+                            'key': encoded_member,
+                            'value': _encode(utils.dumps(capabilities)),
+                            'lease': self._membership_lease.id,
+                        }
+                    }
+                ],
+                'failure': [],
             }
             result = self.client.transaction(txn)
             if not result.get('succeeded'):
@@ -368,7 +391,8 @@ class Etcd3Driver(coordination.CoordinationDriverCachedRunWatchers,
                 self._joined_groups.add(group_id)
 
         return coordination.CoordinatorResult(
-            self._executor.submit(_join_group))
+            self._executor.submit(_join_group)
+        )
 
     def leave_group(self, group_id):
         @_translate_failures
@@ -380,14 +404,14 @@ class Etcd3Driver(coordination.CoordinationDriverCachedRunWatchers,
                 if metadata['key'] == prefix_member:
                     break
             else:
-                raise coordination.MemberNotJoined(group_id,
-                                                   self._member_id)
+                raise coordination.MemberNotJoined(group_id, self._member_id)
 
             self.client.delete(prefix_member)
             self._joined_groups.discard(group_id)
 
         return coordination.CoordinatorResult(
-            self._executor.submit(_leave_group))
+            self._executor.submit(_leave_group)
+        )
 
     def get_members(self, group_id):
         @_translate_failures
@@ -400,7 +424,7 @@ class Etcd3Driver(coordination.CoordinationDriverCachedRunWatchers,
                 if metadata['key'] == prefix_group:
                     group_found = True
                 else:
-                    members.add(metadata['key'][len(prefix_group):])
+                    members.add(metadata['key'][len(prefix_group) :])
 
             if not group_found:
                 raise coordination.GroupNotCreated(group_id)
@@ -408,7 +432,8 @@ class Etcd3Driver(coordination.CoordinationDriverCachedRunWatchers,
             return members
 
         return coordination.CoordinatorResult(
-            self._executor.submit(_get_members))
+            self._executor.submit(_get_members)
+        )
 
     def get_member_capabilities(self, group_id, member_id):
         @_translate_failures
@@ -420,7 +445,8 @@ class Etcd3Driver(coordination.CoordinationDriverCachedRunWatchers,
             return utils.loads(result[0])
 
         return coordination.CoordinatorResult(
-            self._executor.submit(_get_member_capabilities))
+            self._executor.submit(_get_member_capabilities)
+        )
 
     def update_capabilities(self, group_id, capabilities):
         @_translate_failures
@@ -430,20 +456,28 @@ class Etcd3Driver(coordination.CoordinationDriverCachedRunWatchers,
             if not result:
                 raise coordination.MemberNotJoined(group_id, self._member_id)
 
-            self.client.put(prefix_member, utils.dumps(capabilities),
-                            lease=self._membership_lease)
+            self.client.put(
+                prefix_member,
+                utils.dumps(capabilities),
+                lease=self._membership_lease,
+            )
 
         return coordination.CoordinatorResult(
-            self._executor.submit(_update_capabilities))
+            self._executor.submit(_update_capabilities)
+        )
 
     def get_groups(self):
         @_translate_failures
         def _get_groups():
             groups = self.client.get_prefix(self.GROUP_PREFIX)
             return [
-                group[1]['key'][len(self.GROUP_PREFIX):-1] for group in groups]
+                group[1]['key'][len(self.GROUP_PREFIX) : -1]
+                for group in groups
+            ]
+
         return coordination.CoordinatorResult(
-            self._executor.submit(_get_groups))
+            self._executor.submit(_get_groups)
+        )
 
     @staticmethod
     def watch_elected_as_leader(group_id, callback):
