@@ -139,9 +139,14 @@
 - job:
     name: tooz-tox-py313-mysql
     parent: openstack-tox-py313
+    # NOTE(tkajinam): Debian Trixie which is used for py313 tests do not
+    # provide mysqld. Because pifpaf does not support mariadb atm we use
+    # Ubuntu Noble which provides mysql.
+    nodeset: ubuntu-noble
     description: |
       Run tests using ``py313-mysql`` environment.
     vars:
+      python_use_pyenv: True
       tox_envlist: py313-mysql
 
 - job:
