@@ -9,6 +9,7 @@
       - release-notes-jobs-python3
     check:
       jobs:
+        - tooz-tox-examples
         - tooz-tox-py310-etcd3gw
         - tooz-tox-py313-etcd3gw
         - tooz-tox-py310-zookeeper
@@ -27,6 +28,7 @@
         - tooz-tox-py313-consul
     gate:
       jobs:
+        - tooz-tox-examples
         - tooz-tox-py310-etcd3gw
         - tooz-tox-py313-etcd3gw
         - tooz-tox-py310-zookeeper
@@ -43,6 +45,14 @@
         - tooz-tox-py313-mysql
         - tooz-tox-py310-consul
         - tooz-tox-py313-consul
+
+- job:
+    name: tooz-tox-examples
+    parent: openstack-tox-py312
+    description: |
+      Run tests using ``examples`` environment.
+    vars:
+      tox_envlist: examples
 
 - job:
     name: tooz-tox-py310-consul

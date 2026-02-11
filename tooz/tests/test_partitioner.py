@@ -89,10 +89,6 @@ class TestPartitioner(tests.TestWithCoordinator):
         p.stop()
 
 
-class ZakeTestPartitioner(TestPartitioner):
-    url = "zake://"
-
-
 class IPCTestPartitioner(TestPartitioner):
     url = "ipc://"
 

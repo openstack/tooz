@@ -68,12 +68,6 @@ Redis
 .. autoclass:: tooz.drivers.redis.RedisDriver
    :members:
 
-Zake
-~~~~
-
-.. autoclass:: tooz.drivers.zake.ZakeDriver
-   :members:
-
 Zookeeper
 ~~~~~~~~~
 

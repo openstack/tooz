@@ -17,7 +17,7 @@ import uuid
 
 from tooz import coordination
 
-coordinator = coordination.get_coordinator('zake://', b'host-1')
+coordinator = coordination.get_coordinator('redis://localhost:6379', b'host-1')
 coordinator.start()
 
 # Create a group

@@ -23,14 +23,6 @@ The zookeeper is the reference implementation and provides the most solid
 features as it's possible to build a cluster of zookeeper servers that is
 resilient towards network partitions for example.
 
-**Test driver:** :py:class:`tooz.drivers.zake.ZakeDriver`
-
-**Characteristics:**
-
-:py:attr:`tooz.drivers.zake.ZakeDriver.CHARACTERISTICS`
-
-**Test driver entrypoint name:** ``zake``
-
 Considerations
 ~~~~~~~~~~~~~~
 

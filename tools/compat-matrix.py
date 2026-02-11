@@ -40,7 +40,6 @@ driver_class_names = [
     "mysql.MySQLDriver",
     "pgsql.PostgresDriver",
     "redis.RedisDriver",
-    "zake.ZakeDriver",
     "zookeeper.KazooDriver",
 ]
 driver_headers = []
@@ -81,7 +80,6 @@ grouping_table = [
         "No",  # MySQL
         "No",  # PostgreSQL
         "Yes",  # Redis
-        "Yes",  # Zake
         "Yes",  # Zookeeper
     ],
 ]
@@ -114,7 +112,6 @@ leader_table = [
         "No",  # MySQL
         "No",  # PostgreSQL
         "Yes",  # Redis
-        "Yes",  # Zake
         "Yes",  # Zookeeper
     ],
 ]
@@ -144,7 +141,6 @@ lock_table = [
         "Yes",  # MySQL
         "Yes",  # PostgreSQL
         "Yes",  # Redis
-        "Yes",  # Zake
         "Yes",  # Zookeeper
     ],
 ]

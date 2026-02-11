@@ -1,0 +1,4 @@
+---
+upgrade:
+  - |
+    The zake driver has been removed.

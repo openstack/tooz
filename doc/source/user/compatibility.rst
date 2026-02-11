@@ -47,8 +47,6 @@ Driver support
      - No
    * - :py:class:`~tooz.drivers.redis.RedisDriver`
      - Yes
-   * - :py:class:`~tooz.drivers.zake.ZakeDriver`
-     - Yes
    * - :py:class:`~tooz.drivers.zookeeper.KazooDriver`
      - Yes
 
@@ -89,8 +87,6 @@ Driver support
      - No
    * - :py:class:`~tooz.drivers.redis.RedisDriver`
      - Yes
-   * - :py:class:`~tooz.drivers.zake.ZakeDriver`
-     - Yes
    * - :py:class:`~tooz.drivers.zookeeper.KazooDriver`
      - Yes
 
@@ -127,8 +123,6 @@ Driver support
    * - :py:class:`~tooz.drivers.pgsql.PostgresDriver`
      - Yes
    * - :py:class:`~tooz.drivers.redis.RedisDriver`
-     - Yes
-   * - :py:class:`~tooz.drivers.zake.ZakeDriver`
      - Yes
    * - :py:class:`~tooz.drivers.zookeeper.KazooDriver`
      - Yes
