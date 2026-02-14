@@ -19,6 +19,8 @@ from collections.abc import Generator
 import contextlib
 import hashlib
 import logging
+import warnings
+
 import psycopg2
 import psycopg2.extensions
 from typing import Any, cast
@@ -208,6 +210,12 @@ class PostgresDriver(coordination.CoordinationDriver):
         self, member_id: bytes, parsed_url: Any, options: Any
     ) -> None:
         """Initialize the PostgreSQL driver."""
+        warnings.warn(
+            'PostgreSQL driver is deprecated and will be removed in '
+            'a future release',
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__(member_id, parsed_url, options)
         self._parsed_url = parsed_url
         self._options = utils.collapse(options)
