@@ -65,7 +65,11 @@ class TestWithCoordinator(testcase.TestCase, metaclass=SkipNotImplementedMeta):
                 + "?api_version=v3beta"
             )
         if os.getenv("TOOZ_TEST_SENTINEL"):
-            self.url = self.url.replace(":6379", ":6380?sentinel=pifpaf")
+            redis_port = os.getenv("TOOZ_TEST_REDIS_PORT", 6379)
+            sentinel_port = os.getenv("TOOZ_TEST_REDIS_SENTINEL_PORT", 6380)
+            self.url = self.url.replace(
+                f":{redis_port}", f":{sentinel_port}?sentinel=pifpaf"
+            )
         self.useFixture(fixtures.NestedTempfile())
         self.group_id = get_random_uuid()
         self.member_id = get_random_uuid()
