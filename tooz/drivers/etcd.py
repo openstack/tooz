@@ -14,6 +14,7 @@
 import functools
 import logging
 import threading
+import warnings
 
 import fasteners
 from oslo_utils import timeutils
@@ -248,6 +249,12 @@ class EtcdDriver(coordination.CoordinationDriver):
     )
 
     def __init__(self, member_id, parsed_url, options):
+        warnings.warn(
+            'Etcd driver is deprecated and will be removed in '
+            'a future release. Use the etcd3 driver instead.',
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__(member_id, parsed_url, options)
         host = parsed_url.hostname or self.DEFAULT_HOST
         port = parsed_url.port or self.DEFAULT_PORT
