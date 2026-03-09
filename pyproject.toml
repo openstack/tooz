@@ -94,8 +94,10 @@ exclude = "(?x)(doc | examples | releasenotes | tools)"
 
 [[tool.mypy.overrides]]
 module = [
+    "tooz.coordination",
     "tooz.hashring",
     "tooz.locking",
+    "tooz.partitioner",
     "tooz.utils",
     "tooz._retry",
 ]

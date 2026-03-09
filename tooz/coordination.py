@@ -14,13 +14,18 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from __future__ import annotations
+
 import abc
 import collections
+from collections.abc import Callable
 from concurrent import futures
+import contextlib
 import enum
 import logging
 import threading
-import urllib
+from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar
+import urllib.parse
 
 from oslo_utils import netutils
 from oslo_utils import timeutils
@@ -31,6 +36,9 @@ import tooz
 from tooz import _retry
 from tooz import partitioner
 from tooz import utils
+
+if TYPE_CHECKING:
+    from tooz import locking
 
 LOG = logging.getLogger(__name__)
 
@@ -113,11 +121,6 @@ class Characteristics(enum.Enum):
     """
 
 
-class Hooks(list):
-    def run(self, *args, **kwargs):
-        return list(map(lambda cb: cb(*args, **kwargs), self))
-
-
 class Event:
     """Base class for events."""
 
@@ -125,11 +128,11 @@ class Event:
 class MemberJoinedGroup(Event):
     """A member joined a group event."""
 
-    def __init__(self, group_id, member_id):
+    def __init__(self, group_id: bytes, member_id: bytes) -> None:
         self.group_id = group_id
         self.member_id = member_id
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         group = (
             self.group_id.decode()
             if isinstance(self.group_id, bytes)
@@ -146,11 +149,11 @@ class MemberJoinedGroup(Event):
 class MemberLeftGroup(Event):
     """A member left a group event."""
 
-    def __init__(self, group_id, member_id):
+    def __init__(self, group_id: bytes, member_id: bytes) -> None:
         self.group_id = group_id
         self.member_id = member_id
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         group = (
             self.group_id.decode()
             if isinstance(self.group_id, bytes)
@@ -167,7 +170,7 @@ class MemberLeftGroup(Event):
 class LeaderElected(Event):
     """A leader as been elected."""
 
-    def __init__(self, group_id, member_id):
+    def __init__(self, group_id: bytes, member_id: bytes) -> None:
         self.group_id = group_id
         self.member_id = member_id
 
@@ -176,24 +179,27 @@ class Heart:
     """Coordination drivers main liveness pump (its heart)."""
 
     def __init__(
-        self, driver, thread_cls=threading.Thread, event_cls=threading.Event
-    ):
+        self,
+        driver: CoordinationDriver,
+        thread_cls: type[threading.Thread] = threading.Thread,
+        event_cls: type[threading.Event] = threading.Event,
+    ) -> None:
         self._thread_cls = thread_cls
         self._dead = event_cls()
-        self._runner = None
+        self._runner: threading.Thread | None = None
         self._driver = driver
         self._beats = 0
 
     @property
-    def beats(self):
+    def beats(self) -> int:
         """How many times the heart has beaten."""
         return self._beats
 
-    def is_alive(self):
+    def is_alive(self) -> bool:
         """Returns if the heart is beating."""
         return not (self._runner is None or not self._runner.is_alive())
 
-    def _beat_forever_until_stopped(self):
+    def _beat_forever_until_stopped(self) -> None:
         """Inner beating loop."""
         retry = tenacity.Retrying(
             wait=tenacity.wait_fixed(1),
@@ -202,6 +208,7 @@ class Heart:
         while not self._dead.is_set():
             with timeutils.StopWatch() as w:
                 wait_until_next_beat = retry(self._driver.heartbeat)
+            assert wait_until_next_beat is not None  # narrow type
             ran_for = w.elapsed()
             has_to_sleep_for = wait_until_next_beat - ran_for
             if has_to_sleep_for < 0:
@@ -223,7 +230,7 @@ class Heart:
             # This is a measure of safety, better be too soon than too late.
             self._dead.wait(has_to_sleep_for / 2.0)
 
-    def start(self, thread_cls=None):
+    def start(self, thread_cls: type[threading.Thread] | None = None) -> None:
         """Starts the heart beating thread (noop if already started)."""
         if not self.is_alive():
             self._dead.clear()
@@ -234,14 +241,35 @@ class Heart:
             self._runner.daemon = True
             self._runner.start()
 
-    def stop(self):
+    def stop(self) -> None:
         """Requests the heart beating thread to stop beating."""
         self._dead.set()
 
-    def wait(self, timeout=None):
+    def wait(self, timeout: int | float | None = None) -> bool:
         """Wait up to given timeout for the heart beating thread to stop."""
+        if self._runner is None:
+            raise RuntimeError('runner must be initialized to wait')
+
         self._runner.join(timeout)
         return self._runner.is_alive()
+
+
+T = TypeVar('T')
+EventT = TypeVar('EventT', bound=Event, contravariant=True)
+
+
+class EventCallback(Protocol, Generic[EventT]):
+    __name__: str
+
+    def __call__(self, event: EventT) -> None: ...
+
+
+class Hooks(list[EventCallback[Any]]):
+    def run(self, *args: Any, **kwargs: Any) -> list[Any]:
+        return list(map(lambda cb: cb(*args, **kwargs), self))
+
+
+Capabilities = dict[str, Any]
 
 
 class CoordinationDriver:
@@ -259,19 +287,30 @@ class CoordinationDriver:
     enum member(s) that can be used to interogate how this driver works.
     """
 
-    def __init__(self, member_id, parsed_url, options):
+    # TODO(stephenfin): Fix type of parsed_url
+    # https://review.opendev.org/c/openstack/oslo.utils/+/980011
+    def __init__(
+        self, member_id: bytes, parsed_url: Any, options: dict[str, Any]
+    ) -> None:
         super().__init__()
         self._member_id = member_id
         self._started = False
-        self._hooks_join_group = collections.defaultdict(Hooks)
-        self._hooks_leave_group = collections.defaultdict(Hooks)
-        self._hooks_elected_leader = collections.defaultdict(Hooks)
+        self._hooks_join_group: collections.defaultdict[bytes, Hooks] = (
+            collections.defaultdict(Hooks)
+        )
+        self._hooks_leave_group: collections.defaultdict[bytes, Hooks] = (
+            collections.defaultdict(Hooks)
+        )
+        self._hooks_elected_leader: collections.defaultdict[bytes, Hooks] = (
+            collections.defaultdict(Hooks)
+        )
+        self._joined_groups: set[bytes] = set()
         self.requires_beating = (
             CoordinationDriver.heartbeat != self.__class__.heartbeat
         )
         self.heart = Heart(self)
 
-    def _has_hooks_for_group(self, group_id):
+    def _has_hooks_for_group(self, group_id: bytes) -> bool:
         return (
             group_id in self._hooks_join_group
             or group_id in self._hooks_leave_group
@@ -279,10 +318,10 @@ class CoordinationDriver:
 
     def join_partitioned_group(
         self,
-        group_id,
-        weight=1,
-        partitions=partitioner.Partitioner.DEFAULT_PARTITION_NUMBER,
-    ):
+        group_id: bytes,
+        weight: int = 1,
+        partitions: int = partitioner.Partitioner.DEFAULT_PARTITION_NUMBER,
+    ) -> partitioner.Partitioner:
         """Join a group and get a partitioner.
 
         A partitioner allows to distribute a bunch of objects across several
@@ -302,7 +341,9 @@ class CoordinationDriver:
         self.join_group_create(group_id, capabilities={'weight': weight})
         return partitioner.Partitioner(self, group_id, partitions=partitions)
 
-    def leave_partitioned_group(self, partitioner):
+    def leave_partitioned_group(
+        self, partitioner: partitioner.Partitioner
+    ) -> None:
         """Leave a partitioned group.
 
         This leaves the partitioned group and stop the partitioner.
@@ -310,9 +351,9 @@ class CoordinationDriver:
         """
         leave = self.leave_group(partitioner.group_id)
         partitioner.stop()
-        return leave.get()
+        leave.get()
 
-    def run_watchers(self, timeout=None):
+    def run_watchers(self, timeout: float | None = None) -> list[Any]:
         """Run the watchers callback.
 
         This may also activate :py:meth:`.run_elect_coordinator` (depending
@@ -320,11 +361,13 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    def run_elect_coordinator(self):
+    def run_elect_coordinator(self) -> None:
         """Try to leader elect this coordinator & activate hooks on success."""
         raise tooz.NotImplemented("not implemented")
 
-    def watch_join_group(self, group_id, callback):
+    def watch_join_group(
+        self, group_id: bytes, callback: EventCallback[MemberJoinedGroup]
+    ) -> None:
         """Call a function when group_id sees a new member joined.
 
         The callback functions will be executed when `run_watchers` is
@@ -336,7 +379,9 @@ class CoordinationDriver:
         """
         self._hooks_join_group[group_id].append(callback)
 
-    def unwatch_join_group(self, group_id, callback):
+    def unwatch_join_group(
+        self, group_id: bytes, callback: EventCallback[MemberJoinedGroup]
+    ) -> None:
         """Stop executing a function when a group_id sees a new member joined.
 
         :param group_id: The group id to unwatch
@@ -355,7 +400,9 @@ class CoordinationDriver:
         if not self._hooks_join_group[group_id]:
             del self._hooks_join_group[group_id]
 
-    def watch_leave_group(self, group_id, callback):
+    def watch_leave_group(
+        self, group_id: bytes, callback: EventCallback[MemberLeftGroup]
+    ) -> None:
         """Call a function when group_id sees a new member leaving.
 
         The callback functions will be executed when `run_watchers` is
@@ -368,7 +415,9 @@ class CoordinationDriver:
         """
         self._hooks_leave_group[group_id].append(callback)
 
-    def unwatch_leave_group(self, group_id, callback):
+    def unwatch_leave_group(
+        self, group_id: bytes, callback: EventCallback[MemberLeftGroup]
+    ) -> None:
         """Stop executing a function when a group_id sees a new member leaving.
 
         :param group_id: The group id to unwatch
@@ -387,7 +436,9 @@ class CoordinationDriver:
         if not self._hooks_leave_group[group_id]:
             del self._hooks_leave_group[group_id]
 
-    def watch_elected_as_leader(self, group_id, callback):
+    def watch_elected_as_leader(
+        self, group_id: bytes, callback: EventCallback[LeaderElected]
+    ) -> None:
         """Call a function when member gets elected as leader.
 
         The callback functions will be executed when `run_watchers` is
@@ -400,7 +451,9 @@ class CoordinationDriver:
         """
         self._hooks_elected_leader[group_id].append(callback)
 
-    def unwatch_elected_as_leader(self, group_id, callback):
+    def unwatch_elected_as_leader(
+        self, group_id: bytes, callback: EventCallback[LeaderElected]
+    ) -> None:
         """Call a function when member gets elected as leader.
 
         The callback functions will be executed when `run_watchers` is
@@ -419,7 +472,7 @@ class CoordinationDriver:
         if not self._hooks_elected_leader[group_id]:
             del self._hooks_elected_leader[group_id]
 
-    def stand_down_group_leader(self, group_id):
+    def stand_down_group_leader(self, group_id: bytes) -> bool:
         """Stand down as the group leader if we are.
 
         :param group_id: The group where we don't want to be a leader anymore
@@ -427,10 +480,10 @@ class CoordinationDriver:
         raise tooz.NotImplemented("not implemented")
 
     @property
-    def is_started(self):
+    def is_started(self) -> bool:
         return self._started
 
-    def start(self, start_heart=False):
+    def start(self, start_heart: bool = False) -> None:
         """Start the service engine.
 
         If needed, the establishment of a connection to the servers
@@ -447,10 +500,10 @@ class CoordinationDriver:
         # Tracks which group are joined
         self._joined_groups = set()
 
-    def _start(self):
+    def _start(self) -> None:
         pass
 
-    def stop(self):
+    def stop(self) -> None:
         """Stop the service engine.
 
         If needed, the connection to servers is closed and the client will
@@ -479,10 +532,10 @@ class CoordinationDriver:
         self._stop()
         self._started = False
 
-    def _stop(self):
+    def _stop(self) -> None:
         pass
 
-    def create_group(self, group_id):
+    def create_group(self, group_id: bytes) -> CoordAsyncResult[None]:
         """Request the creation of a group asynchronously.
 
         :param group_id: the id of the group to create
@@ -492,7 +545,7 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    def get_groups(self):
+    def get_groups(self) -> CoordAsyncResult[list[bytes]]:
         """Return the list composed by all groups ids asynchronously.
 
         :returns: the list of all created group ids
@@ -500,21 +553,29 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    def join_group(self, group_id, capabilities=None):
+    def join_group(
+        self, group_id: bytes, capabilities: Capabilities | None = None
+    ) -> CoordAsyncResult[None]:
         """Join a group and establish group membership asynchronously.
 
         :param group_id: the id of the group to join
         :type group_id: ascii bytes
-        :param capabilities: the capabilities of the joined member
-        :type capabilities: object
+        :param capabilities: the capabilities of the joined member; a
+            :class:`dict` mapping string keys to arbitrary values.
+        :type capabilities: dict or None
         :returns: None
         :rtype: CoordAsyncResult
         """
         raise tooz.NotImplemented("not implemented")
 
     @_retry.retry()
-    def join_group_create(self, group_id, capabilities=None):
+    def join_group_create(
+        self, group_id: bytes, capabilities: Capabilities | None = None
+    ) -> None:
         """Join a group and create it if necessary.
+
+        See :meth:`join_group` for the description of the *capabilities*
+        parameter.
 
         If the group cannot be joined because it does not exist, it is created
         before being joined.
@@ -524,7 +585,8 @@ class CoordinationDriver:
         if another member is creating/deleting the group at the same time.
 
         :param group_id: Identifier of the group to join and create
-        :param capabilities: the capabilities of the joined member
+        :param capabilities: the capabilities of the joined member; see
+            :meth:`join_group`
         """
         req = self.join_group(group_id, capabilities)
         try:
@@ -539,7 +601,7 @@ class CoordinationDriver:
             # Now retry to join the group
             raise _retry.TryAgain
 
-    def leave_group(self, group_id):
+    def leave_group(self, group_id: bytes) -> CoordAsyncResult[None]:
         """Leave a group asynchronously.
 
         :param group_id: the id of the group to leave
@@ -549,7 +611,7 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    def delete_group(self, group_id):
+    def delete_group(self, group_id: bytes) -> CoordAsyncResult[None]:
         """Delete a group asynchronously.
 
         :param group_id: the id of the group to leave
@@ -559,7 +621,7 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    def get_members(self, group_id):
+    def get_members(self, group_id: bytes) -> CoordAsyncResult[set[bytes]]:
         """Return the set of all member ids of a group asynchronously.
 
         :returns: set of all member ids in the specified group
@@ -567,7 +629,9 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    def get_member_capabilities(self, group_id, member_id):
+    def get_member_capabilities(
+        self, group_id: bytes, member_id: bytes
+    ) -> CoordAsyncResult[Capabilities | None]:
         """Return the capabilities of a member asynchronously.
 
         :param group_id: the id of the group of the member
@@ -579,7 +643,9 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    def get_member_info(self, group_id, member_id):
+    def get_member_info(
+        self, group_id: bytes, member_id: bytes
+    ) -> CoordAsyncResult[dict[str, Any]]:
         """Return the statistics and capabilities of a member asynchronously.
 
         :param group_id: the id of the group of the member
@@ -591,19 +657,22 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    def update_capabilities(self, group_id, capabilities):
+    def update_capabilities(
+        self, group_id: bytes, capabilities: Capabilities
+    ) -> CoordAsyncResult[None]:
         """Update member capabilities in the specified group.
 
         :param group_id: the id of the group of the current member
         :type group_id: ascii bytes
-        :param capabilities: the capabilities of the updated member
-        :type capabilities: object
+        :param capabilities: the updated capabilities of the member; see
+            :meth:`join_group`
+        :type capabilities: dict
         :returns: None
         :rtype: CoordAsyncResult
         """
         raise tooz.NotImplemented("not implemented")
 
-    def get_leader(self, group_id):
+    def get_leader(self, group_id: bytes) -> CoordAsyncResult[bytes]:
         """Return the leader for a group.
 
         :param group_id: the id of the group:
@@ -612,7 +681,7 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    def get_lock(self, name):
+    def get_lock(self, name: bytes) -> locking.Lock:
         """Return a distributed lock.
 
         This is a exclusive lock, a second call to acquire() will block or
@@ -623,7 +692,7 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    def heartbeat(self):
+    def heartbeat(self) -> float | None:
         """Update member status to indicate it is still alive.
 
         Method to run once in a while to be sure that the member is not dead
@@ -634,7 +703,7 @@ class CoordinationDriver:
         pass
 
 
-class CoordAsyncResult(metaclass=abc.ABCMeta):
+class CoordAsyncResult(Generic[T], metaclass=abc.ABCMeta):
     """Representation of an asynchronous task.
 
     Every call API returns an CoordAsyncResult object on which the result or
@@ -643,7 +712,7 @@ class CoordAsyncResult(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def get(self, timeout=None):
+    def get(self, timeout: float | None = None) -> T:
         """Retrieve the result of the corresponding asynchronous call.
 
         :param timeout: block until the timeout expire.
@@ -651,18 +720,24 @@ class CoordAsyncResult(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def done(self):
+    def done(self) -> bool:
         """Returns True if the task is done, False otherwise."""
 
 
-class CoordinatorResult(CoordAsyncResult):
+class CoordinatorResult(CoordAsyncResult[T]):
     """Asynchronous result that references a future."""
 
-    def __init__(self, fut, failure_translator=None):
+    def __init__(
+        self,
+        fut: futures.Future[T],
+        failure_translator: (
+            Callable[[], contextlib.AbstractContextManager[Any]] | None
+        ) = None,
+    ) -> None:
         self._fut = fut
         self._failure_translator = failure_translator
 
-    def get(self, timeout=None):
+    def get(self, timeout: float | None = None) -> T:
         try:
             if self._failure_translator:
                 with self._failure_translator():
@@ -672,25 +747,31 @@ class CoordinatorResult(CoordAsyncResult):
         except futures.TimeoutError as e:
             utils.raise_with_cause(OperationTimedOut, str(e), cause=e)
 
-    def done(self):
+    def done(self) -> bool:
         return self._fut.done()
 
 
 class CoordinationDriverWithExecutor(CoordinationDriver):
     EXCLUDE_OPTIONS: frozenset[str] | None = None
 
-    def __init__(self, member_id, parsed_url, options):
-        self._options = utils.collapse(options, exclude=self.EXCLUDE_OPTIONS)
-        self._executor = utils.ProxyExecutor.build(
+    # TODO(stephenfin): Fix type of parsed_url
+    # https://review.opendev.org/c/openstack/oslo.utils/+/980011
+    def __init__(
+        self, member_id: bytes, parsed_url: Any, options: dict[str, Any]
+    ) -> None:
+        self._options: dict[str, Any] = utils.collapse(
+            options, exclude=self.EXCLUDE_OPTIONS
+        )
+        self._executor: utils.ProxyExecutor = utils.ProxyExecutor.build(
             self.__class__.__name__, self._options
         )
         super().__init__(member_id, parsed_url, options)
 
-    def start(self, start_heart=False):
+    def start(self, start_heart: bool = False) -> None:
         self._executor.start()
         super().start(start_heart)
 
-    def stop(self):
+    def stop(self) -> None:
         super().stop()
         self._executor.stop()
 
@@ -704,22 +785,32 @@ class CoordinationDriverCachedRunWatchers(CoordinationDriver):
 
     """
 
-    def __init__(self, member_id, parsed_url, options):
+    # TODO(stephenfin): Fix type of parsed_url
+    # https://review.opendev.org/c/openstack/oslo.utils/+/980011
+    def __init__(
+        self, member_id: bytes, parsed_url: Any, options: dict[str, Any]
+    ) -> None:
         super().__init__(member_id, parsed_url, options)
         # A cache for group members
-        self._group_members = collections.defaultdict(set)
+        self._group_members: collections.defaultdict[bytes, set[bytes]] = (
+            collections.defaultdict(set)
+        )
         self._joined_groups = set()
 
-    def _init_watch_group(self, group_id):
+    def _init_watch_group(self, group_id: bytes) -> None:
         if group_id not in self._group_members:
             members = self.get_members(group_id)
             self._group_members[group_id] = members.get()
 
-    def watch_join_group(self, group_id, callback):
+    def watch_join_group(
+        self, group_id: bytes, callback: EventCallback[MemberJoinedGroup]
+    ) -> None:
         self._init_watch_group(group_id)
         super().watch_join_group(group_id, callback)
 
-    def unwatch_join_group(self, group_id, callback):
+    def unwatch_join_group(
+        self, group_id: bytes, callback: EventCallback[MemberJoinedGroup]
+    ) -> None:
         super().unwatch_join_group(group_id, callback)
 
         if (
@@ -728,11 +819,15 @@ class CoordinationDriverCachedRunWatchers(CoordinationDriver):
         ):
             del self._group_members[group_id]
 
-    def watch_leave_group(self, group_id, callback):
+    def watch_leave_group(
+        self, group_id: bytes, callback: EventCallback[MemberLeftGroup]
+    ) -> None:
         self._init_watch_group(group_id)
         super().watch_leave_group(group_id, callback)
 
-    def unwatch_leave_group(self, group_id, callback):
+    def unwatch_leave_group(
+        self, group_id: bytes, callback: EventCallback[MemberLeftGroup]
+    ) -> None:
         super().unwatch_leave_group(group_id, callback)
 
         if (
@@ -741,7 +836,7 @@ class CoordinationDriverCachedRunWatchers(CoordinationDriver):
         ):
             del self._group_members[group_id]
 
-    def run_watchers(self, timeout=None):
+    def run_watchers(self, timeout: float | None = None) -> list[Any]:
         with timeutils.StopWatch(duration=timeout) as w:
             result = []
             group_with_hooks = set(self._hooks_join_group.keys()).union(
@@ -777,8 +872,11 @@ class CoordinationDriverCachedRunWatchers(CoordinationDriver):
 
 
 def get_coordinator(
-    backend_url, member_id, characteristics=frozenset(), **kwargs
-):
+    backend_url: str,
+    member_id: bytes,
+    characteristics: frozenset[Characteristics] = frozenset(),
+    **kwargs: Any,
+) -> CoordinationDriver:
     """Initialize and load the backend.
 
     :param backend_url: the backend URL to use
@@ -805,20 +903,23 @@ def get_coordinator(
                 options[k] = v
     else:
         options = parsed_qs
-    d = driver.DriverManager(
+
+    m: driver.DriverManager[CoordinationDriver]
+    m = driver.DriverManager(
         namespace=TOOZ_BACKENDS_NAMESPACE,
         name=parsed_url.scheme,
         invoke_on_load=True,
         invoke_args=(member_id, parsed_url, options),
-    ).driver
-    characteristics = set(characteristics)
+    )
+    d = m.driver
+    assert isinstance(d, CoordinationDriver)  # narrow type
     driver_characteristics = set(getattr(d, 'CHARACTERISTICS', set()))
-    missing_characteristics = characteristics - driver_characteristics
+    missing_characteristics = set(characteristics) - driver_characteristics
     if missing_characteristics:
         raise ToozDriverChosenPoorly(
             f"Desired characteristics {characteristics} is not a strict "
-            f"subset of driver characteristics {driver_characteristics},"
-            f" {missing_characteristics} characteristics were not found"
+            f"subset of driver characteristics {driver_characteristics}, "
+            f"{missing_characteristics} characteristics were not found"
         )
     return d
 
@@ -918,7 +1019,7 @@ class WatchCallbackNotFound(tooz.ToozError):
 
     """
 
-    def __init__(self, group_id, callback):
+    def __init__(self, group_id: bytes, callback: EventCallback[Any]) -> None:
         self.group_id = (
             group_id.decode() if isinstance(group_id, bytes) else group_id
         )

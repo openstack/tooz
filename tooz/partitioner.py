@@ -13,7 +13,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from __future__ import annotations
+
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any, cast
+
 from tooz import hashring
+
+if TYPE_CHECKING:
+    from tooz import coordination
 
 
 class Partitioner:
@@ -28,8 +36,11 @@ class Partitioner:
     DEFAULT_PARTITION_NUMBER = hashring.HashRing.DEFAULT_PARTITION_NUMBER
 
     def __init__(
-        self, coordinator, group_id, partitions=DEFAULT_PARTITION_NUMBER
-    ):
+        self,
+        coordinator: coordination.CoordinationDriver,
+        group_id: bytes,
+        partitions: int = DEFAULT_PARTITION_NUMBER,
+    ) -> None:
         members = coordinator.get_members(group_id)
         self.partitions = partitions
         self.group_id = group_id
@@ -42,26 +53,33 @@ class Partitioner:
         self._coord.watch_leave_group(self.group_id, self._on_member_leave)
         self.ring = hashring.HashRing([], partitions=self.partitions)
         for m_id, cap in caps:
-            self.ring.add_node(m_id, cap.get().get("weight", 1))
+            raw = cap.get()
+            weight = raw.get("weight", 1) if isinstance(raw, dict) else 1
+            self.ring.add_node(m_id, weight)
 
-    def _on_member_join(self, event):
-        weight = (
-            self._coord.get_member_capabilities(self.group_id, event.member_id)
-            .get()
-            .get("weight", 1)
+    def _on_member_join(self, event: coordination.MemberJoinedGroup) -> None:
+        cap = self._coord.get_member_capabilities(
+            self.group_id, event.member_id
         )
+        raw = cap.get()
+        weight = raw.get("weight", 1) if isinstance(raw, dict) else 1
         self.ring.add_node(event.member_id, weight)
 
-    def _on_member_leave(self, event):
+    def _on_member_leave(self, event: coordination.MemberLeftGroup) -> None:
         self.ring.remove_node(event.member_id)
 
     @staticmethod
-    def _hash_object(obj):
+    def _hash_object(obj: object) -> bytes:
         if hasattr(obj, "__tooz_hash__"):
-            return obj.__tooz_hash__()
+            return cast(bytes, obj.__tooz_hash__())
         return str(obj).encode('utf8')
 
-    def members_for_object(self, obj, ignore_members=None, replicas=1):
+    def members_for_object(
+        self,
+        obj: object,
+        ignore_members: Iterable[object] | None = None,
+        replicas: int = 1,
+    ) -> Any:
         """Return the members responsible for an object.
 
         :param obj: The object to check owning for.
@@ -76,8 +94,12 @@ class Partitioner:
         )
 
     def belongs_to_member(
-        self, obj, member_id, ignore_members=None, replicas=1
-    ):
+        self,
+        obj: object,
+        member_id: bytes,
+        ignore_members: Iterable[object] | None = None,
+        replicas: int = 1,
+    ) -> bool:
         """Return whether an object belongs to a member.
 
         :param obj: The object to check owning for.
@@ -89,7 +111,12 @@ class Partitioner:
             obj, ignore_members=ignore_members, replicas=replicas
         )
 
-    def belongs_to_self(self, obj, ignore_members=None, replicas=1):
+    def belongs_to_self(
+        self,
+        obj: object,
+        ignore_members: Iterable[object] | None = None,
+        replicas: int = 1,
+    ) -> bool:
         """Return whether an object belongs to this coordinator.
 
         :param obj: The object to check owning for.
@@ -103,7 +130,7 @@ class Partitioner:
             replicas=replicas,
         )
 
-    def stop(self):
+    def stop(self) -> None:
         """Stop the partitioner."""
         self._coord.unwatch_join_group(self.group_id, self._on_member_join)
         self._coord.unwatch_leave_group(self.group_id, self._on_member_leave)
