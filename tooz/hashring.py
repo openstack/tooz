@@ -12,17 +12,28 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
+from __future__ import annotations
+
 import bisect
+from collections.abc import Iterable
 import hashlib
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 import tooz
 from tooz import utils
+
+if TYPE_CHECKING:
+    import _hashlib
+
+Node: TypeAlias = Any
+Weight: TypeAlias = int
 
 
 class UnknownNode(tooz.ToozError):
     """Node is unknown."""
 
-    def __init__(self, node):
+    def __init__(self, node: Node) -> None:
         super().__init__(f"Unknown node `{node}'")
         self.node = node
 
@@ -31,14 +42,13 @@ class HashRing:
     """Map objects onto nodes based on their consistent hash."""
 
     DEFAULT_PARTITION_NUMBER = 2**5
-
     DEFAULT_HASH_FUNCTION = 'md5'
 
     def __init__(
         self,
-        nodes,
-        partitions=DEFAULT_PARTITION_NUMBER,
-        hash_function=DEFAULT_HASH_FUNCTION,
+        nodes: Iterable[Node],
+        partitions: int = DEFAULT_PARTITION_NUMBER,
+        hash_function: str = DEFAULT_HASH_FUNCTION,
     ):
         """Create a new hashring.
 
@@ -55,34 +65,35 @@ class HashRing:
                 )
             )
 
-        self.nodes = {}
-        self._ring = dict()
-        self._partitions = []
-        self._partition_number = partitions
+        self.nodes: dict[Node, Weight] = {}
+        self._ring: dict[int, Node] = {}
+        self._partitions: list[int] = []
+        self._partition_number: int = partitions
         self._hash_function = hash_function
 
         self.add_nodes(set(nodes))
 
-    def add_node(self, node, weight=1):
+    def add_node(self, node: Node, weight: Weight = 1) -> None:
         """Add a node to the hashring.
 
         :param node: Node to add.
         :param weight: How many resource instances this node should manage
-        compared to the other nodes (default 1). Higher weights will be
-        assigned more resources. Three nodes A, B and C with weights 1, 2 and 3
-        will each handle 1/6, 1/3 and 1/2 of the resources, respectively.
-
+            compared to the other nodes (default 1). Higher weights will be
+            assigned more resources. Three nodes A, B and C with weights 1, 2
+            and 3 will each handle 1/6, 1/3 and 1/2 of the resources,
+            respectively.
         """
-        return self.add_nodes((node,), weight)
+        self.add_nodes((node,), weight)
 
-    def add_nodes(self, nodes, weight=1):
+    def add_nodes(self, nodes: Iterable[Node], weight: Weight = 1) -> None:
         """Add nodes to the hashring with equal weight
 
         :param nodes: Nodes to add.
         :param weight: How many resource instances this node should manage
-        compared to the other nodes (default 1). Higher weights will be
-        assigned more resources. Three nodes A, B and C with weights 1, 2 and 3
-        will each handle 1/6, 1/3 and 1/2 of the resources, respectively.
+            compared to the other nodes (default 1). Higher weights will be
+            assigned more resources. Three nodes A, B and C with weights 1, 2
+            and 3 will each handle 1/6, 1/3 and 1/2 of the resources,
+            respectively.
         """
         for node in nodes:
             key = utils.to_binary(node, 'utf-8')
@@ -98,7 +109,7 @@ class HashRing:
 
         self._partitions = sorted(self._ring.keys())
 
-    def remove_node(self, node):
+    def remove_node(self, node: Node) -> None:
         """Remove a node from the hashring.
 
         Raises py:exc:`UnknownNode`
@@ -122,10 +133,10 @@ class HashRing:
         self._partitions = sorted(self._ring.keys())
 
     @staticmethod
-    def _hash2int(key):
+    def _hash2int(key: _hashlib.HASH) -> int:
         return int(key.hexdigest(), 16)
 
-    def _get_partition(self, data):
+    def _get_partition(self, data: bytes) -> int:
         if self._hash_function == 'md5':
             hashed_key = self._hash2int(
                 hashlib.md5(data, usedforsecurity=False)
@@ -135,10 +146,15 @@ class HashRing:
         position = bisect.bisect(self._partitions, hashed_key)
         return position if position < len(self._partitions) else 0
 
-    def _get_node(self, partition):
+    def _get_node(self, partition: int) -> Node:
         return self._ring[self._partitions[partition]]
 
-    def get_nodes(self, data, ignore_nodes=None, replicas=1):
+    def get_nodes(
+        self,
+        data: bytes,
+        ignore_nodes: Iterable[Node] | None = None,
+        replicas: int = 1,
+    ) -> set[Node]:
         """Get the set of nodes which the supplied data map onto.
 
         :param data: A byte identifier to be mapped across the ring.
@@ -153,7 +169,7 @@ class HashRing:
 
         replicas = min(replicas, len(candidates))
 
-        nodes = set()
+        nodes: set[Node] = set()
         while len(nodes) < replicas:
             node = self._get_node(partition)
             if node not in ignore_nodes:
@@ -163,8 +179,8 @@ class HashRing:
             )
         return nodes
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: bytes) -> Node:
         return self.get_nodes(key)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._partitions)
