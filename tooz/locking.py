@@ -12,50 +12,81 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
+from __future__ import annotations
+
 import abc
+import types
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 import tooz
 from tooz import coordination
 
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
-class _LockProxy:
-    def __init__(self, lock, *args, **kwargs):
+
+LockT = TypeVar('LockT', bound='Lock')
+
+
+class _LockProxy(Generic[LockT]):
+    def __init__(self, lock: LockT, *args: Any, **kwargs: Any):
         self.lock = lock
         self.args = args
         self.kwargs = kwargs
 
-    def __enter__(self):
+    def __enter__(self) -> LockT:
         return self.lock.__enter__(*self.args, **self.kwargs)
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: types.TracebackType | None,
+    ) -> None:
         self.lock.__exit__(exc_type, exc_val, exc_tb)
 
 
 class Lock(metaclass=abc.ABCMeta):
-    def __init__(self, name):
+    def __init__(self, name: bytes) -> None:
         if not name:
             raise ValueError("Locks must be provided a name")
         self._name = name
 
     @property
-    def name(self):
+    def name(self) -> bytes:
         return self._name
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Any, **kwargs: Any) -> _LockProxy[Self]:
         return _LockProxy(self, *args, **kwargs)
 
-    def __enter__(self, *args, **kwargs):
-        acquired = self.acquire(*args, **kwargs)
+    def __enter__(
+        self,
+        blocking: bool = True,
+        shared: bool = False,
+        timeout: int | None = None,
+    ) -> Self:
+        acquired = self.acquire(blocking, shared, timeout)
         if not acquired:
-            msg = f'Acquiring lock {self.name} failed'
+            name = (
+                self.name.decode()
+                if isinstance(self.name, bytes)
+                else self.name
+            )
+            msg = f'Acquiring lock {name} failed'
             raise coordination.LockAcquireFailed(msg)
 
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: types.TracebackType | None,
+    ) -> None:
         self.release()
 
-    def is_still_owner(self):
+    def is_still_owner(self) -> bool:
         """Checks if the lock is still owned by the acquiree.
 
         :returns: returns true if still acquired (false if not) and
@@ -65,7 +96,7 @@ class Lock(metaclass=abc.ABCMeta):
         raise tooz.NotImplemented("not implemented")
 
     @abc.abstractmethod
-    def release(self):
+    def release(self) -> bool:
         """Attempts to release the lock, returns true if released.
 
         The behavior of releasing a lock which was not acquired in the first
@@ -76,7 +107,7 @@ class Lock(metaclass=abc.ABCMeta):
         :rtype: bool
         """
 
-    def break_(self):
+    def break_(self) -> bool:
         """Forcefully release the lock.
 
         This is mostly used for testing purposes, to simulate an out of
@@ -93,7 +124,12 @@ class Lock(metaclass=abc.ABCMeta):
         raise tooz.NotImplemented("not implemented")
 
     @abc.abstractmethod
-    def acquire(self, blocking=True, shared=False, timeout=None):
+    def acquire(
+        self,
+        blocking: bool = True,
+        shared: bool = False,
+        timeout: int | None = None,
+    ) -> bool:
         """Attempts to acquire the lock.
 
         :param blocking: If True, blocks until the lock is acquired. If False,

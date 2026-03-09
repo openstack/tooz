@@ -43,8 +43,10 @@ class TestSherlockDriver(testcase.TestCase):
             autospec=True,
             return_value=mock.Mock(),
         ) as mock_acquire:
-            with lock(blocking_value, timeout):
-                mock_acquire.assert_called_once_with(blocking_value, timeout)
+            with lock(blocking_value, timeout=timeout):
+                mock_acquire.assert_called_once_with(
+                    blocking_value, False, timeout
+                )
         k8s_mock.assert_called_once_with(
             lock_name=mock.ANY, k8s_namespace='fake_name'
         )
@@ -64,7 +66,9 @@ class TestSherlockDriver(testcase.TestCase):
             return_value=mock.Mock(),
         ) as mock_acquire:
             with lock(blocking_value):
-                mock_acquire.assert_called_once_with(blocking_value)
+                mock_acquire.assert_called_once_with(
+                    blocking_value, False, None
+                )
         k8s_mock.assert_called_once_with(
             lock_name=mock.ANY, k8s_namespace='fake_name'
         )

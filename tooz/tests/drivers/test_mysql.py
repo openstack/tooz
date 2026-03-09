@@ -101,7 +101,7 @@ class TestMySQLDriver(testcase.TestCase):
         ) as mock_acquire:
             with lock(blocking_value, timeout=timeout):
                 mock_acquire.assert_called_once_with(
-                    blocking_value, timeout=timeout
+                    blocking_value, False, timeout
                 )
 
     @mock.patch("pymysql.Connect")
@@ -122,4 +122,6 @@ class TestMySQLDriver(testcase.TestCase):
             lock, 'acquire', wraps=lock.acquire, autospec=True
         ) as mock_acquire:
             with lock(blocking_value):
-                mock_acquire.assert_called_once_with(blocking_value)
+                mock_acquire.assert_called_once_with(
+                    blocking_value, False, None
+                )

@@ -1025,7 +1025,9 @@ class TestAPI(tests.TestWithCoordinator):
             lock, 'acquire', wraps=lock.acquire, autospec=True
         ) as mock_acquire:
             with lock(blocking_value):
-                mock_acquire.assert_called_once_with(blocking_value)
+                mock_acquire.assert_called_once_with(
+                    blocking_value, False, None
+                )
 
     def test_lock_context_manager_acquire_argument_timeout(self):
         name = tests.get_random_uuid()
