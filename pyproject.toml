@@ -95,6 +95,7 @@ exclude = "(?x)(doc | examples | releasenotes | tools)"
 [[tool.mypy.overrides]]
 module = [
     "tooz.utils",
+    "tooz._retry",
 ]
 disallow_untyped_calls = true
 disallow_untyped_defs = true
