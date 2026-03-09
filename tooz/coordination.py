@@ -239,7 +239,7 @@ class CoordinationDriver:
     backing store.
     """
 
-    CHARACTERISTICS = ()
+    CHARACTERISTICS: tuple[Characteristics, ...] = ()
     """
     Tuple of :py:class:`~tooz.coordination.Characteristics` introspectable
     enum member(s) that can be used to interogate how this driver works.
@@ -679,7 +679,7 @@ class CoordinatorResult(CoordAsyncResult):
 
 
 class CoordinationDriverWithExecutor(CoordinationDriver):
-    EXCLUDE_OPTIONS = None
+    EXCLUDE_OPTIONS: frozenset[str] | None = None
 
     def __init__(self, member_id, parsed_url, options):
         self._options = utils.collapse(options, exclude=self.EXCLUDE_OPTIONS)
