@@ -93,6 +93,13 @@ disable_error_code = ["import-untyped"]
 exclude = "(?x)(doc | examples | releasenotes | tools)"
 
 [[tool.mypy.overrides]]
+module = [
+    "tooz.utils",
+]
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
 module = ["tooz.tests.*"]
 disallow_untyped_calls = false
 disallow_untyped_defs = false

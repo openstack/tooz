@@ -12,10 +12,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from __future__ import annotations
+
 import base64
+from collections.abc import Callable, Collection, Sequence
+from concurrent import futures
 import datetime
 import operator
 import os
+from typing import TYPE_CHECKING, Any, NoReturn, ParamSpec, TypeVar
 
 import futurist
 import msgpack
@@ -24,14 +29,21 @@ from oslo_utils import excutils
 
 import tooz
 
+if TYPE_CHECKING:
+    from typing_extensions import Self
+
+
+P = ParamSpec('P')
+R = TypeVar('R')
+
 
 class Base64LockEncoder:
-    def __init__(self, keyspace_url, prefix=''):
+    def __init__(self, keyspace_url: str, prefix: str = '') -> None:
         self.keyspace_url = keyspace_url
         if prefix:
             self.keyspace_url += prefix
 
-    def check_and_encode(self, name):
+    def check_and_encode(self, name: str | bytes) -> str:
         if not isinstance(name, (str, bytes)):
             raise TypeError(
                 "Provided lock name is expected to be a string"
@@ -44,7 +56,7 @@ class Base64LockEncoder:
                 f"Invalid lock name due to encoding/decoding issue: {e}"
             )
 
-    def encode(self, name):
+    def encode(self, name: str | bytes) -> str:
         if isinstance(name, str):
             name = name.encode("ascii")
         enc_name = base64.urlsafe_b64encode(name)
@@ -64,15 +76,19 @@ class ProxyExecutor:
 
     DEFAULT_KIND = 'threaded'
 
-    def __init__(self, driver_name, default_executor_factory):
+    def __init__(
+        self,
+        driver_name: str,
+        default_executor_factory: Callable[[], futures.Executor],
+    ) -> None:
         self.default_executor_factory = default_executor_factory
         self.driver_name = driver_name
         self.started = False
-        self.executor = None
+        self.executor: futures.Executor | None = None
         self.internally_owned = True
 
     @classmethod
-    def build(cls, driver_name, options):
+    def build(cls, driver_name: str, options: dict[str, Any]) -> Self:
         default_executor_fact = cls.KIND_TO_FACTORY[cls.DEFAULT_KIND]
         if 'executor' in options:
             executor_kind = options['executor']
@@ -81,41 +97,45 @@ class ProxyExecutor:
             except KeyError:
                 executors_known = sorted(list(cls.KIND_TO_FACTORY))
                 raise tooz.ToozError(
-                    "Unknown executor"
-                    f" '{executor_kind}' provided, accepted values"
-                    f" are {executors_known}"
+                    f"Unknown executor '{executor_kind}' provided, "
+                    f"accepted values are {executors_known}"
                 )
         return cls(driver_name, default_executor_fact)
 
-    def start(self):
+    def start(self) -> None:
         if self.started:
             return
         self.executor = self.default_executor_factory()
         self.started = True
 
-    def stop(self):
+    def stop(self) -> None:
         executor = self.executor
         self.executor = None
         if executor is not None:
             executor.shutdown()
         self.started = False
 
-    def submit(self, cb, *args, **kwargs):
+    def submit(
+        self, cb: Callable[P, R], *args: P.args, **kwargs: P.kwargs
+    ) -> futures.Future[R]:
         if not self.started:
             raise tooz.ToozError(
-                f"{self.driver_name} driver asynchronous executor"
-                " has not been started"
+                f"{self.driver_name} driver asynchronous executor "
+                f"has not been started"
             )
+
+        assert self.executor is not None  # narrow type
+
         try:
             return self.executor.submit(cb, *args, **kwargs)
         except RuntimeError:
             raise tooz.ToozError(
                 f"{self.driver_name} driver asynchronous executor has"
-                " been shutdown"
+                f"been shutdown"
             )
 
 
-def safe_abs_path(rooted_at, *pieces):
+def safe_abs_path(rooted_at: str, *pieces: str) -> str:
     # Avoids the following junk...
     #
     # >>> import os
@@ -132,15 +152,25 @@ def safe_abs_path(rooted_at, *pieces):
     return path
 
 
-def convert_blocking(blocking, timeout=None):
+# TODO(stephenfin): Tighten the types here and start logging a deprecation
+# warning for non-boolean blocking values.
+def convert_blocking(
+    blocking: bool | float | str, timeout: float | None = None
+) -> tuple[bool, float | None]:
     """Converts a multi-type blocking variable into its derivatives."""
-    if not isinstance(blocking, bool):
-        timeout = float(blocking)
-        blocking = True
+    if isinstance(blocking, bool):
+        return blocking, timeout
+
+    timeout = float(blocking)
+    blocking = True
     return blocking, timeout
 
 
-def collapse(config, exclude=None, item_selector=operator.itemgetter(-1)):
+def collapse(
+    config: dict[str, Any],
+    exclude: Collection[str] | None = None,
+    item_selector: Callable[[Sequence[Any]], Any] = operator.itemgetter(-1),
+) -> dict[str, Any]:
     """Collapses config with keys and **list/tuple** values.
 
     NOTE(harlowja): The last item/index from the list/tuple value is selected
@@ -153,7 +183,7 @@ def collapse(config, exclude=None, item_selector=operator.itemgetter(-1)):
     if not config:
         return {}
     if exclude is None:
-        exclude = set()
+        exclude = frozenset()
     collapsed = {}
     for k, v in config.items():
         if isinstance(v, (tuple, list)):
@@ -167,7 +197,7 @@ def collapse(config, exclude=None, item_selector=operator.itemgetter(-1)):
     return collapsed
 
 
-def to_binary(text, encoding='ascii'):
+def to_binary(text: str | bytes, encoding: str = 'ascii') -> bytes:
     """Return the binary representation of string (if not already binary)."""
     if not isinstance(text, bytes):
         text = text.encode(encoding)
@@ -178,7 +208,9 @@ class SerializationError(tooz.ToozError):
     "Exception raised when serialization or deserialization breaks."
 
 
-def dumps(data, excp_cls=SerializationError):
+def dumps(
+    data: Any, excp_cls: type[tooz.ToozError] = SerializationError
+) -> bytes:
     """Serializes provided data using msgpack into a byte string."""
     try:
         return msgpackutils.dumps(data)
@@ -186,7 +218,9 @@ def dumps(data, excp_cls=SerializationError):
         raise_with_cause(excp_cls, str(e), cause=e)
 
 
-def loads(blob, excp_cls=SerializationError):
+def loads(
+    blob: bytes, excp_cls: type[tooz.ToozError] = SerializationError
+) -> Any:
     """Deserializes provided data using msgpack (from a prior byte string)."""
     try:
         return msgpackutils.loads(blob)
@@ -194,12 +228,18 @@ def loads(blob, excp_cls=SerializationError):
         raise_with_cause(excp_cls, str(e), cause=e)
 
 
-def millis_to_datetime(milliseconds):
+def millis_to_datetime(milliseconds: str | float) -> datetime.datetime:
     """Converts number of milliseconds (from epoch) into a datetime object."""
     return datetime.datetime.fromtimestamp(float(milliseconds) / 1000)
 
 
-def raise_with_cause(exc_cls, message, *args, **kwargs):
+# https://review.opendev.org/c/openstack/oslo.utils/+/979690
+def raise_with_cause(  # type: ignore[misc]
+    exc_cls: type[tooz.ToozError],
+    message: str,
+    *args: Any,
+    **kwargs: Any,
+) -> NoReturn:
     """Helper to raise + chain exceptions (when able) and associate a *cause*.
 
     **For internal usage only.**

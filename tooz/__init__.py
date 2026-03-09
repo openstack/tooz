@@ -26,7 +26,9 @@ class ToozError(Exception):
 
     """
 
-    def __init__(self, message, cause=None):
+    def __init__(
+        self, message: str, cause: BaseException | None = None
+    ) -> None:
         super().__init__(message)
         self.cause = cause
 
