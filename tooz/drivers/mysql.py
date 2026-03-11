@@ -38,7 +38,7 @@ class MySQLLock(locking.Lock):
 
     def acquire(self, blocking=True, shared=False, timeout=None):
         if shared:
-            raise tooz.NotImplemented
+            raise tooz.NotImplemented("not implemented")
 
         @_retry.retry(stop_max_delay=blocking)
         def _lock(timeout):
@@ -167,27 +167,27 @@ class MySQLDriver(coordination.CoordinationDriver):
 
     @staticmethod
     def watch_join_group(group_id, callback):
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @staticmethod
     def unwatch_join_group(group_id, callback):
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @staticmethod
     def watch_leave_group(group_id, callback):
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @staticmethod
     def unwatch_leave_group(group_id, callback):
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @staticmethod
     def watch_elected_as_leader(group_id, callback):
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @staticmethod
     def unwatch_elected_as_leader(group_id, callback):
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @staticmethod
     def get_connection(parsed_url, options, defer_connect=False):

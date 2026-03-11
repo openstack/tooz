@@ -104,7 +104,7 @@ class EtcdLock(locking.Lock):
 
     def acquire(self, blocking=True, shared=False, timeout=None):
         if shared:
-            raise tooz.NotImplemented
+            raise tooz.NotImplemented("not implemented")
 
         blocking, timeout = utils.convert_blocking(blocking, timeout)
         if timeout is not None:
@@ -288,13 +288,13 @@ class EtcdDriver(coordination.CoordinationDriver):
         return self.lock_timeout
 
     def watch_join_group(self, group_id, callback):
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     def unwatch_join_group(self, group_id, callback):
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     def watch_leave_group(self, group_id, callback):
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     def unwatch_leave_group(self, group_id, callback):
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")

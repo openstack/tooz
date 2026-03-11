@@ -64,9 +64,9 @@ class ConsulLock(locking.Lock):
 
     def acquire(self, blocking=True, shared=False, timeout=None):
         if shared:
-            raise tooz.NotImplemented
+            raise tooz.NotImplemented("not implemented")
         if timeout:
-            raise tooz.NotImplemented
+            raise tooz.NotImplemented("not implemented")
 
         @_retry.retry(stop_max_delay=blocking)
         @_translate_failures
@@ -512,11 +512,11 @@ class ConsulDriver(
 
     @staticmethod
     def watch_elected_as_leader(group_id, callback):
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @staticmethod
     def unwatch_elected_as_leader(group_id, callback):
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
 
 ConsulFutureResult = functools.partial(
