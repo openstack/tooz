@@ -25,9 +25,11 @@ from testtools import testcase
 
 import tooz
 import tooz.coordination
+from tooz.drivers import etcd3gw
 from tooz.drivers import file
 from tooz.drivers import ipc
 from tooz.drivers import memcached
+from tooz.drivers import redis
 from tooz import tests
 
 
@@ -120,7 +122,9 @@ class TestAPI(tests.TestWithCoordinator):
             (file.FileDriver, ipc.IPCDriver, memcached.MemcachedDriver),
         ):
             self.assertIn(str_group_id, groups)
-            found = next(g for g in groups if g == str_group_id)
+            # this is a list of strings but the hints say list of bytes
+            # (intentionally)
+            found = next(g for g in groups if g == str_group_id)  # type: ignore[comparison-overlap]
             self.assertIsInstance(found, str)
         else:
             self.assertIn(bytes_group_id, groups)
@@ -177,14 +181,11 @@ class TestAPI(tests.TestWithCoordinator):
         all_group_ids = self._coord.get_groups().get()
         self.assertIn(self.group_id, all_group_ids)
         self._coord.join_group(self.group_id).get()
-        member_list = self._coord.get_members(self.group_id).get()
-        self.assertIn(self.member_id, member_list)
         member_ids = self._coord.get_members(self.group_id).get()
         self.assertIn(self.member_id, member_ids)
         self._coord.leave_group(self.group_id).get()
-        new_member_objects = self._coord.get_members(self.group_id).get()
-        new_member_list = [member.member_id for member in new_member_objects]
-        self.assertNotIn(self.member_id, new_member_list)
+        member_ids = self._coord.get_members(self.group_id).get()
+        self.assertNotIn(self.member_id, member_ids)
 
     def test_leave_nonexistent_group(self):
         all_group_ids = self._coord.get_groups().get()
@@ -256,7 +257,9 @@ class TestAPI(tests.TestWithCoordinator):
             (file.FileDriver, ipc.IPCDriver, memcached.MemcachedDriver),
         ):
             self.assertIn(str_member_id, members)
-            found = next(m for m in members if m == str_member_id)
+            # this is a list of strings but the hints say list of bytes
+            # (intentionally)
+            found = next(m for m in members if m == str_member_id)  # type: ignore[comparison-overlap]
             self.assertIsInstance(found, str)
         else:
             self.assertIn(bytes_member_id, members)
@@ -523,7 +526,7 @@ class TestAPI(tests.TestWithCoordinator):
         # driver that are not able to see all events, so we join, wait for
         # the join to be seen, and then we leave, and wait for the leave to
         # be seen.
-        self._coord.watch_join_group(self.group_id, lambda children: True)
+        self._coord.watch_join_group(self.group_id, lambda children: None)
         self._coord.watch_leave_group(self.group_id, self._set_event)
 
         # Join and leave the group
@@ -555,11 +558,20 @@ class TestAPI(tests.TestWithCoordinator):
         self.assertEqual([], self.events)
 
     def test_watch_join_group_disappear(self):
-        if not hasattr(self._coord, '_destroy_group'):
+        if not isinstance(
+            self._coord,
+            (
+                etcd3gw.Etcd3Driver,
+                memcached.MemcachedDriver,
+                redis.RedisDriver,
+            ),
+        ):
             self.skipTest(
-                "This test only works with coordinators"
-                " that have the ability to destroy groups."
+                "This test only works with coordinators "
+                "that have the ability to destroy groups."
             )
+            # https://github.com/testing-cabal/testtools/pull/585
+            raise Exception()
 
         self._coord.create_group(self.group_id).get()
         self._coord.watch_join_group(self.group_id, self._set_event)
@@ -620,12 +632,9 @@ class TestAPI(tests.TestWithCoordinator):
         # Only works for clients that have access to the groups they are part
         # of, to ensure that after we got booted out by client3 that this
         # client now no longer believes its part of the group.
-        cached_run = (
-            tooz.coordination.CoordinationDriverCachedRunWatchers.run_watchers
-        )
-        if (
-            hasattr(self._coord, '_joined_groups')
-            and self._coord.run_watchers == cached_run
+        if isinstance(
+            self._coord,
+            tooz.coordination.CoordinationDriverCachedRunWatchers,
         ):
             self.assertIn(self.group_id, self._coord._joined_groups)
             self._coord.run_watchers()
@@ -1105,7 +1114,7 @@ class TestHook(testcase.TestCase):
         self.hooks = tooz.coordination.Hooks()
         self.triggered = False
 
-    def _trigger(self):
+    def _trigger(self, event: object = None) -> None:
         self.triggered = True
 
     def test_register_hook(self):

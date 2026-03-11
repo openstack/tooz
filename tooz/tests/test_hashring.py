@@ -72,7 +72,7 @@ class HashRingTestCase(testcase.TestCase):
         self.assertEqual(2**5 * len(nodes), len(ring))
 
     def test_add_node_bytes(self):
-        nodes = {'foo', 'bar'}
+        nodes: set[str | bytes] = {'foo', 'bar'}
         ring = hashring.HashRing(nodes)
         self.assertEqual(nodes, set(ring.nodes.keys()))
         self.assertEqual(2**5 * len(nodes), len(ring))
