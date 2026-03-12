@@ -85,9 +85,9 @@ class MemcachedLock(locking.Lock):
 
     def acquire(self, blocking=True, shared=False, timeout=None):
         if shared:
-            raise tooz.NotImplemented
+            raise tooz.NotImplemented("not implemented")
         if timeout is not None:
-            raise tooz.Timeout
+            raise tooz.NotImplemented("not implemented")
 
         @_retry.retry(stop_max_delay=blocking)
         @_translate_failures

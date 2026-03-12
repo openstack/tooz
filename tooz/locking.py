@@ -62,7 +62,7 @@ class Lock(metaclass=abc.ABCMeta):
                   false if the lock was never acquired in the first place
                   or raises ``NotImplemented`` if not implemented.
         """
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @abc.abstractmethod
     def release(self):
@@ -90,7 +90,7 @@ class Lock(metaclass=abc.ABCMeta):
         :returns: returns true if forcefully broken (false if not)
                   or raises ``NotImplemented`` if not implemented.
         """
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @abc.abstractmethod
     def acquire(self, blocking=True, shared=False, timeout=None):

@@ -305,12 +305,12 @@ class CoordinationDriver:
         This may also activate :py:meth:`.run_elect_coordinator` (depending
         on driver implementation).
         """
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @staticmethod
     def run_elect_coordinator():
         """Try to leader elect this coordinator & activate hooks on success."""
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     def watch_join_group(self, group_id, callback):
         """Call a function when group_id sees a new member joined.
@@ -413,7 +413,7 @@ class CoordinationDriver:
 
         :param group_id: The group where we don't want to be a leader anymore
         """
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @property
     def is_started(self):
@@ -480,7 +480,7 @@ class CoordinationDriver:
         :returns: None
         :rtype: CoordAsyncResult
         """
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @staticmethod
     def get_groups():
@@ -489,7 +489,7 @@ class CoordinationDriver:
         :returns: the list of all created group ids
         :rtype: CoordAsyncResult
         """
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @staticmethod
     def join_group(group_id, capabilities=b""):
@@ -502,7 +502,7 @@ class CoordinationDriver:
         :returns: None
         :rtype: CoordAsyncResult
         """
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @_retry.retry()
     def join_group_create(self, group_id, capabilities=b""):
@@ -540,7 +540,7 @@ class CoordinationDriver:
         :returns: None
         :rtype: CoordAsyncResult
         """
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @staticmethod
     def delete_group(group_id):
@@ -551,7 +551,7 @@ class CoordinationDriver:
         :returns: Result
         :rtype: CoordAsyncResult
         """
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @staticmethod
     def get_members(group_id):
@@ -560,7 +560,7 @@ class CoordinationDriver:
         :returns: set of all member ids in the specified group
         :rtype: CoordAsyncResult
         """
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @staticmethod
     def get_member_capabilities(group_id, member_id):
@@ -573,7 +573,7 @@ class CoordinationDriver:
         :returns: capabilities of a member
         :rtype: CoordAsyncResult
         """
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @staticmethod
     def get_member_info(group_id, member_id):
@@ -586,7 +586,7 @@ class CoordinationDriver:
         :returns: capabilities and statistics of a member
         :rtype: CoordAsyncResult
         """
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @staticmethod
     def update_capabilities(group_id, capabilities):
@@ -599,7 +599,7 @@ class CoordinationDriver:
         :returns: None
         :rtype: CoordAsyncResult
         """
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @staticmethod
     def get_leader(group_id):
@@ -609,7 +609,7 @@ class CoordinationDriver:
         :returns: the leader
         :rtype: CoordAsyncResult
         """
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @staticmethod
     def get_lock(name):
@@ -620,9 +620,8 @@ class CoordinationDriver:
 
         :param name: The lock name that is used to identify it across all
                      nodes.
-
         """
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @staticmethod
     def heartbeat():

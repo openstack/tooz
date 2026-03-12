@@ -46,7 +46,7 @@ class KubernetesLock(locking.Lock):
 
     def acquire(self, blocking=True, shared=False, expire=None):
         if shared:
-            raise tooz.NotImplemented
+            raise tooz.NotImplemented("not implemented")
         blocking, timeout = utils.convert_blocking(blocking)
         sherlock.configure(
             expire=expire, timeout=int(timeout) if timeout else timeout

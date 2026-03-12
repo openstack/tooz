@@ -72,7 +72,7 @@ class IPCLock(locking.Lock):
 
     def acquire(self, blocking=True, shared=False, timeout=None):
         if shared:
-            raise tooz.NotImplemented
+            raise tooz.NotImplemented("not implemented")
 
         if (
             blocking is not True

@@ -76,7 +76,7 @@ class Etcd3Lock(locking.Lock):
     @_translate_failures
     def acquire(self, blocking=True, shared=False, timeout=None):
         if shared:
-            raise tooz.NotImplemented
+            raise tooz.NotImplemented("not implemented")
         if timeout is None:
             timeout = self._timeout
 
@@ -481,8 +481,8 @@ class Etcd3Driver(
 
     @staticmethod
     def watch_elected_as_leader(group_id, callback):
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")
 
     @staticmethod
     def unwatch_elected_as_leader(group_id, callback):
-        raise tooz.NotImplemented
+        raise tooz.NotImplemented("not implemented")

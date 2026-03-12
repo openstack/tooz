@@ -100,7 +100,7 @@ class RedisLock(locking.Lock):
     @_handle_failures()
     def acquire(self, blocking=True, shared=False, timeout=None):
         if shared:
-            raise tooz.NotImplemented
+            raise tooz.NotImplemented("not implemented")
         blocking, timeout = utils.convert_blocking(blocking, timeout)
         acquired = self._lock.acquire(
             blocking=blocking, blocking_timeout=timeout
@@ -523,11 +523,9 @@ return 1
             )
             if not new_enough:
                 raise tooz.NotImplemented(
-                    "Redis version greater than or"
-                    f" equal to '{self.MIN_VERSION}' is required"
-                    f" to use this driver; '{redis_version}' is"
-                    " being used which is not new"
-                    " enough"
+                    f"Redis version greater than or equal to "
+                    f"'{self.MIN_VERSION}' is required to use this driver; "
+                    f"'{redis_version}' is being used which is not new enough"
                 )
             tpl_params = {
                 'group_existence_value': self.GROUP_EXISTS_VALUE,
