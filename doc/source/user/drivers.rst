@@ -202,10 +202,9 @@ Etcd3 Gateway
 
 **Summary:**
 
-The etcd3gw driver is a driver providing only distributed locks (for now)
-and is based on the `etcd server`_ supported key/value storage and
-associated primitives. It relies on the `GRPC Gateway`_ to provide HTTP access
-to etcd3.
+The etcd3gw driver is a driver providing distributed locking and grouping APIs
+and is based on the `etcd server`_ supported key/value storage and associated
+primitives. It relies on the `GRPC Gateway`_ to provide HTTP access to etcd3.
 
 Consul
 ------
