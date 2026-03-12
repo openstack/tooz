@@ -96,6 +96,7 @@ exclude = "(?x)(doc | examples | releasenotes | tools)"
 module = [
     "tooz.coordination",
     "tooz.drivers.etcd3gw",
+    "tooz.drivers.mysql",
     "tooz.hashring",
     "tooz.locking",
     "tooz.partitioner",
