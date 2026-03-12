@@ -18,7 +18,7 @@ import struct
 import time
 
 import msgpack
-import sysv_ipc
+import sysv_ipc  # type: ignore[import-not-found]
 
 import tooz
 from tooz import coordination

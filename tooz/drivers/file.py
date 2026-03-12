@@ -215,7 +215,9 @@ class FileDriver(
     """This routine is used to hash a member (or group) id into a filesystem
        safe name that can be used for member lookup and group joining."""
 
-    _barriers = weakref.WeakValueDictionary()
+    _barriers: weakref.WeakValueDictionary[str, _Barrier] = (
+        weakref.WeakValueDictionary()
+    )
     """
     Barriers shared among all file driver locks, this is required
     since interprocess locking is not thread aware, so we must add the
