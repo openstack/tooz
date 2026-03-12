@@ -13,11 +13,15 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from __future__ import annotations
+
+from collections.abc import Generator
 import contextlib
 import hashlib
 import logging
-
 import psycopg2
+import psycopg2.extensions
+from typing import Any, cast
 
 import tooz
 from tooz import _retry
@@ -53,7 +57,7 @@ _DIAGNOSTICS_ATTRS = tuple(
 )
 
 
-def _format_exception(e):
+def _format_exception(e: Exception) -> str:
     lines = [
         f"{type(e).__name__}: {str(e).strip()}",
     ]
@@ -78,7 +82,9 @@ def _format_exception(e):
 
 
 @contextlib.contextmanager
-def _translating_cursor(conn):
+def _translating_cursor(
+    conn: psycopg2.extensions.connection,
+) -> Generator[psycopg2.extensions.cursor, None, None]:
     try:
         with conn.cursor() as cur:
             yield cur
@@ -89,24 +95,32 @@ def _translating_cursor(conn):
 class PostgresLock(locking.Lock):
     """A PostgreSQL based lock."""
 
-    def __init__(self, name, parsed_url, options):
-        super().__init__(name)
+    def __init__(
+        self, member_id: bytes, parsed_url: Any, options: dict[str, Any]
+    ) -> None:
+        super().__init__(member_id)
         self.acquired = False
-        self._conn = None
+        self._conn: psycopg2.extensions.connection | None = None
         self._parsed_url = parsed_url
         self._options = options
         h = hashlib.md5(usedforsecurity=False)
-        h.update(name)
+        h.update(member_id)
         self.key = h.digest()[0:2]
 
-    def acquire(self, blocking=True, shared=False, timeout=None):
+    def acquire(
+        self,
+        blocking: bool = True,
+        shared: bool = False,
+        timeout: int | None = None,
+    ) -> bool:
         if shared:
             raise tooz.NotImplemented("not implemented")
+
         if timeout is not None:
             raise tooz.NotImplemented("not implemented")
 
         @_retry.retry(stop_max_delay=blocking)
-        def _lock():
+        def _lock() -> bool:
             # NOTE(sileht) One the same session the lock is not exclusive
             # so we track it internally if the process already has the lock.
             if self.acquired is True:
@@ -129,7 +143,8 @@ class PostgresLock(locking.Lock):
                     cur.execute(
                         "SELECT pg_try_advisory_lock(%s, %s);", self.key
                     )
-                    if cur.fetchone()[0] is True:
+                    row = cur.fetchone()
+                    if row is not None and row[0] is True:
                         self.acquired = True
                         return True
                     elif blocking is False:
@@ -145,9 +160,11 @@ class PostgresLock(locking.Lock):
                 self._conn.close()
             raise
 
-    def release(self):
+    def release(self) -> bool:
         if not self.acquired:
             return False
+
+        assert self._conn is not None  # narrow type
 
         with _translating_cursor(self._conn) as cur:
             cur.execute("SELECT pg_advisory_unlock(%s, %s);", self.key)
@@ -156,7 +173,7 @@ class PostgresLock(locking.Lock):
         self._conn.close()
         return True
 
-    def __del__(self):
+    def __del__(self) -> None:
         if self.acquired:
             LOG.warning("unreleased lock %s garbage collected", self.name)
 
@@ -187,41 +204,70 @@ class PostgresDriver(coordination.CoordinationDriver):
     enum member(s) that can be used to interogate how this driver works.
     """
 
-    def __init__(self, member_id, parsed_url, options):
+    def __init__(
+        self, member_id: bytes, parsed_url: Any, options: Any
+    ) -> None:
         """Initialize the PostgreSQL driver."""
         super().__init__(member_id, parsed_url, options)
         self._parsed_url = parsed_url
         self._options = utils.collapse(options)
 
-    def _start(self):
+    def _start(self) -> None:
         self._conn = self.get_connection(self._parsed_url, self._options)
 
-    def _stop(self):
+    def _stop(self) -> None:
         self._conn.close()
 
-    def get_lock(self, name):
+    def get_lock(self, name: bytes) -> PostgresLock:
         return PostgresLock(name, self._parsed_url, self._options)
 
-    def watch_join_group(self, group_id, callback):
+    def watch_join_group(
+        self,
+        group_id: bytes,
+        callback: coordination.EventCallback[coordination.MemberJoinedGroup],
+    ) -> None:
         raise tooz.NotImplemented("not implemented")
 
-    def unwatch_join_group(self, group_id, callback):
+    def unwatch_join_group(
+        self,
+        group_id: bytes,
+        callback: coordination.EventCallback[coordination.MemberJoinedGroup],
+    ) -> None:
         raise tooz.NotImplemented("not implemented")
 
-    def watch_leave_group(self, group_id, callback):
+    def watch_leave_group(
+        self,
+        group_id: bytes,
+        callback: coordination.EventCallback[coordination.MemberLeftGroup],
+    ) -> None:
         raise tooz.NotImplemented("not implemented")
 
-    def unwatch_leave_group(self, group_id, callback):
+    def unwatch_leave_group(
+        self,
+        group_id: bytes,
+        callback: coordination.EventCallback[coordination.MemberLeftGroup],
+    ) -> None:
         raise tooz.NotImplemented("not implemented")
 
-    def watch_elected_as_leader(self, group_id, callback):
+    def watch_elected_as_leader(
+        self,
+        group_id: bytes,
+        callback: coordination.EventCallback[coordination.LeaderElected],
+    ) -> None:
         raise tooz.NotImplemented("not implemented")
 
-    def unwatch_elected_as_leader(self, group_id, callback):
+    def unwatch_elected_as_leader(
+        self,
+        group_id: bytes,
+        callback: coordination.EventCallback[coordination.LeaderElected],
+    ) -> None:
         raise tooz.NotImplemented("not implemented")
 
+    # the connection object returned by psycopg2 is not part of the public API
     @staticmethod
-    def get_connection(parsed_url, options):
+    def get_connection(
+        parsed_url: Any, options: Any
+    ) -> psycopg2.extensions.connection:
         host = options.get("host") or parsed_url.hostname
         port = options.get("port") or parsed_url.port
         dbname = options.get("dbname") or parsed_url.path[1:]
@@ -232,8 +278,11 @@ class PostgresDriver(coordination.CoordinationDriver):
             kwargs["password"] = parsed_url.password
 
         try:
-            return psycopg2.connect(
-                host=host, port=port, database=dbname, **kwargs
+            return cast(
+                psycopg2.extensions.connection,
+                psycopg2.connect(
+                    host=host, port=port, database=dbname, **kwargs
+                ),
             )
         except psycopg2.Error as e:
             utils.raise_with_cause(

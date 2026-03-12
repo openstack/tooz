@@ -97,6 +97,7 @@ module = [
     "tooz.coordination",
     "tooz.drivers.etcd3gw",
     "tooz.drivers.mysql",
+    "tooz.drivers.pgsql",
     "tooz.hashring",
     "tooz.locking",
     "tooz.partitioner",
