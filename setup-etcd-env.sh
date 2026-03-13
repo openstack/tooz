@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# Invoked by run-tests.sh
+
 set -eux
 if [ -z "$(which etcd)" ]; then
     ETCD_VERSION=${ETCD_VERSION:-3.5.21}
