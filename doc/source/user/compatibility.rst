@@ -31,8 +31,6 @@ Driver support
      - Supported
    * - :py:class:`~tooz.drivers.consul.ConsulDriver`
      - Yes
-   * - :py:class:`~tooz.drivers.etcd.EtcdDriver`
-     - Yes
    * - :py:class:`~tooz.drivers.etcd3gw.Etcd3Driver`
      - Yes
    * - :py:class:`~tooz.drivers.file.FileDriver`
@@ -73,8 +71,6 @@ Driver support
      - Supported
    * - :py:class:`~tooz.drivers.consul.ConsulDriver`
      - No
-   * - :py:class:`~tooz.drivers.etcd.EtcdDriver`
-     - No
    * - :py:class:`~tooz.drivers.etcd3gw.Etcd3Driver`
      - No
    * - :py:class:`~tooz.drivers.file.FileDriver`
@@ -111,8 +107,6 @@ Driver support
    * - Driver
      - Supported
    * - :py:class:`~tooz.drivers.consul.ConsulDriver`
-     - Yes
-   * - :py:class:`~tooz.drivers.etcd.EtcdDriver`
      - Yes
    * - :py:class:`~tooz.drivers.etcd3gw.Etcd3Driver`
      - Yes

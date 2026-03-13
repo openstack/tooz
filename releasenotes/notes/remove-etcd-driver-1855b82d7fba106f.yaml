@@ -1,0 +1,6 @@
+---
+upgrade:
+  - |
+    The etcd driver has been removed. It only supported the v2 API, which was
+    removed in etcd 3.6. Use the etcd3gw driver instead, which supports the
+    v3 API.

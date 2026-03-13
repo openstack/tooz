@@ -175,21 +175,6 @@ Considerations
 - Does **not** work when MySQL replicates from one server to another (locks
   are local to the server that they were created from).
 
-Etcd
-----
-
-**Driver:**  :py:class:`tooz.drivers.etcd.EtcdDriver`
-
-**Characteristics:** :py:attr:`tooz.drivers.etcd.EtcdDriver.CHARACTERISTICS`
-
-**Entrypoint name:** ``etcd``
-
-**Summary:**
-
-The etcd driver is a driver providing only distributed locks (for now)
-and is based on the `etcd server`_ supported key/value storage and
-associated primitives.
-
 Etcd3 Gateway
 -------------
 
