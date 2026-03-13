@@ -130,10 +130,17 @@ class MemberJoinedGroup(Event):
         self.member_id = member_id
 
     def __repr__(self):
-        return (
-            f"<{self.__class__.__name__}: "
-            f"group {self.group_id}: +member {self.member_id}>"
+        group = (
+            self.group_id.decode()
+            if isinstance(self.group_id, bytes)
+            else self.group_id
         )
+        member = (
+            self.member_id.decode()
+            if isinstance(self.member_id, bytes)
+            else self.member_id
+        )
+        return f"<{self.__class__.__name__}: group {group}: +member {member}>"
 
 
 class MemberLeftGroup(Event):
@@ -144,10 +151,17 @@ class MemberLeftGroup(Event):
         self.member_id = member_id
 
     def __repr__(self):
-        return (
-            f"<{self.__class__.__name__}: "
-            f"group {self.group_id}: -member {self.member_id}>"
+        group = (
+            self.group_id.decode()
+            if isinstance(self.group_id, bytes)
+            else self.group_id
         )
+        member = (
+            self.member_id.decode()
+            if isinstance(self.member_id, bytes)
+            else self.member_id
+        )
+        return f"<{self.__class__.__name__}: group {group}: -member {member}>"
 
 
 class LeaderElected(Event):
@@ -849,43 +863,66 @@ class LockAcquireFailed(tooz.ToozError):
 class GroupNotCreated(tooz.ToozError):
     """Exception raised when the caller request an nonexistent group."""
 
-    def __init__(self, group_id):
-        self.group_id = group_id
-        super().__init__(f"Group {group_id} does not exist")
+    # TODO(stephenfin): Make this only accept str
+    def __init__(self, group_id: str | bytes) -> None:
+        self.group_id = (
+            group_id.decode() if isinstance(group_id, bytes) else group_id
+        )
+        super().__init__(f"Group {self.group_id} does not exist")
 
 
 class GroupAlreadyExist(tooz.ToozError):
     """Exception raised trying to create an already existing group."""
 
-    def __init__(self, group_id):
-        self.group_id = group_id
-        super().__init__(f"Group {group_id} already exists")
+    # TODO(stephenfin): Make this only accept str
+    def __init__(self, group_id: str | bytes) -> None:
+        self.group_id = (
+            group_id.decode() if isinstance(group_id, bytes) else group_id
+        )
+        super().__init__(f"Group {self.group_id} already exists")
 
 
 class MemberAlreadyExist(tooz.ToozError):
     """Exception raised trying to join a group already joined."""
 
-    def __init__(self, group_id, member_id):
-        self.group_id = group_id
-        self.member_id = member_id
-        super().__init__(f"Member {member_id} has already joined {group_id}")
+    # TODO(stephenfin): Make this only accept str
+    def __init__(self, group_id: str | bytes, member_id: str | bytes) -> None:
+        self.group_id = (
+            group_id.decode() if isinstance(group_id, bytes) else group_id
+        )
+        self.member_id = (
+            member_id.decode() if isinstance(member_id, bytes) else member_id
+        )
+        super().__init__(
+            f"Member {self.member_id} has already joined {self.group_id}"
+        )
 
 
 class MemberNotJoined(tooz.ToozError):
     """Exception raised trying to access a member not in a group."""
 
-    def __init__(self, group_id, member_id):
-        self.group_id = group_id
-        self.member_id = member_id
-        super().__init__(f"Member {member_id} has not joined {group_id}")
+    # TODO(stephenfin): Make this only accept str
+    def __init__(self, group_id: str | bytes, member_id: str | bytes) -> None:
+        self.group_id = (
+            group_id.decode() if isinstance(group_id, bytes) else group_id
+        )
+        self.member_id = (
+            member_id.decode() if isinstance(member_id, bytes) else member_id
+        )
+        super().__init__(
+            f"Member {self.member_id} has not joined {self.group_id}"
+        )
 
 
 class GroupNotEmpty(tooz.ToozError):
     "Exception raised when the caller try to delete a group with members."
 
-    def __init__(self, group_id):
-        self.group_id = group_id
-        super().__init__(f"Group {group_id} is not empty")
+    # TODO(stephenfin): Make this only accept str
+    def __init__(self, group_id: str | bytes) -> None:
+        self.group_id = (
+            group_id.decode() if isinstance(group_id, bytes) else group_id
+        )
+        super().__init__(f"Group {self.group_id} is not empty")
 
 
 class WatchCallbackNotFound(tooz.ToozError):
@@ -897,11 +934,13 @@ class WatchCallbackNotFound(tooz.ToozError):
     """
 
     def __init__(self, group_id, callback):
-        self.group_id = group_id
+        self.group_id = (
+            group_id.decode() if isinstance(group_id, bytes) else group_id
+        )
         self.callback = callback
         super().__init__(
             f"Callback {callback.__name__} is not registered on group "
-            f"{group_id}"
+            f"{self.group_id}"
         )
 
 
