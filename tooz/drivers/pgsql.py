@@ -202,28 +202,22 @@ class PostgresDriver(coordination.CoordinationDriver):
     def get_lock(self, name):
         return PostgresLock(name, self._parsed_url, self._options)
 
-    @staticmethod
-    def watch_join_group(group_id, callback):
+    def watch_join_group(self, group_id, callback):
         raise tooz.NotImplemented("not implemented")
 
-    @staticmethod
-    def unwatch_join_group(group_id, callback):
+    def unwatch_join_group(self, group_id, callback):
         raise tooz.NotImplemented("not implemented")
 
-    @staticmethod
-    def watch_leave_group(group_id, callback):
+    def watch_leave_group(self, group_id, callback):
         raise tooz.NotImplemented("not implemented")
 
-    @staticmethod
-    def unwatch_leave_group(group_id, callback):
+    def unwatch_leave_group(self, group_id, callback):
         raise tooz.NotImplemented("not implemented")
 
-    @staticmethod
-    def watch_elected_as_leader(group_id, callback):
+    def watch_elected_as_leader(self, group_id, callback):
         raise tooz.NotImplemented("not implemented")
 
-    @staticmethod
-    def unwatch_elected_as_leader(group_id, callback):
+    def unwatch_elected_as_leader(self, group_id, callback):
         raise tooz.NotImplemented("not implemented")
 
     @staticmethod

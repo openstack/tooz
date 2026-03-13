@@ -252,6 +252,5 @@ class IPCDriver(coordination.CoordinationDriverWithExecutor):
             self._executor.submit(self._get_groups_handler)
         )
 
-    @staticmethod
-    def get_lock(name):
+    def get_lock(self, name):
         return IPCLock(name)

@@ -510,12 +510,10 @@ class ConsulDriver(
 
         return ConsulFutureResult(self._executor.submit(_update_capabilities))
 
-    @staticmethod
-    def watch_elected_as_leader(group_id, callback):
+    def watch_elected_as_leader(self, group_id, callback):
         raise tooz.NotImplemented("not implemented")
 
-    @staticmethod
-    def unwatch_elected_as_leader(group_id, callback):
+    def unwatch_elected_as_leader(self, group_id, callback):
         raise tooz.NotImplemented("not implemented")
 
 

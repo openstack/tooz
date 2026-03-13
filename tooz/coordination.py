@@ -312,8 +312,7 @@ class CoordinationDriver:
         partitioner.stop()
         return leave.get()
 
-    @staticmethod
-    def run_watchers(timeout=None):
+    def run_watchers(self, timeout=None):
         """Run the watchers callback.
 
         This may also activate :py:meth:`.run_elect_coordinator` (depending
@@ -321,8 +320,7 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    @staticmethod
-    def run_elect_coordinator():
+    def run_elect_coordinator(self):
         """Try to leader elect this coordinator & activate hooks on success."""
         raise tooz.NotImplemented("not implemented")
 
@@ -421,8 +419,7 @@ class CoordinationDriver:
         if not self._hooks_elected_leader[group_id]:
             del self._hooks_elected_leader[group_id]
 
-    @staticmethod
-    def stand_down_group_leader(group_id):
+    def stand_down_group_leader(self, group_id):
         """Stand down as the group leader if we are.
 
         :param group_id: The group where we don't want to be a leader anymore
@@ -485,8 +482,7 @@ class CoordinationDriver:
     def _stop(self):
         pass
 
-    @staticmethod
-    def create_group(group_id):
+    def create_group(self, group_id):
         """Request the creation of a group asynchronously.
 
         :param group_id: the id of the group to create
@@ -496,8 +492,7 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    @staticmethod
-    def get_groups():
+    def get_groups(self):
         """Return the list composed by all groups ids asynchronously.
 
         :returns: the list of all created group ids
@@ -505,8 +500,7 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    @staticmethod
-    def join_group(group_id, capabilities=b""):
+    def join_group(self, group_id, capabilities=b""):
         """Join a group and establish group membership asynchronously.
 
         :param group_id: the id of the group to join
@@ -545,8 +539,7 @@ class CoordinationDriver:
             # Now retry to join the group
             raise _retry.TryAgain
 
-    @staticmethod
-    def leave_group(group_id):
+    def leave_group(self, group_id):
         """Leave a group asynchronously.
 
         :param group_id: the id of the group to leave
@@ -556,8 +549,7 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    @staticmethod
-    def delete_group(group_id):
+    def delete_group(self, group_id):
         """Delete a group asynchronously.
 
         :param group_id: the id of the group to leave
@@ -567,8 +559,7 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    @staticmethod
-    def get_members(group_id):
+    def get_members(self, group_id):
         """Return the set of all member ids of a group asynchronously.
 
         :returns: set of all member ids in the specified group
@@ -576,8 +567,7 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    @staticmethod
-    def get_member_capabilities(group_id, member_id):
+    def get_member_capabilities(self, group_id, member_id):
         """Return the capabilities of a member asynchronously.
 
         :param group_id: the id of the group of the member
@@ -589,8 +579,7 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    @staticmethod
-    def get_member_info(group_id, member_id):
+    def get_member_info(self, group_id, member_id):
         """Return the statistics and capabilities of a member asynchronously.
 
         :param group_id: the id of the group of the member
@@ -602,8 +591,7 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    @staticmethod
-    def update_capabilities(group_id, capabilities):
+    def update_capabilities(self, group_id, capabilities):
         """Update member capabilities in the specified group.
 
         :param group_id: the id of the group of the current member
@@ -615,8 +603,7 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    @staticmethod
-    def get_leader(group_id):
+    def get_leader(self, group_id):
         """Return the leader for a group.
 
         :param group_id: the id of the group:
@@ -625,8 +612,7 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    @staticmethod
-    def get_lock(name):
+    def get_lock(self, name):
         """Return a distributed lock.
 
         This is a exclusive lock, a second call to acquire() will block or
@@ -637,8 +623,7 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    @staticmethod
-    def heartbeat():
+    def heartbeat(self):
         """Update member status to indicate it is still alive.
 
         Method to run once in a while to be sure that the member is not dead
