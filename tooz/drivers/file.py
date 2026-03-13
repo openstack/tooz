@@ -13,6 +13,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from __future__ import annotations
+
+from collections.abc import Callable, Generator
 import contextlib
 import datetime
 import errno
@@ -23,6 +26,7 @@ import os
 import shutil
 import tempfile
 import threading
+from typing import Any, ParamSpec, TypeVar, TypedDict, cast
 import weakref
 
 import fasteners
@@ -37,24 +41,27 @@ from tooz import utils
 
 LOG = logging.getLogger(__name__)
 
+P = ParamSpec('P')
+R = TypeVar('R')
+
 
 class _Barrier:
-    def __init__(self):
+    def __init__(self) -> None:
         self.cond = threading.Condition()
-        self.owner = None
+        self.owner: tuple[int | None, int, str | bytes] | None = None
         self.shared = False
         self.ref = 0
 
 
 @contextlib.contextmanager
-def _translate_failures():
+def _translate_failures() -> Generator[None, None, None]:
     try:
         yield
     except (OSError, voluptuous.Invalid) as e:
         utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
 
 
-def _convert_from_old_format(data):
+def _convert_from_old_format(data: dict[str | bytes, Any]) -> dict[str, Any]:
     # NOTE(sileht): previous version of the driver was storing str as-is
     # making impossible to read from python3 something written with python2
     # version of the lib.
@@ -67,23 +74,15 @@ def _convert_from_old_format(data):
     # example of potential old python3 payload:
     # {u"member_id": b"member"}
     # {u"member_id": u"member"}
-    if b"member_id" in data or b"group_id" in data:
-        data = {k.decode("utf8"): v for k, v in data.items()}
-        # About member_id and group_id valuse if the file have been written
-        # with python2 and in the old format, we can't known with python3
-        # if we need to decode the value or not. Python3 see bytes blob
-        # We keep it as-is and pray, this have a good change to break if
-        # the application was using str in python2 and unicode in python3
-        # The member file is often overridden so it's should be fine
-        # But the group file can be very old, so we
-        # now have to update it each time create_group is called
-    return data
+    return {
+        k.decode() if isinstance(k, bytes) else k: v for k, v in data.items()
+    }
 
 
-def _lock_me(lock):
-    def wrapper(func):
+def _lock_me(lock: FileLock) -> Callable[[Callable[P, R]], Callable[P, R]]:
+    def wrapper(func: Callable[P, R]) -> Callable[P, R]:
         @functools.wraps(func)
-        def decorator(*args, **kwargs):
+        def decorator(*args: P.args, **kwargs: P.kwargs) -> R:
             with lock:
                 return func(*args, **kwargs)
 
@@ -95,18 +94,25 @@ def _lock_me(lock):
 class FileLock(locking.Lock):
     """A file based lock."""
 
-    def __init__(self, path, barrier, member_id):
-        super().__init__(path)
+    def __init__(
+        self, path: str, barrier: _Barrier, member_id: bytes | str
+    ) -> None:
+        super().__init__(path)  # type: ignore[arg-type]
         self.acquired = False
         self._lock = fasteners.InterProcessLock(path)
         self._barrier = barrier
         self._member_id = member_id
         self.ref = 0
 
-    def is_still_owner(self):
+    def is_still_owner(self) -> bool:
         return self.acquired
 
-    def acquire(self, blocking=True, shared=False, timeout=None):
+    def acquire(
+        self,
+        blocking: bool = True,
+        shared: bool = False,
+        timeout: float | None = None,
+    ) -> bool:
         blocking, timeout = utils.convert_blocking(blocking, timeout)
         watch = timeutils.StopWatch(duration=timeout)
         watch.start()
@@ -151,9 +157,9 @@ class FileLock(locking.Lock):
                     self._barrier.cond.notify_all()
 
         self.acquired = gotten
-        return gotten
+        return bool(gotten)
 
-    def release(self):
+    def release(self) -> bool:
         if not self.acquired:
             return False
         with self._barrier.cond:
@@ -167,9 +173,16 @@ class FileLock(locking.Lock):
                 self._barrier.cond.notify_all()
         return True
 
-    def __del__(self):
+    def __del__(self) -> None:
         if self.acquired:
             LOG.warning("Unreleased lock %s garbage collected", self.name)
+
+
+class Record(TypedDict, total=False):
+    capabilities: coordination.Capabilities | None
+    joined_on: datetime.datetime
+    member_id: bytes
+    encoded: bool
 
 
 class FileDriver(
@@ -224,7 +237,11 @@ class FileDriver(
     thread awareness on-top of it instead.
     """
 
-    def __init__(self, member_id, parsed_url, options):
+    _joined_groups: set[bytes]
+
+    def __init__(
+        self, member_id: bytes, parsed_url: Any, options: dict[str, Any]
+    ) -> None:
         """Initialize the file driver."""
         super().__init__(member_id, parsed_url, options)
         self._dir = parsed_url.path
@@ -241,35 +258,38 @@ class FileDriver(
         self._timeout = int(self._options.get('timeout', 10))
 
     @classmethod
-    def _get_raw_lock(cls, path, member_id):
+    def _get_raw_lock(cls, path: str, member_id: bytes) -> FileLock:
         lock_barrier = cls._barriers.setdefault(path, _Barrier())
         return FileLock(path, lock_barrier, member_id)
 
-    def get_lock(self, name):
+    def get_lock(self, name: bytes) -> FileLock:
         path = utils.safe_abs_path(self._dir, name.decode())
         if path in self._reserved_paths:
             raise ValueError(
-                "Unable to create a lock using"
-                f" reserved path '{path}' for lock"
-                f" with name '{name}'"
+                f"Unable to create a lock using reserved path '{path}' for "
+                f"lock with name {name.decode()}"
             )
         return self._get_raw_lock(path, self._member_id)
 
     @classmethod
-    def _make_filesystem_safe(cls, item):
+    def _make_filesystem_safe(cls, item: str | bytes) -> str:
         item = utils.to_binary(item, encoding="utf8")
         return hashlib.new(cls.HASH_ROUTINE, item).hexdigest()
 
-    def _start(self):
+    def _start(self) -> None:
         super()._start()
         for a_dir in self._reserved_dirs:
             try:
                 fileutils.ensure_tree(a_dir)
             except OSError as e:
-                raise coordination.ToozConnectionError(e)
+                raise coordination.ToozConnectionError(
+                    'error opening file'
+                ) from e
 
-    def _update_group_metadata(self, path, group_id):
-        details = {'group_id': utils.to_binary(group_id, encoding="utf8")}
+    def _update_group_metadata(self, path: str, group_id: bytes) -> None:
+        details: dict[str, Any] = {
+            'group_id': utils.to_binary(group_id, encoding="utf8")
+        }
         details['encoded'] = details["group_id"] != group_id
         details_blob = utils.dumps(details)
         fd, name = tempfile.mkstemp("tooz", dir=self._tmpdir)
@@ -277,12 +297,14 @@ class FileDriver(
             fh.write(details_blob)
         os.rename(name, path)
 
-    def create_group(self, group_id):
+    def create_group(
+        self, group_id: bytes
+    ) -> coordination.CoordAsyncResult[None]:
         safe_group_id = self._make_filesystem_safe(group_id)
         group_dir = os.path.join(self._group_dir, safe_group_id)
         group_meta_path = os.path.join(group_dir, '.metadata')
 
-        def _do_create_group():
+        def _do_create_group() -> None:
             if os.path.exists(os.path.join(group_dir, ".metadata")):
                 # NOTE(sileht): We update the group metadata even
                 # they are already good, so ensure dict key are convert
@@ -297,20 +319,24 @@ class FileDriver(
         fut = self._executor.submit(_do_create_group)
         return FileFutureResult(fut)
 
-    def join_group(self, group_id, capabilities=None):
+    def join_group(
+        self,
+        group_id: bytes,
+        capabilities: coordination.Capabilities | None = None,
+    ) -> coordination.CoordAsyncResult[None]:
         safe_group_id = self._make_filesystem_safe(group_id)
         group_dir = os.path.join(self._group_dir, safe_group_id)
         me_path = os.path.join(group_dir, f"{self._safe_member_id}.raw")
 
         @_lock_me(self._driver_lock)
-        def _do_join_group():
+        def _do_join_group() -> None:
             if not os.path.exists(os.path.join(group_dir, ".metadata")):
                 raise coordination.GroupNotCreated(group_id)
             if os.path.isfile(me_path):
                 raise coordination.MemberAlreadyExist(
                     group_id, self._member_id
                 )
-            details = {
+            details: Record = {
                 'capabilities': capabilities,
                 'joined_on': datetime.datetime.now(),
                 'member_id': utils.to_binary(
@@ -326,13 +352,16 @@ class FileDriver(
         fut = self._executor.submit(_do_join_group)
         return FileFutureResult(fut)
 
-    def leave_group(self, group_id):
+    def leave_group(
+        self,
+        group_id: bytes,
+    ) -> coordination.CoordAsyncResult[None]:
         safe_group_id = self._make_filesystem_safe(group_id)
         group_dir = os.path.join(self._group_dir, safe_group_id)
         me_path = os.path.join(group_dir, f"{self._safe_member_id}.raw")
 
         @_lock_me(self._driver_lock)
-        def _do_leave_group():
+        def _do_leave_group() -> None:
             if not os.path.exists(os.path.join(group_dir, ".metadata")):
                 raise coordination.GroupNotCreated(group_id)
             try:
@@ -369,25 +398,34 @@ class FileDriver(
         ),
     }
 
-    def _load_and_validate(self, blob, schema_key):
+    def _load_and_validate(
+        self, blob: bytes, schema_key: str
+    ) -> dict[str, Any]:
         data = utils.loads(blob)
         data = _convert_from_old_format(data)
         schema = self._SCHEMAS[schema_key]
-        return schema(data)
+        return cast(dict[str, Any], schema(data))
 
-    def _read_member_id(self, path):
+    def _read_member_id(self, path: str) -> bytes | str:
         with open(path, 'rb') as fh:
             details = self._load_and_validate(fh.read(), 'member')
             if details.get("encoded"):
-                return details['member_id'].decode("utf-8")
-            return details['member_id']
+                return cast(bytes, details['member_id']).decode("utf-8")
+            # bytes if stored with encoded (1.36+) else str
+            return cast(bytes | str, details['member_id'])
 
-    def get_members(self, group_id):
+    # NOTE(stephenfin): return type widens the base class's set[bytes] to
+    # set[bytes | str] because there is no runtime enforcement that member_id
+    # must be bytes; a str member_id is stored with encoded=True and read back
+    # as str.
+    def get_members(  # type: ignore[override]
+        self, group_id: bytes
+    ) -> coordination.CoordAsyncResult[set[bytes | str]]:
         safe_group_id = self._make_filesystem_safe(group_id)
         group_dir = os.path.join(self._group_dir, safe_group_id)
 
         @_lock_me(self._driver_lock)
-        def _do_get_members():
+        def _do_get_members() -> set[bytes | str]:
             if not os.path.isdir(group_dir):
                 raise coordination.GroupNotCreated(group_id)
             members = set()
@@ -424,14 +462,16 @@ class FileDriver(
         fut = self._executor.submit(_do_get_members)
         return FileFutureResult(fut)
 
-    def get_member_capabilities(self, group_id, member_id):
+    def get_member_capabilities(
+        self, group_id: bytes, member_id: bytes
+    ) -> coordination.CoordAsyncResult[coordination.Capabilities | None]:
         safe_group_id = self._make_filesystem_safe(group_id)
         group_dir = os.path.join(self._group_dir, safe_group_id)
         safe_member_id = self._make_filesystem_safe(member_id)
         member_path = os.path.join(group_dir, f"{safe_member_id}.raw")
 
         @_lock_me(self._driver_lock)
-        def _do_get_member_capabilities():
+        def _do_get_member_capabilities() -> coordination.Capabilities | None:
             try:
                 with open(member_path, "rb") as fh:
                     contents = fh.read()
@@ -445,17 +485,22 @@ class FileDriver(
                     raise
             else:
                 details = self._load_and_validate(contents, 'member')
-                return details.get("capabilities")
+                return cast(
+                    coordination.Capabilities | None,
+                    details.get("capabilities"),
+                )
 
         fut = self._executor.submit(_do_get_member_capabilities)
         return FileFutureResult(fut)
 
-    def delete_group(self, group_id):
+    def delete_group(
+        self, group_id: bytes
+    ) -> coordination.CoordAsyncResult[None]:
         safe_group_id = self._make_filesystem_safe(group_id)
         group_dir = os.path.join(self._group_dir, safe_group_id)
 
         @_lock_me(self._driver_lock)
-        def _do_delete_group():
+        def _do_delete_group() -> None:
             try:
                 entries = os.listdir(group_dir)
             except OSError as e:
@@ -482,15 +527,20 @@ class FileDriver(
         fut = self._executor.submit(_do_delete_group)
         return FileFutureResult(fut)
 
-    def _read_group_id(self, path):
+    def _read_group_id(self, path: str) -> bytes | str:
         with open(path, 'rb') as fh:
             details = self._load_and_validate(fh.read(), 'group')
             if details.get("encoded"):
-                return details['group_id'].decode("utf-8")
-            return details['group_id']
+                return cast(bytes, details['group_id']).decode("utf-8")
+            # bytes if stored with encoded (1.36+) else str
+            return cast(bytes | str, details['group_id'])
 
-    def get_groups(self):
-        def _do_get_groups():
+    # NOTE(stephenfin): return type widens the base class's list[bytes] to
+    # list[bytes | str] because there is no runtime enforcement that group_id
+    # must be bytes; a str group_id is stored with encoded=True and read back
+    # as str.
+    def get_groups(self) -> coordination.CoordAsyncResult[list[bytes | str]]:  # type: ignore[override]
+        def _do_get_groups() -> list[bytes | str]:
             groups = []
             for entry in os.listdir(self._group_dir):
                 path = os.path.join(self._group_dir, entry, '.metadata')
@@ -504,7 +554,7 @@ class FileDriver(
         fut = self._executor.submit(_do_get_groups)
         return FileFutureResult(fut)
 
-    def heartbeat(self):
+    def heartbeat(self) -> float:
         for group_id in self._joined_groups:
             safe_group_id = self._make_filesystem_safe(group_id)
             group_dir = os.path.join(self._group_dir, safe_group_id)
@@ -513,7 +563,7 @@ class FileDriver(
             )
 
             @_lock_me(self._driver_lock)
-            def _do_heartbeat():
+            def _do_heartbeat() -> None:
                 try:
                     os.utime(member_path, None)
                 except OSError as err:
@@ -523,10 +573,18 @@ class FileDriver(
             _do_heartbeat()
         return self._timeout
 
-    def watch_elected_as_leader(self, group_id, callback):
+    def watch_elected_as_leader(
+        self,
+        group_id: bytes,
+        callback: coordination.EventCallback[coordination.LeaderElected],
+    ) -> None:
         raise tooz.NotImplemented("not implemented")
 
-    def unwatch_elected_as_leader(self, group_id, callback):
+    def unwatch_elected_as_leader(
+        self,
+        group_id: bytes,
+        callback: coordination.EventCallback[coordination.LeaderElected],
+    ) -> None:
         raise tooz.NotImplemented("not implemented")
 
 
