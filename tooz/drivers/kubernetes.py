@@ -11,6 +11,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from __future__ import annotations
+
+from typing import Any
+
 from kubernetes.client import exceptions as k8s_exc
 import sherlock
 
@@ -21,14 +25,14 @@ from tooz import utils
 
 
 class KubernetesLock(locking.Lock):
-    def __init__(self, name, namespace, lock):
+    def __init__(self, name: bytes, namespace: bytes, lock: Any) -> None:
         super().__init__(name)
         self._name = name
         self._namespace = namespace
         self._lock = lock
         self._client = lock.client
 
-    def is_still_owner(self):
+    def is_still_owner(self) -> bool:
         if not self._lock.locked():
             return False
         try:
@@ -44,16 +48,22 @@ class KubernetesLock(locking.Lock):
                 )
         return False
 
-    def acquire(self, blocking=True, shared=False, expire=None):
+    # FIXME(stephenfin): We are missing a timeout parameter here
+    def acquire(
+        self,
+        blocking: bool = True,
+        shared: bool = False,
+        expire: int | None = None,
+    ) -> bool:
         if shared:
             raise tooz.NotImplemented("not implemented")
         blocking, timeout = utils.convert_blocking(blocking)
         sherlock.configure(
             expire=expire, timeout=int(timeout) if timeout else timeout
         )
-        return self._lock.acquire(blocking=blocking)
+        return bool(self._lock.acquire(blocking=blocking))
 
-    def release(self):
+    def release(self) -> bool:
         if self._lock.locked():
             try:
                 self._lock.release()
@@ -68,10 +78,14 @@ class KubernetesLock(locking.Lock):
             return False
 
     @property
-    def acquired(self):
+    def acquired(self) -> bool:
         return self._lock.locked() and self.is_still_owner()
 
 
+# TODO(stephenfin): This sherlock [1] library does not look to be maintained.
+# This driver should probably be deprecated.
+#
+# https://github.com/py-sherlock/sherlock
 class SherlockDriver(coordination.CoordinationDriverCachedRunWatchers):
     """This driver uses the `sherlock`_ client against `kubernetes`_ servers.
 
@@ -105,12 +119,14 @@ class SherlockDriver(coordination.CoordinationDriverCachedRunWatchers):
     enum member(s) that can be used to interogate how this driver works.
     """
 
-    def __init__(self, member_id, parsed_url, options):
+    def __init__(
+        self, member_id: bytes, parsed_url: Any, options: dict[str, Any]
+    ) -> None:
         super().__init__(member_id, parsed_url, options)
         options = utils.collapse(options)
         self._namespace = options.get('namespace', self.K8S_NAMESPACE)
 
-    def get_lock(self, name):
+    def get_lock(self, name: bytes) -> KubernetesLock:
         lock = sherlock.KubernetesLock(
             lock_name=name, k8s_namespace=self._namespace
         )
