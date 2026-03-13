@@ -191,25 +191,6 @@ The etcd3gw driver is a driver providing distributed locking and grouping APIs
 and is based on the `etcd server`_ supported key/value storage and associated
 primitives. It relies on the `GRPC Gateway`_ to provide HTTP access to etcd3.
 
-Consul
-------
-
-**Driver:**  :py:class:`tooz.drivers.consul.ConsulDriver`
-
-**Characteristics:**
-
-:py:attr:`tooz.drivers.consul.ConsulDriver.CHARACTERISTICS`
-
-**Entrypoint name:** ``consul``
-
-**Summary:**
-
-The `consul`_ driver is a driver providing distributed locking and group
-membership and is based on the consul server key/value storage and/or
-primitives. When a lock is acquired it will release either when explicitly
-released or automatically when the consul session ends (for example if
-the program using the lock crashes).
-
 Kubernetes
 ----------
 
@@ -232,7 +213,6 @@ Characteristics
 .. autoclass:: tooz.coordination.Characteristics
 
 .. _etcd server: https://coreos.com/etcd/
-.. _consul: https://www.consul.io/
 .. _advisory locks: http://www.postgresql.org/docs/8.2/interactive/\
                     explicit-locking.html#ADVISORY-LOCKS
 .. _get_lock: http://dev.mysql.com/doc/refman/5.5/en/\

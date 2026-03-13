@@ -1,0 +1,5 @@
+---
+upgrade:
+  - |
+    The consul driver has been removed. The library it depended on is no
+    longer maintained and did not support modern Python versions.

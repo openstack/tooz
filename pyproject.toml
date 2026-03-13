@@ -43,13 +43,9 @@ Repository = "https://opendev.org/openstack/tooz"
 "mysql" = "tooz.drivers.mysql:MySQLDriver"
 "file" = "tooz.drivers.file:FileDriver"
 "zookeeper" = "tooz.drivers.zookeeper:KazooDriver"
-"consul" = "tooz.drivers.consul:ConsulDriver"
 "kubernetes" = "tooz.drivers.kubernetes:SherlockDriver"
 
 [project.optional-dependencies]
-consul = [
-  "python-consul2>=0.0.16", # MIT License
-]
 etcd3gw = [
   "etcd3gw>=2.3.0", # Apache-2.0
 ]
