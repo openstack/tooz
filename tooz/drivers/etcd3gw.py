@@ -11,14 +11,19 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from __future__ import annotations
+
 import base64
+from collections.abc import Callable
 import functools
 import logging
 import threading
+from typing import Any, ParamSpec, TypeVar, cast
 import uuid
 
 import etcd3gw
-from etcd3gw import exceptions as etcd3_exc
+from etcd3gw import exceptions as etcd3gw_exc
+from etcd3gw import lease as etcd3gw_lease
 
 import tooz
 from tooz import _retry
@@ -26,30 +31,33 @@ from tooz import coordination
 from tooz import locking
 from tooz import utils
 
+P = ParamSpec('P')
+R = TypeVar('R')
+
 LOG = logging.getLogger(__name__)
 
 
-def _encode(data):
+def _encode(data: bytes) -> str:
     """Safely encode data for consumption of the gateway."""
     return base64.b64encode(data).decode("ascii")
 
 
-def _translate_failures(func):
+def _translate_failures(func: Callable[P, R]) -> Callable[P, R]:
     """Translates common requests exceptions into tooz exceptions."""
 
     @functools.wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
         try:
             return func(*args, **kwargs)
-        except etcd3_exc.ConnectionFailedError as e:
+        except etcd3gw_exc.ConnectionFailedError as e:
             utils.raise_with_cause(
                 coordination.ToozConnectionError, str(e), cause=e
             )
-        except etcd3_exc.ConnectionTimeoutError as e:
+        except etcd3gw_exc.ConnectionTimeoutError as e:
             utils.raise_with_cause(
                 coordination.OperationTimedOut, str(e), cause=e
             )
-        except etcd3_exc.Etcd3Exception as e:
+        except etcd3gw_exc.Etcd3Exception as e:
             utils.raise_with_cause(coordination.ToozError, str(e), cause=e)
 
     return wrapper
@@ -62,9 +70,9 @@ class Etcd3Lock(locking.Lock):
     semantics for the coordination driver.
     """
 
-    LOCK_PREFIX = b"/tooz/locks"
+    LOCK_PREFIX = b'/tooz/locks'
 
-    def __init__(self, coord, name, timeout):
+    def __init__(self, coord: Etcd3Driver, name: bytes, timeout: int) -> None:
         super().__init__(name)
         self._timeout = timeout
         self._coord = coord
@@ -73,15 +81,22 @@ class Etcd3Lock(locking.Lock):
         self._uuid = _encode(uuid.uuid4().bytes)
         self._exclusive_access = threading.Lock()
 
+    # TODO(stephenfin): Narrow the type of blocking and log a deprecation
+    # warning
     @_translate_failures
-    def acquire(self, blocking=True, shared=False, timeout=None):
+    def acquire(
+        self,
+        blocking: bool | float = True,
+        shared: bool = False,
+        timeout: int | None = None,
+    ) -> bool:
         if shared:
             raise tooz.NotImplemented("not implemented")
         if timeout is None:
             timeout = self._timeout
 
         @_retry.retry(stop_max_delay=blocking)
-        def _acquire():
+        def _acquire() -> bool:
             # TODO(jd): save the created revision so we can check it later to
             # make sure we still have the lock
             self._lease = self._coord.client.lease(timeout)
@@ -118,7 +133,7 @@ class Etcd3Lock(locking.Lock):
         return _acquire()
 
     @_translate_failures
-    def release(self):
+    def release(self) -> bool:
         txn = {
             'compare': [
                 {
@@ -140,18 +155,18 @@ class Etcd3Lock(locking.Lock):
         return False
 
     @_translate_failures
-    def break_(self):
-        if self._coord.client.delete(self._key):
+    def break_(self) -> bool:
+        if self._coord.client.delete(self._key.decode()):
             self._coord._acquired_locks.discard(self)
             return True
         return False
 
     @property
-    def acquired(self):
+    def acquired(self) -> bool:
         return self in self._coord._acquired_locks
 
     @_translate_failures
-    def heartbeat(self):
+    def heartbeat(self) -> bool:
         with self._exclusive_access:
             if self.acquired:
                 self._lease.refresh()
@@ -193,12 +208,12 @@ class Etcd3Driver(
     DEFAULT_TIMEOUT = 30
 
     #: Default hostname used when none is provided.
-    DEFAULT_HOST = "localhost"
+    DEFAULT_HOST = 'localhost'
 
     #: Default port used if none provided (4001 or 2379 are the common ones).
     DEFAULT_PORT = 2379
 
-    GROUP_PREFIX = b"tooz/groups/"
+    GROUP_PREFIX = b'tooz/groups/'
 
     CHARACTERISTICS = (
         coordination.Characteristics.NON_TIMEOUT_BASED,
@@ -209,7 +224,9 @@ class Etcd3Driver(
         coordination.Characteristics.SERIALIZABLE,
     )
 
-    def __init__(self, member_id, parsed_url, options):
+    def __init__(
+        self, member_id: bytes, parsed_url: Any, options: dict[str, Any]
+    ) -> None:
         super().__init__(member_id, parsed_url, options)
         protocol = 'https' if parsed_url.scheme.endswith('https') else 'http'
         host = parsed_url.hostname or self.DEFAULT_HOST
@@ -238,18 +255,19 @@ class Etcd3Driver(
         self.membership_timeout = int(
             options.get('membership_timeout', timeout)
         )
-        self._acquired_locks = set()
-        self._membership_lease = None
+        self._acquired_locks: set[Etcd3Lock] = set()
+        self._membership_lease: etcd3gw_lease.Lease | None = None
 
-    def _start(self):
+    def _start(self) -> None:
         super()._start()
         self._membership_lease = self.client.lease(self.membership_timeout)
 
-    def get_lock(self, name):
+    def get_lock(self, name: bytes) -> Etcd3Lock:
         return Etcd3Lock(self, name, self.lock_timeout)
 
-    def heartbeat(self):
+    def heartbeat(self) -> int:
         # TODO(kaifeng) use the same lease for locks?
+        assert self._membership_lease is not None
         if self._membership_lease.refresh() == -1:
             expired_lease = self._membership_lease.id
             self._membership_lease = self.client.lease(self.membership_timeout)
@@ -263,15 +281,17 @@ class Etcd3Driver(
             lock.heartbeat()
         return min(self.lock_timeout, self.membership_timeout)
 
-    def _encode_group_id(self, group_id):
+    def _encode_group_id(self, group_id: bytes) -> str:
         return _encode(self._prefix_group(group_id))
 
-    def _prefix_group(self, group_id):
+    def _prefix_group(self, group_id: bytes) -> bytes:
         return b"%s%s/" % (self.GROUP_PREFIX, utils.to_binary(group_id))
 
-    def create_group(self, group_id):
+    def create_group(
+        self, group_id: bytes
+    ) -> coordination.CoordinatorResult[None]:
         @_translate_failures
-        def _create_group():
+        def _create_group() -> None:
             encoded_group = self._encode_group_id(group_id)
             txn = {
                 'compare': [
@@ -302,14 +322,16 @@ class Etcd3Driver(
             self._executor.submit(_create_group)
         )
 
-    def _destroy_group(self, group_id):
-        self.client.delete(group_id)
+    def _destroy_group(self, group_id: bytes) -> None:
+        self.client.delete(group_id.decode())
 
-    def delete_group(self, group_id):
+    def delete_group(
+        self, group_id: bytes
+    ) -> coordination.CoordinatorResult[None]:
         @_translate_failures
-        def _delete_group():
+        def _delete_group() -> None:
             prefix_group = self._prefix_group(group_id)
-            members = self.client.get_prefix(prefix_group)
+            members = self.client.get_prefix(prefix_group.decode())
             if len(members) > 1:
                 raise coordination.GroupNotEmpty(group_id)
 
@@ -341,13 +363,18 @@ class Etcd3Driver(
             self._executor.submit(_delete_group)
         )
 
-    def join_group(self, group_id, capabilities=None):
+    def join_group(
+        self,
+        group_id: bytes,
+        capabilities: coordination.Capabilities | None = None,
+    ) -> coordination.CoordinatorResult[None]:
         @_retry.retry()
         @_translate_failures
-        def _join_group():
+        def _join_group() -> None:
+            assert self._membership_lease is not None
             prefix_group = self._prefix_group(group_id)
             prefix_member = prefix_group + self._member_id
-            members = self.client.get_prefix(prefix_group)
+            members = self.client.get_prefix(prefix_group.decode())
 
             encoded_member = _encode(prefix_member)
 
@@ -394,33 +421,37 @@ class Etcd3Driver(
             self._executor.submit(_join_group)
         )
 
-    def leave_group(self, group_id):
+    def leave_group(
+        self, group_id: bytes
+    ) -> coordination.CoordinatorResult[None]:
         @_translate_failures
-        def _leave_group():
+        def _leave_group() -> None:
             prefix_group = self._prefix_group(group_id)
             prefix_member = prefix_group + self._member_id
-            members = self.client.get_prefix(prefix_group)
+            members = self.client.get_prefix(prefix_group.decode())
             for capabilities, metadata in members:
                 if metadata['key'] == prefix_member:
                     break
             else:
                 raise coordination.MemberNotJoined(group_id, self._member_id)
 
-            self.client.delete(prefix_member)
+            self.client.delete(prefix_member.decode())
             self._joined_groups.discard(group_id)
 
         return coordination.CoordinatorResult(
             self._executor.submit(_leave_group)
         )
 
-    def get_members(self, group_id):
+    def get_members(
+        self, group_id: bytes
+    ) -> coordination.CoordinatorResult[set[bytes]]:
         @_translate_failures
-        def _get_members():
+        def _get_members() -> set[bytes]:
             prefix_group = self._prefix_group(group_id)
             members = set()
             group_found = False
 
-            for cap, metadata in self.client.get_prefix(prefix_group):
+            for cap, metadata in self.client.get_prefix(prefix_group.decode()):
                 if metadata['key'] == prefix_group:
                     group_found = True
                 else:
@@ -435,30 +466,36 @@ class Etcd3Driver(
             self._executor.submit(_get_members)
         )
 
-    def get_member_capabilities(self, group_id, member_id):
+    def get_member_capabilities(
+        self, group_id: bytes, member_id: bytes
+    ) -> coordination.CoordinatorResult[coordination.Capabilities | None]:
         @_translate_failures
-        def _get_member_capabilities():
+        def _get_member_capabilities() -> coordination.Capabilities | None:
             prefix_member = self._prefix_group(group_id) + member_id
-            result = self.client.get(prefix_member)
+            result = self.client.get(prefix_member.decode())
             if not result:
                 raise coordination.MemberNotJoined(group_id, member_id)
-            return utils.loads(result[0])
+            return cast(coordination.Capabilities, utils.loads(result[0]))
 
         return coordination.CoordinatorResult(
             self._executor.submit(_get_member_capabilities)
         )
 
-    def update_capabilities(self, group_id, capabilities):
+    def update_capabilities(
+        self, group_id: bytes, capabilities: coordination.Capabilities
+    ) -> coordination.CoordinatorResult[None]:
         @_translate_failures
-        def _update_capabilities():
+        def _update_capabilities() -> None:
             prefix_member = self._prefix_group(group_id) + self._member_id
-            result = self.client.get(prefix_member)
+            result = self.client.get(prefix_member.decode())
             if not result:
                 raise coordination.MemberNotJoined(group_id, self._member_id)
 
             self.client.put(
-                prefix_member,
-                utils.dumps(capabilities),
+                prefix_member.decode(),
+                # etcd3gw insists on strings, but msgpack encoded byte strings
+                # are not decodeable
+                utils.dumps(capabilities),  # type: ignore
                 lease=self._membership_lease,
             )
 
@@ -466,10 +503,10 @@ class Etcd3Driver(
             self._executor.submit(_update_capabilities)
         )
 
-    def get_groups(self):
+    def get_groups(self) -> coordination.CoordinatorResult[list[bytes]]:
         @_translate_failures
-        def _get_groups():
-            groups = self.client.get_prefix(self.GROUP_PREFIX)
+        def _get_groups() -> list[bytes]:
+            groups = self.client.get_prefix(self.GROUP_PREFIX.decode())
             return [
                 group[1]['key'][len(self.GROUP_PREFIX) : -1]
                 for group in groups
@@ -479,8 +516,10 @@ class Etcd3Driver(
             self._executor.submit(_get_groups)
         )
 
-    def watch_elected_as_leader(self, group_id, callback):
+    def watch_elected_as_leader(self, group_id: bytes, callback: Any) -> None:
         raise tooz.NotImplemented("not implemented")
 
-    def unwatch_elected_as_leader(self, group_id, callback):
+    def unwatch_elected_as_leader(
+        self, group_id: bytes, callback: Any
+    ) -> None:
         raise tooz.NotImplemented("not implemented")

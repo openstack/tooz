@@ -95,6 +95,7 @@ exclude = "(?x)(doc | examples | releasenotes | tools)"
 [[tool.mypy.overrides]]
 module = [
     "tooz.coordination",
+    "tooz.drivers.etcd3gw",
     "tooz.hashring",
     "tooz.locking",
     "tooz.partitioner",
