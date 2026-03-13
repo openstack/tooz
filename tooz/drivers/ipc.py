@@ -13,12 +13,13 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import hashlib
-import struct
-import time
+from __future__ import annotations
 
+import hashlib
 import msgpack
-import sysv_ipc  # type: ignore[import-not-found]
+import struct
+import sysv_ipc
+import time
 
 import tooz
 from tooz import coordination
@@ -31,7 +32,7 @@ else:
     _KEY_RANGE = sysv_ipc.KEY_MAX - sysv_ipc.KEY_MIN
 
 
-def ftok(name, project):
+def ftok(name: str | bytes, project: str | bytes) -> int:
     # Similar to ftok & http://semanchuk.com/philip/sysv_ipc/#ftok_weakness
     # but hopefully without as many weaknesses...
     h = hashlib.md5(usedforsecurity=False)
@@ -41,7 +42,7 @@ def ftok(name, project):
     if not isinstance(name, bytes):
         name = name.encode('ascii')
     h.update(name)
-    return (int(h.hexdigest(), 16) % _KEY_RANGE) + sysv_ipc.KEY_MIN
+    return (int(h.hexdigest(), 16) % int(_KEY_RANGE)) + int(sysv_ipc.KEY_MIN)
 
 
 class IPCLock(locking.Lock):
@@ -56,12 +57,12 @@ class IPCLock(locking.Lock):
 
     _LOCK_PROJECT = b'__TOOZ_LOCK_'
 
-    def __init__(self, name):
+    def __init__(self, name: bytes) -> None:
         super().__init__(name)
         self.key = ftok(name, self._LOCK_PROJECT)
-        self._lock = None
+        self._lock: sysv_ipc.Semaphore | None = None
 
-    def break_(self):
+    def break_(self) -> bool:
         try:
             lock = sysv_ipc.Semaphore(key=self.key)
             lock.remove()
@@ -70,7 +71,12 @@ class IPCLock(locking.Lock):
         else:
             return True
 
-    def acquire(self, blocking=True, shared=False, timeout=None):
+    def acquire(
+        self,
+        blocking: bool = True,
+        shared: bool = False,
+        timeout: float | None = None,
+    ) -> bool:
         if shared:
             raise tooz.NotImplemented("not implemented")
 
@@ -110,11 +116,12 @@ class IPCLock(locking.Lock):
                     continue
 
             if start_time is not None:
+                assert timeout is not None  # only set when timeout is not None
                 elapsed = max(0.0, time.time() - start_time)
                 if elapsed >= timeout:
                     # Ran out of time...
                     return False
-                adjusted_timeout = timeout - elapsed
+                adjusted_timeout: float | None = timeout - elapsed
             else:
                 adjusted_timeout = timeout
             try:
@@ -129,7 +136,7 @@ class IPCLock(locking.Lock):
                 self._lock = tmplock
                 return True
 
-    def release(self):
+    def release(self) -> bool:
         if self._lock is not None:
             try:
                 self._lock.remove()
@@ -173,9 +180,9 @@ class IPCDriver(coordination.CoordinationDriverWithExecutor):
     _SEGMENT_SIZE = 1024
     _GROUP_LIST_KEY = "GROUP_LIST"
     _GROUP_PROJECT = "_TOOZ_INTERNAL"
-    _INTERNAL_LOCK_NAME = "TOOZ_INTERNAL_LOCK"
+    _INTERNAL_LOCK_NAME = b"TOOZ_INTERNAL_LOCK"
 
-    def _start(self):
+    def _start(self) -> None:
         super()._start()
         self._group_list = sysv_ipc.SharedMemory(
             ftok(self._GROUP_LIST_KEY, self._GROUP_PROJECT),
@@ -184,7 +191,7 @@ class IPCDriver(coordination.CoordinationDriverWithExecutor):
         )
         self._lock = self.get_lock(self._INTERNAL_LOCK_NAME)
 
-    def _stop(self):
+    def _stop(self) -> None:
         super()._stop()
         try:
             self._group_list.detach()
@@ -192,7 +199,7 @@ class IPCDriver(coordination.CoordinationDriverWithExecutor):
         except sysv_ipc.ExistentialError:
             pass
 
-    def _read_group_list(self):
+    def _read_group_list(self) -> set[bytes]:
         data = self._group_list.read(byte_count=2)
         length = struct.unpack("H", data)[0]
         if length == 0:
@@ -200,15 +207,17 @@ class IPCDriver(coordination.CoordinationDriverWithExecutor):
         data = self._group_list.read(byte_count=length, offset=2)
         return set(msgpack.loads(data))
 
-    def _write_group_list(self, group_list):
+    def _write_group_list(self, group_list: set[bytes]) -> None:
         data = msgpack.dumps(list(group_list))
         if len(data) >= self._SEGMENT_SIZE - 2:
             raise tooz.ToozError("Group list is too big")
         self._group_list.write(struct.pack('H', len(data)))
         self._group_list.write(data, offset=2)
 
-    def create_group(self, group_id):
-        def _create_group():
+    def create_group(
+        self, group_id: bytes
+    ) -> coordination.CoordAsyncResult[None]:
+        def _create_group() -> None:
             with self._lock:
                 group_list = self._read_group_list()
                 if group_id in group_list:
@@ -220,8 +229,10 @@ class IPCDriver(coordination.CoordinationDriverWithExecutor):
             self._executor.submit(_create_group)
         )
 
-    def delete_group(self, group_id):
-        def _delete_group():
+    def delete_group(
+        self, group_id: bytes
+    ) -> coordination.CoordAsyncResult[None]:
+        def _delete_group() -> None:
             with self._lock:
                 group_list = self._read_group_list()
                 if group_id not in group_list:
@@ -233,24 +244,32 @@ class IPCDriver(coordination.CoordinationDriverWithExecutor):
             self._executor.submit(_delete_group)
         )
 
-    def watch_join_group(self, group_id, callback):
+    def watch_join_group(
+        self,
+        group_id: bytes,
+        callback: coordination.EventCallback[coordination.MemberJoinedGroup],
+    ) -> None:
         # Check the group exist
         self.get_members(group_id).get()
         super().watch_join_group(group_id, callback)
 
-    def watch_leave_group(self, group_id, callback):
+    def watch_leave_group(
+        self,
+        group_id: bytes,
+        callback: coordination.EventCallback[coordination.MemberLeftGroup],
+    ) -> None:
         # Check the group exist
         self.get_members(group_id).get()
         super().watch_leave_group(group_id, callback)
 
-    def _get_groups_handler(self):
+    def _get_groups_handler(self) -> list[bytes]:
         with self._lock:
-            return self._read_group_list()
+            return list(self._read_group_list())
 
-    def get_groups(self):
+    def get_groups(self) -> coordination.CoordAsyncResult[list[bytes]]:
         return coordination.CoordinatorResult(
             self._executor.submit(self._get_groups_handler)
         )
 
-    def get_lock(self, name):
+    def get_lock(self, name: bytes) -> IPCLock:
         return IPCLock(name)

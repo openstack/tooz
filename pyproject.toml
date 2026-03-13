@@ -91,11 +91,17 @@ show_error_context = true
 incremental = true
 disable_error_code = ["import-untyped"]
 exclude = "(?x)(doc | examples | releasenotes | tools)"
+# Vendored stubs for packages pending upstream type annotation merges.
+# Remove stubs/sysv_ipc when [1] has merged.
+#
+# [1] https://github.com/osvenskan/sysv_ipc/pull/78
+mypy_path = ["stubs"]
 
 [[tool.mypy.overrides]]
 module = [
     "tooz.coordination",
     "tooz.drivers.etcd3gw",
+    "tooz.drivers.ipc",
     "tooz.drivers.mysql",
     "tooz.drivers.pgsql",
     "tooz.hashring",
