@@ -102,6 +102,7 @@ module = [
     "tooz.coordination",
     "tooz.drivers.etcd3gw",
     "tooz.drivers.ipc",
+    "tooz.drivers.memcached",
     "tooz.drivers.mysql",
     "tooz.drivers.pgsql",
     "tooz.hashring",
