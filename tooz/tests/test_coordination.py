@@ -25,6 +25,9 @@ from testtools import testcase
 
 import tooz
 import tooz.coordination
+from tooz.drivers import file
+from tooz.drivers import ipc
+from tooz.drivers import memcached
 from tooz import tests
 
 
@@ -99,6 +102,30 @@ class TestAPI(tests.TestWithCoordinator):
         created_groups = self._coord.get_groups().get()
         for group_id in groups_ids:
             self.assertIn(group_id, created_groups)
+
+    def test_get_groups_str_group_id(self):
+        """Drivers accept str group_id at runtime (no runtime enforcement).
+
+        Depending on the driver, the str group_id may be returned as-is or
+        normalised to bytes.
+        """
+        str_group_id = "str-" + self.group_id.decode('ascii')
+        self._coord.create_group(str_group_id).get()  # type: ignore[arg-type]
+        groups = self._coord.get_groups().get()
+        bytes_group_id = str_group_id.encode('utf-8')
+        # Drivers that store IDs as-is propagate str back; all others
+        # normalise to bytes.
+        if isinstance(
+            self._coord,
+            (file.FileDriver, ipc.IPCDriver, memcached.MemcachedDriver),
+        ):
+            self.assertIn(str_group_id, groups)
+            found = next(g for g in groups if g == str_group_id)
+            self.assertIsInstance(found, str)
+        else:
+            self.assertIn(bytes_group_id, groups)
+            found = next(g for g in groups if g == bytes_group_id)
+            self.assertIsInstance(found, bytes)
 
     def test_delete_group(self):
         self._coord.create_group(self.group_id).get()
@@ -200,6 +227,41 @@ class TestAPI(tests.TestWithCoordinator):
         client2.join_group(group_id_test2).get()
         members_ids = self._coord.get_members(group_id_test2).get()
         self.assertEqual({self.member_id, member_id_test2}, members_ids)
+
+    def test_get_members_str_member_id(self):
+        """Drivers accept str member_id at runtime (no runtime enforcement).
+
+        Depending on the driver, the str member_id may be returned as-is or
+        normalised to bytes. Drivers that cannot handle str member_ids at all
+        will cause this test to be skipped.
+        """
+        str_member_id = "str-" + self.member_id.decode('ascii')
+        group_id = tests.get_random_uuid()
+        coord2 = tooz.coordination.get_coordinator(self.url, str_member_id)  # type: ignore[arg-type]
+        coord2.start()
+        self.addCleanup(coord2.stop)
+        self._coord.create_group(group_id).get()
+        try:
+            coord2.join_group(group_id).get()
+        except (TypeError, tooz.ToozError):
+            self.skipTest(
+                f"{type(self._coord).__name__} does not support str member_id"
+            )
+        members = self._coord.get_members(group_id).get()
+        bytes_member_id = str_member_id.encode('utf-8')
+        # Drivers that store IDs as-is propagate str back; all others
+        # normalise to bytes.
+        if isinstance(
+            self._coord,
+            (file.FileDriver, ipc.IPCDriver, memcached.MemcachedDriver),
+        ):
+            self.assertIn(str_member_id, members)
+            found = next(m for m in members if m == str_member_id)
+            self.assertIsInstance(found, str)
+        else:
+            self.assertIn(bytes_member_id, members)
+            found = next(m for m in members if m == bytes_member_id)
+            self.assertIsInstance(found, bytes)
 
     def test_get_member_capabilities(self):
         self._coord.create_group(self.group_id).get()
