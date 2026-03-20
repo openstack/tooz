@@ -528,16 +528,9 @@ return 1
                     f"'{redis_version}' is being used which is not new enough"
                 )
             tpl_params = {
-                'group_existence_value': self.GROUP_EXISTS_VALUE,
-                'group_existence_key': self.GROUP_EXISTS,
+                'group_existence_value': self.GROUP_EXISTS_VALUE.decode(),
+                'group_existence_key': self.GROUP_EXISTS.decode(),
             }
-            # For py3.x ensure these are unicode since the string template
-            # replacement will expect unicode (and we don't want b'' as a
-            # prefix which will happen in py3.x if this is not done).
-            for k, v in tpl_params.copy().items():
-                if isinstance(v, bytes):
-                    v = v.decode('ascii')
-                tpl_params[k] = v
             prepared_scripts = {}
             for name, raw_script_tpl in self.SCRIPTS.items():
                 script_tpl = string.Template(raw_script_tpl)
