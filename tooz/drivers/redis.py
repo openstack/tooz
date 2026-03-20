@@ -76,7 +76,7 @@ def _handle_failures(n_tries=15):
 
 class RedisLock(locking.Lock):
     def __init__(self, coord, client, name, timeout):
-        name = f"{coord.namespace}_{str(name)}_lock"
+        name = b'%s_%s_lock' % (coord.namespace, utils.to_binary(name))
         super().__init__(name)
         # NOTE(jd) Make sure we don't release and heartbeat at the same time by
         # using a exclusive access lock (LP#1557593)
