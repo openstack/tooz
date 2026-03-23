@@ -240,9 +240,8 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
             group_id=group_id,
         )
 
-    @staticmethod
     def _join_group_handler(
-        async_result, timeout, timeout_exception, group_id, member_id
+        self, async_result, timeout, timeout_exception, group_id, member_id
     ):
         try:
             async_result.get(block=True, timeout=timeout)
@@ -256,6 +255,8 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
             raise coordination.GroupNotCreated(group_id)
         except exceptions.ZookeeperError as e:
             utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
+
+        self._joined_groups.add(group_id)
 
     def join_group(self, group_id, capabilities=b""):
         member_path = self._path_member(group_id, self._member_id)
@@ -271,9 +272,8 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
             member_id=self._member_id,
         )
 
-    @staticmethod
     def _leave_group_handler(
-        async_result, timeout, timeout_exception, group_id, member_id
+        self, async_result, timeout, timeout_exception, group_id, member_id
     ):
         try:
             async_result.get(block=True, timeout=timeout)
@@ -285,6 +285,8 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
             raise coordination.MemberNotJoined(group_id, member_id)
         except exceptions.ZookeeperError as e:
             utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
+
+        self._joined_groups.discard(group_id)
 
     def heartbeat(self):
         # Just fetch the base path (and do nothing with it); this will
