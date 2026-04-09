@@ -183,80 +183,59 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
     def _loads(blob):
         return utils.loads(blob)
 
-    def _create_group_handler(
-        self, async_result, timeout, timeout_exception, group_id
-    ):
-        try:
-            async_result.get(block=True, timeout=timeout)
-        except timeout_exception as e:
-            utils.raise_with_cause(
-                coordination.OperationTimedOut, str(e), cause=e
-            )
-        except exceptions.NodeExistsError:
-            raise coordination.GroupAlreadyExist(group_id)
-        except exceptions.NoNodeError as e:
-            utils.raise_with_cause(
-                tooz.ToozError,
-                f"Tooz namespace '{self._namespace}' has not been created",
-                cause=e,
-            )
-        except exceptions.ZookeeperError as e:
-            utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
-
     def create_group(self, group_id):
         group_path = self._path_group(group_id)
         async_result = self._coord.create_async(group_path)
+
+        def _create_group(async_result, timeout, timeout_exception, group_id):
+            try:
+                async_result.get(block=True, timeout=timeout)
+            except timeout_exception as e:
+                utils.raise_with_cause(
+                    coordination.OperationTimedOut, str(e), cause=e
+                )
+            except exceptions.NodeExistsError:
+                raise coordination.GroupAlreadyExist(group_id)
+            except exceptions.NoNodeError as e:
+                utils.raise_with_cause(
+                    tooz.ToozError,
+                    f"Tooz namespace '{self._namespace}' has not been created",
+                    cause=e,
+                )
+            except exceptions.ZookeeperError as e:
+                utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
+
         return ZooAsyncResult(
             async_result,
-            self._create_group_handler,
+            _create_group,
             timeout_exception=self._timeout_exception,
             group_id=group_id,
         )
-
-    @staticmethod
-    def _delete_group_handler(
-        async_result, timeout, timeout_exception, group_id
-    ):
-        try:
-            async_result.get(block=True, timeout=timeout)
-        except timeout_exception as e:
-            utils.raise_with_cause(
-                coordination.OperationTimedOut, str(e), cause=e
-            )
-        except exceptions.NoNodeError:
-            raise coordination.GroupNotCreated(group_id)
-        except exceptions.NotEmptyError:
-            raise coordination.GroupNotEmpty(group_id)
-        except exceptions.ZookeeperError as e:
-            utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
 
     def delete_group(self, group_id):
         group_path = self._path_group(group_id)
         async_result = self._coord.delete_async(group_path)
+
+        def _delete_group(async_result, timeout, timeout_exception, group_id):
+            try:
+                async_result.get(block=True, timeout=timeout)
+            except timeout_exception as e:
+                utils.raise_with_cause(
+                    coordination.OperationTimedOut, str(e), cause=e
+                )
+            except exceptions.NoNodeError:
+                raise coordination.GroupNotCreated(group_id)
+            except exceptions.NotEmptyError:
+                raise coordination.GroupNotEmpty(group_id)
+            except exceptions.ZookeeperError as e:
+                utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
+
         return ZooAsyncResult(
             async_result,
-            self._delete_group_handler,
+            _delete_group,
             timeout_exception=self._timeout_exception,
             group_id=group_id,
         )
-
-    def _join_group_handler(
-        self, async_result, timeout, timeout_exception, group_id, member_id
-    ):
-        try:
-            async_result.get(block=True, timeout=timeout)
-        except timeout_exception as e:
-            utils.raise_with_cause(
-                coordination.OperationTimedOut, str(e), cause=e
-            )
-        except exceptions.NodeExistsError:
-            raise coordination.MemberAlreadyExist(group_id, member_id)
-        except exceptions.NoNodeError:
-            raise coordination.GroupNotCreated(group_id)
-        except exceptions.ZookeeperError as e:
-            utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
-
-        self._joined_groups.add(group_id)
 
     def join_group(self, group_id, capabilities=b""):
         member_path = self._path_member(group_id, self._member_id)
@@ -264,29 +243,32 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         async_result = self._coord.create_async(
             member_path, value=capabilities, ephemeral=True
         )
+
+        def _join_group(
+            async_result, timeout, timeout_exception, group_id, member_id
+        ):
+            try:
+                async_result.get(block=True, timeout=timeout)
+            except timeout_exception as e:
+                utils.raise_with_cause(
+                    coordination.OperationTimedOut, str(e), cause=e
+                )
+            except exceptions.NodeExistsError:
+                raise coordination.MemberAlreadyExist(group_id, member_id)
+            except exceptions.NoNodeError:
+                raise coordination.GroupNotCreated(group_id)
+            except exceptions.ZookeeperError as e:
+                utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
+
+            self._joined_groups.add(group_id)
+
         return ZooAsyncResult(
             async_result,
-            self._join_group_handler,
+            _join_group,
             timeout_exception=self._timeout_exception,
             group_id=group_id,
             member_id=self._member_id,
         )
-
-    def _leave_group_handler(
-        self, async_result, timeout, timeout_exception, group_id, member_id
-    ):
-        try:
-            async_result.get(block=True, timeout=timeout)
-        except timeout_exception as e:
-            utils.raise_with_cause(
-                coordination.OperationTimedOut, str(e), cause=e
-            )
-        except exceptions.NoNodeError:
-            raise coordination.MemberNotJoined(group_id, member_id)
-        except exceptions.ZookeeperError as e:
-            utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
-
-        self._joined_groups.discard(group_id)
 
     def heartbeat(self):
         # Just fetch the base path (and do nothing with it); this will
@@ -308,155 +290,171 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
     def leave_group(self, group_id):
         member_path = self._path_member(group_id, self._member_id)
         async_result = self._coord.delete_async(member_path)
+
+        def _leave_group(
+            async_result, timeout, timeout_exception, group_id, member_id
+        ):
+            try:
+                async_result.get(block=True, timeout=timeout)
+            except timeout_exception as e:
+                utils.raise_with_cause(
+                    coordination.OperationTimedOut, str(e), cause=e
+                )
+            except exceptions.NoNodeError:
+                raise coordination.MemberNotJoined(group_id, member_id)
+            except exceptions.ZookeeperError as e:
+                utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
+
+            self._joined_groups.discard(group_id)
+
         return ZooAsyncResult(
             async_result,
-            self._leave_group_handler,
+            _leave_group,
             timeout_exception=self._timeout_exception,
             group_id=group_id,
             member_id=self._member_id,
         )
 
-    @staticmethod
-    def _get_members_handler(
-        async_result, timeout, timeout_exception, group_id
-    ):
-        try:
-            members_ids = async_result.get(block=True, timeout=timeout)
-        except timeout_exception as e:
-            utils.raise_with_cause(
-                coordination.OperationTimedOut, str(e), cause=e
-            )
-        except exceptions.NoNodeError:
-            raise coordination.GroupNotCreated(group_id)
-        except exceptions.ZookeeperError as e:
-            utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
-        else:
-            return {m.encode('ascii') for m in members_ids}
-
     def get_members(self, group_id):
         group_path = self._paths_join("/", self._namespace, group_id)
         async_result = self._coord.get_children_async(group_path)
+
+        def _get_members(async_result, timeout, timeout_exception, group_id):
+            try:
+                members_ids = async_result.get(block=True, timeout=timeout)
+            except timeout_exception as e:
+                utils.raise_with_cause(
+                    coordination.OperationTimedOut, str(e), cause=e
+                )
+            except exceptions.NoNodeError:
+                raise coordination.GroupNotCreated(group_id)
+            except exceptions.ZookeeperError as e:
+                utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
+            else:
+                return {m.encode('ascii') for m in members_ids}
+
         return ZooAsyncResult(
             async_result,
-            self._get_members_handler,
+            _get_members,
             timeout_exception=self._timeout_exception,
             group_id=group_id,
         )
-
-    @staticmethod
-    def _update_capabilities_handler(
-        async_result, timeout, timeout_exception, group_id, member_id
-    ):
-        try:
-            async_result.get(block=True, timeout=timeout)
-        except timeout_exception as e:
-            utils.raise_with_cause(
-                coordination.OperationTimedOut, str(e), cause=e
-            )
-        except exceptions.NoNodeError:
-            raise coordination.MemberNotJoined(group_id, member_id)
-        except exceptions.ZookeeperError as e:
-            utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
 
     def update_capabilities(self, group_id, capabilities):
         member_path = self._path_member(group_id, self._member_id)
         capabilities = self._dumps(capabilities)
         async_result = self._coord.set_async(member_path, capabilities)
+
+        def _update_capabilities(
+            async_result, timeout, timeout_exception, group_id, member_id
+        ):
+            try:
+                async_result.get(block=True, timeout=timeout)
+            except timeout_exception as e:
+                utils.raise_with_cause(
+                    coordination.OperationTimedOut, str(e), cause=e
+                )
+            except exceptions.NoNodeError:
+                raise coordination.MemberNotJoined(group_id, member_id)
+            except exceptions.ZookeeperError as e:
+                utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
+
         return ZooAsyncResult(
             async_result,
-            self._update_capabilities_handler,
+            _update_capabilities,
             timeout_exception=self._timeout_exception,
             group_id=group_id,
             member_id=self._member_id,
         )
-
-    @classmethod
-    def _get_member_capabilities_handler(
-        cls, async_result, timeout, timeout_exception, group_id, member_id
-    ):
-        try:
-            capabilities = async_result.get(block=True, timeout=timeout)[0]
-        except timeout_exception as e:
-            utils.raise_with_cause(
-                coordination.OperationTimedOut, str(e), cause=e
-            )
-        except exceptions.NoNodeError:
-            raise coordination.MemberNotJoined(group_id, member_id)
-        except exceptions.ZookeeperError as e:
-            utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
-        else:
-            return cls._loads(capabilities)
 
     def get_member_capabilities(self, group_id, member_id):
         member_path = self._path_member(group_id, member_id)
         async_result = self._coord.get_async(member_path)
+
+        def _get_member_capabilities(
+            async_result, timeout, timeout_exception, group_id, member_id
+        ):
+            try:
+                capabilities = async_result.get(block=True, timeout=timeout)[0]
+            except timeout_exception as e:
+                utils.raise_with_cause(
+                    coordination.OperationTimedOut, str(e), cause=e
+                )
+            except exceptions.NoNodeError:
+                raise coordination.MemberNotJoined(group_id, member_id)
+            except exceptions.ZookeeperError as e:
+                utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
+            else:
+                return self._loads(capabilities)
+
         return ZooAsyncResult(
             async_result,
-            self._get_member_capabilities_handler,
+            _get_member_capabilities,
             timeout_exception=self._timeout_exception,
             group_id=group_id,
             member_id=self._member_id,
         )
-
-    @classmethod
-    def _get_member_info_handler(
-        cls, async_result, timeout, timeout_exception, group_id, member_id
-    ):
-        try:
-            capabilities, znode_stats = async_result.get(
-                block=True, timeout=timeout
-            )
-        except timeout_exception as e:
-            utils.raise_with_cause(
-                coordination.OperationTimedOut, str(e), cause=e
-            )
-        except exceptions.NoNodeError:
-            raise coordination.MemberNotJoined(group_id, member_id)
-        except exceptions.ZookeeperError as e:
-            utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
-        else:
-            member_info = {
-                'capabilities': cls._loads(capabilities),
-                'created_at': utils.millis_to_datetime(znode_stats.ctime),
-                'updated_at': utils.millis_to_datetime(znode_stats.mtime),
-            }
-            return member_info
 
     def get_member_info(self, group_id, member_id):
         member_path = self._path_member(group_id, member_id)
         async_result = self._coord.get_async(member_path)
+
+        def _get_member_info(
+            async_result, timeout, timeout_exception, group_id, member_id
+        ):
+            try:
+                capabilities, znode_stats = async_result.get(
+                    block=True, timeout=timeout
+                )
+            except timeout_exception as e:
+                utils.raise_with_cause(
+                    coordination.OperationTimedOut, str(e), cause=e
+                )
+            except exceptions.NoNodeError:
+                raise coordination.MemberNotJoined(group_id, member_id)
+            except exceptions.ZookeeperError as e:
+                utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
+            else:
+                member_info = {
+                    'capabilities': self._loads(capabilities),
+                    'created_at': utils.millis_to_datetime(znode_stats.ctime),
+                    'updated_at': utils.millis_to_datetime(znode_stats.mtime),
+                }
+                return member_info
+
         return ZooAsyncResult(
             async_result,
-            self._get_member_info_handler,
+            _get_member_info,
             timeout_exception=self._timeout_exception,
             group_id=group_id,
             member_id=self._member_id,
         )
 
-    def _get_groups_handler(self, async_result, timeout, timeout_exception):
-        try:
-            group_ids = async_result.get(block=True, timeout=timeout)
-        except timeout_exception as e:
-            utils.raise_with_cause(
-                coordination.OperationTimedOut, str(e), cause=e
-            )
-        except exceptions.NoNodeError as e:
-            utils.raise_with_cause(
-                tooz.ToozError,
-                f"Tooz namespace '{self._namespace}' has not been created",
-                cause=e,
-            )
-        except exceptions.ZookeeperError as e:
-            utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
-        else:
-            return {g.encode('ascii') for g in group_ids}
-
     def get_groups(self):
         tooz_namespace = self._paths_join("/", self._namespace)
         async_result = self._coord.get_children_async(tooz_namespace)
+
+        def _get_groups(async_result, timeout, timeout_exception):
+            try:
+                group_ids = async_result.get(block=True, timeout=timeout)
+            except timeout_exception as e:
+                utils.raise_with_cause(
+                    coordination.OperationTimedOut, str(e), cause=e
+                )
+            except exceptions.NoNodeError as e:
+                utils.raise_with_cause(
+                    tooz.ToozError,
+                    f"Tooz namespace '{self._namespace}' has not been created",
+                    cause=e,
+                )
+            except exceptions.ZookeeperError as e:
+                utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
+            else:
+                return {g.encode('ascii') for g in group_ids}
+
         return ZooAsyncResult(
             async_result,
-            self._get_groups_handler,
+            _get_groups,
             timeout_exception=self._timeout_exception,
         )
 
