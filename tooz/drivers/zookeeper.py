@@ -165,7 +165,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
                 cause=e,
             )
         try:
-            self._coord.ensure_path(self._paths_join("/", self._namespace))
+            self._coord.ensure_path(self._base_path())
         except exceptions.KazooException as e:
             utils.raise_with_cause(
                 tooz.ToozError, f"Operational error: {e}", cause=e
@@ -265,7 +265,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         # Just fetch the base path (and do nothing with it); this will
         # force any waiting heartbeat responses to be flushed, and also
         # ensures that the connection still works as expected...
-        base_path = self._paths_join("/", self._namespace)
+        base_path = self._base_path()
         try:
             self._coord.get(base_path)
         except self._timeout_exception as e:
@@ -307,7 +307,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         )
 
     def get_members(self, group_id):
-        group_path = self._paths_join("/", self._namespace, group_id)
+        group_path = self._path_group(group_id)
         async_result = self._coord.get_children_async(group_path)
 
         def _get_members(async_result, timeout, timeout_exception, group_id):
@@ -423,8 +423,8 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         )
 
     def get_groups(self):
-        tooz_namespace = self._paths_join("/", self._namespace)
-        async_result = self._coord.get_children_async(tooz_namespace)
+        base_path = self._base_path()
+        async_result = self._coord.get_children_async(base_path)
 
         def _get_groups(async_result, timeout, timeout_exception):
             try:
@@ -449,6 +449,9 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
             _get_groups,
             timeout_exception=self._timeout_exception,
         )
+
+    def _base_path(self):
+        return self._paths_join("/", self._namespace)
 
     def _path_group(self, group_id):
         return self._paths_join("/", self._namespace, group_id)
@@ -550,7 +553,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
 
     def get_lock(self, name):
         z_lock = self._coord.Lock(
-            self._paths_join(b"/", self._namespace, b"locks", name),
+            self._paths_join("/", self._namespace, "locks", name),
             encodeutils.safe_decode(self._member_id, incoming='ascii'),
         )
         return ZooKeeperLock(name, z_lock)
