@@ -175,14 +175,6 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
     def _stop(self):
         self._coord.stop()
 
-    @staticmethod
-    def _dumps(data):
-        return utils.dumps(data)
-
-    @staticmethod
-    def _loads(blob):
-        return utils.loads(blob)
-
     def create_group(self, group_id):
         group_path = self._path_group(group_id)
         async_result = self._coord.create_async(group_path)
@@ -239,9 +231,8 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
 
     def join_group(self, group_id, capabilities=None):
         member_path = self._path_member(group_id, self._member_id)
-        capabilities = self._dumps(capabilities)
         async_result = self._coord.create_async(
-            member_path, value=capabilities, ephemeral=True
+            member_path, value=utils.dumps(capabilities), ephemeral=True
         )
 
         def _join_group(
@@ -342,8 +333,9 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
 
     def update_capabilities(self, group_id, capabilities):
         member_path = self._path_member(group_id, self._member_id)
-        capabilities = self._dumps(capabilities)
-        async_result = self._coord.set_async(member_path, capabilities)
+        async_result = self._coord.set_async(
+            member_path, value=utils.dumps(capabilities)
+        )
 
         def _update_capabilities(
             async_result, timeout, timeout_exception, group_id, member_id
@@ -385,7 +377,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
             except exceptions.ZookeeperError as e:
                 utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
             else:
-                return self._loads(capabilities)
+                return utils.loads(capabilities)
 
         return ZooAsyncResult(
             async_result,
@@ -416,7 +408,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
                 utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
             else:
                 member_info = {
-                    'capabilities': self._loads(capabilities),
+                    'capabilities': utils.loads(capabilities),
                     'created_at': utils.millis_to_datetime(znode_stats.ctime),
                     'updated_at': utils.millis_to_datetime(znode_stats.mtime),
                 }
