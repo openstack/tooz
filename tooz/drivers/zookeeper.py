@@ -237,7 +237,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
             group_id=group_id,
         )
 
-    def join_group(self, group_id, capabilities=b""):
+    def join_group(self, group_id, capabilities=None):
         member_path = self._path_member(group_id, self._member_id)
         capabilities = self._dumps(capabilities)
         async_result = self._coord.create_async(

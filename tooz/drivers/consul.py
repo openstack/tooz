@@ -418,7 +418,7 @@ class ConsulDriver(
 
         return ConsulFutureResult(self._executor.submit(_delete_group))
 
-    def join_group(self, group_id, capabilities=b""):
+    def join_group(self, group_id, capabilities=None):
         @_translate_failures
         def _join_group():
             # lock the group so that it doesn't get deleted while we join

@@ -500,7 +500,7 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
-    def join_group(self, group_id, capabilities=b""):
+    def join_group(self, group_id, capabilities=None):
         """Join a group and establish group membership asynchronously.
 
         :param group_id: the id of the group to join
@@ -513,7 +513,7 @@ class CoordinationDriver:
         raise tooz.NotImplemented("not implemented")
 
     @_retry.retry()
-    def join_group_create(self, group_id, capabilities=b""):
+    def join_group_create(self, group_id, capabilities=None):
         """Join a group and create it if necessary.
 
         If the group cannot be joined because it does not exist, it is created

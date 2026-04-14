@@ -757,7 +757,7 @@ return 1
             )
         )
 
-    def join_group(self, group_id, capabilities=b""):
+    def join_group(self, group_id, capabilities=None):
         encoded_group = self._encode_group_id(group_id)
         encoded_member_id = self._encode_member_id(self._member_id)
 

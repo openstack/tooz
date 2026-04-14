@@ -341,7 +341,7 @@ class Etcd3Driver(
             self._executor.submit(_delete_group)
         )
 
-    def join_group(self, group_id, capabilities=b""):
+    def join_group(self, group_id, capabilities=None):
         @_retry.retry()
         @_translate_failures
         def _join_group():

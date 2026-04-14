@@ -1,0 +1,7 @@
+---
+upgrade:
+  - |
+    The ``CoordinationDriver.join_group`` method has changed the default value
+    of the ``capabilities`` parameter from ``b''`` to ``None``. This affects
+    all drivers with capabilities support, however, it should have no impact
+    at runtime since both are false'y values.

@@ -265,12 +265,12 @@ class TestAPI(tests.TestWithCoordinator):
 
     def test_get_member_capabilities(self):
         self._coord.create_group(self.group_id).get()
-        self._coord.join_group(self.group_id, b"test_capabilities")
+        self._coord.join_group(self.group_id, {"data": "test_capabilities"})
 
         capa = self._coord.get_member_capabilities(
             self.group_id, self.member_id
         ).get()
-        self.assertEqual(capa, b"test_capabilities")
+        self.assertEqual(capa, {"data": "test_capabilities"})
 
     def test_get_member_capabilities_complex(self):
         self._coord.create_group(self.group_id).get()
@@ -283,6 +283,7 @@ class TestAPI(tests.TestWithCoordinator):
             self.group_id, self.member_id
         ).get()
         self.assertEqual(capa, caps)
+        assert isinstance(capa, dict)
         self.assertEqual(capa['type'], caps['type'])
 
     def test_get_member_capabilities_nonexistent_group(self):
@@ -307,12 +308,16 @@ class TestAPI(tests.TestWithCoordinator):
 
     def test_get_member_info(self):
         self._coord.create_group(self.group_id).get()
-        self._coord.join_group(self.group_id, b"test_capabilities").get()
+        self._coord.join_group(
+            self.group_id, {"data": "test_capabilities"}
+        ).get()
 
         member_info = self._coord.get_member_info(
             self.group_id, self.member_id
         ).get()
-        self.assertEqual(member_info['capabilities'], b"test_capabilities")
+        self.assertEqual(
+            member_info['capabilities'], {"data": "test_capabilities"}
+        )
 
     def test_get_member_info_complex(self):
         self._coord.create_group(self.group_id).get()
@@ -352,24 +357,22 @@ class TestAPI(tests.TestWithCoordinator):
 
     def test_update_capabilities(self):
         self._coord.create_group(self.group_id).get()
-        self._coord.join_group(self.group_id, b"test_capabilities1").get()
+        self._coord.join_group(self.group_id, {"version": 1}).get()
 
         capa = self._coord.get_member_capabilities(
             self.group_id, self.member_id
         ).get()
-        self.assertEqual(capa, b"test_capabilities1")
-        self._coord.update_capabilities(
-            self.group_id, b"test_capabilities2"
-        ).get()
+        self.assertEqual(capa, {"version": 1})
+        self._coord.update_capabilities(self.group_id, {"version": 2}).get()
 
         capa2 = self._coord.get_member_capabilities(
             self.group_id, self.member_id
         ).get()
-        self.assertEqual(capa2, b"test_capabilities2")
+        self.assertEqual(capa2, {"version": 2})
 
     def test_update_capabilities_with_group_id_nonexistent(self):
         update_cap = self._coord.update_capabilities(
-            self.group_id, b'test_capabilities'
+            self.group_id, {"data": "test_capabilities"}
         )
         # Drivers raise one of those depending on their capability
         self.assertRaisesAny(

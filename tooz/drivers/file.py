@@ -297,7 +297,7 @@ class FileDriver(
         fut = self._executor.submit(_do_create_group)
         return FileFutureResult(fut)
 
-    def join_group(self, group_id, capabilities=b""):
+    def join_group(self, group_id, capabilities=None):
         safe_group_id = self._make_filesystem_safe(group_id)
         group_dir = os.path.join(self._group_dir, safe_group_id)
         me_path = os.path.join(group_dir, f"{self._safe_member_id}.raw")
