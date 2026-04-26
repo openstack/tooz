@@ -32,7 +32,6 @@ def print_methods(methods):
 driver_tpl = ":py:class:`~tooz.drivers.%s`"
 driver_class_names = [
     "consul.ConsulDriver",
-    "etcd.EtcdDriver",
     "file.FileDriver",
     "ipc.IPCDriver",
     "kubernetes.SherlockDriver",
@@ -72,7 +71,6 @@ print("")
 grouping_table = [
     [
         "Yes",  # Consul
-        "Yes",  # Etcd
         "Yes",  # File
         "No",  # IPC
         "No",  # Kubernetes
@@ -104,7 +102,6 @@ print("")
 leader_table = [
     [
         "No",  # Consul
-        "No",  # Etcd
         "No",  # File
         "No",  # IPC
         "No",  # Kubernetes
@@ -133,7 +130,6 @@ print("")
 lock_table = [
     [
         "Yes",  # Consul
-        "Yes",  # Etcd
         "Yes",  # File
         "Yes",  # IPC
         "Yes",  # Kubernetes

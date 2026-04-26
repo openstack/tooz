@@ -14,12 +14,6 @@ Consul
 .. autoclass:: tooz.drivers.consul.ConsulDriver
    :members:
 
-Etcd
-~~~~
-
-.. autoclass:: tooz.drivers.etcd.EtcdDriver
-   :members:
-
 Etcd3gw
 ~~~~~~~
 
