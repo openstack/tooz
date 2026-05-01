@@ -102,6 +102,7 @@ module = [
     "tooz.drivers.memcached",
     "tooz.drivers.mysql",
     "tooz.drivers.pgsql",
+    "tooz.drivers.zookeeper",
     "tooz.hashring",
     "tooz.locking",
     "tooz.partitioner",
