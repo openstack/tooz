@@ -12,15 +12,22 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from __future__ import annotations
+
+from collections.abc import Callable
+from concurrent import futures
 import functools
 import logging
 import string
 import threading
+from typing import Any, ParamSpec, TypeVar, cast
 
 from oslo_utils import netutils
 from oslo_utils import strutils
 from oslo_utils import versionutils
 import redis
+from redis import client
+from redis.commands.core import Script as RedisScript
 from redis import exceptions
 from redis import sentinel
 
@@ -31,8 +38,13 @@ from tooz import utils
 
 LOG = logging.getLogger(__name__)
 
+P = ParamSpec('P')
+R = TypeVar('R')
 
-def _handle_failures(n_tries=15):
+
+def _handle_failures(
+    n_tries: int = 15,
+) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """Translates common redis exceptions into tooz exceptions.
 
     This also enables retrying on certain exceptions.
@@ -41,9 +53,9 @@ def _handle_failures(n_tries=15):
     :param n_tries: the number of retries
     """
 
-    def inner(func):
+    def inner(func: Callable[P, R]) -> Callable[P, R]:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             ntries = n_tries
             while ntries:
                 try:
@@ -68,6 +80,7 @@ def _handle_failures(n_tries=15):
                     )
                 except exceptions.RedisError as e:
                     utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
+            raise RuntimeError("unreachable")
 
         return wrapper
 
@@ -75,30 +88,41 @@ def _handle_failures(n_tries=15):
 
 
 class RedisLock(locking.Lock):
-    def __init__(self, coord, client, name, timeout):
+    def __init__(
+        self,
+        coord: RedisDriver,
+        client: redis.Redis,
+        name: bytes,
+        timeout: int,
+    ) -> None:
         name = b'%s_%s_lock' % (coord.namespace, utils.to_binary(name))
         super().__init__(name)
         # NOTE(jd) Make sure we don't release and heartbeat at the same time by
         # using a exclusive access lock (LP#1557593)
         self._exclusive_access = threading.Lock()
-        self._lock = client.lock(name, timeout=timeout, thread_local=False)
+        self._lock = client.lock(name, timeout=timeout, thread_local=False)  # type: ignore[arg-type]
         self._coord = coord
         self._client = client
 
     @_handle_failures()
-    def is_still_owner(self):
+    def is_still_owner(self) -> bool:
         lock_tok = self._lock.local.token
         if not lock_tok:
             return False
         owner_tok = self._client.get(self.name)
-        return owner_tok == lock_tok
+        return bool(owner_tok == lock_tok)
 
     @_handle_failures()
-    def break_(self):
+    def break_(self) -> bool:
         return bool(self._client.delete(self.name))
 
     @_handle_failures()
-    def acquire(self, blocking=True, shared=False, timeout=None):
+    def acquire(
+        self,
+        blocking: bool | float = True,
+        shared: bool = False,
+        timeout: float | None = None,
+    ) -> bool:
         if shared:
             raise tooz.NotImplemented("not implemented")
         blocking, timeout = utils.convert_blocking(blocking, timeout)
@@ -108,10 +132,10 @@ class RedisLock(locking.Lock):
         if acquired:
             with self._exclusive_access:
                 self._coord._acquired_locks.add(self)
-        return acquired
+        return bool(acquired)
 
     @_handle_failures()
-    def release(self):
+    def release(self) -> bool:
         with self._exclusive_access:
             try:
                 self._lock.release()
@@ -123,7 +147,7 @@ class RedisLock(locking.Lock):
             return True
 
     @_handle_failures()
-    def heartbeat(self):
+    def heartbeat(self) -> bool:
         with self._exclusive_access:
             if self.acquired:
                 self._lock.reacquire()
@@ -131,7 +155,7 @@ class RedisLock(locking.Lock):
         return False
 
     @property
-    def acquired(self):
+    def acquired(self) -> bool:
         return self in self._coord._acquired_locks
 
 
@@ -380,7 +404,9 @@ return 1
 
     EXCLUDE_OPTIONS = CLIENT_LIST_ARGS
 
-    def __init__(self, member_id, parsed_url, options):
+    def __init__(
+        self, member_id: bytes, parsed_url: Any, options: dict[str, Any]
+    ) -> None:
         super().__init__(member_id, parsed_url, options)
         self._parsed_url = parsed_url
         self._encoding = self._options.get('encoding', self.DEFAULT_ENCODING)
@@ -396,13 +422,15 @@ return 1
         self._group_prefix = self._namespace + b"_group"
         self._beat_prefix = self._namespace + b"_beats"
         self._groups = self._namespace + b"_groups"
-        self._client = None
-        self._acquired_locks = set()
+        self._client: redis.Redis | None = None
+        self._acquired_locks: set[RedisLock] = set()
         self._started = False
-        self._server_info = {}
-        self._scripts = {}
+        self._server_info: dict[str, Any] = {}
+        self._scripts: dict[str, RedisScript] = {}
 
-    def _check_fetch_redis_version(self, desired_version, not_existent=True):
+    def _check_fetch_redis_version(
+        self, desired_version: str, not_existent: bool = True
+    ) -> tuple[bool, str | None]:
         try:
             redis_version = self._server_info['redis_version']
         except KeyError:
@@ -415,29 +443,35 @@ return 1
         return (False, redis_version)
 
     @property
-    def namespace(self):
+    def namespace(self) -> bytes:
         return self._namespace
 
     @property
-    def running(self):
+    def running(self) -> bool:
         return self._started
 
-    def get_lock(self, name):
+    def get_lock(self, name: bytes) -> RedisLock:
+        assert self._client is not None
         return RedisLock(self, self._client, name, self.lock_timeout)
 
     _dumps = staticmethod(utils.dumps)
     _loads = staticmethod(utils.loads)
 
     @classmethod
-    def _parse_sentinel(cls, sentinel):
+    def _parse_sentinel(cls, sentinel: str) -> tuple[str, int]:
         host, port = netutils.parse_host_port(sentinel)
         if host is None or port is None:
             raise ValueError('Malformed sentinel server format')
         return (host, port)
 
     @classmethod
-    def _make_client(cls, parsed_url, options, default_socket_timeout):
-        kwargs = {}
+    def _make_client(
+        cls,
+        parsed_url: Any,
+        options: dict[str, Any],
+        default_socket_timeout: int,
+    ) -> redis.Redis:
+        kwargs: dict[str, Any] = {}
         if parsed_url.hostname:
             kwargs['host'] = parsed_url.hostname
             if parsed_url.port:
@@ -453,6 +487,7 @@ return 1
         for a in cls.CLIENT_ARGS:
             if a not in options:
                 continue
+            v: Any
             if a in cls.CLIENT_BOOL_ARGS:
                 v = strutils.bool_from_string(options[a])
             elif a in cls.CLIENT_LIST_ARGS:
@@ -476,7 +511,7 @@ return 1
             ]
             sentinel_hosts.insert(0, (kwargs.pop('host'), kwargs.pop('port')))
             sentinel_name = kwargs.pop('sentinel')
-            sentinel_kwargs = {}
+            sentinel_kwargs: dict[str, Any] = {}
             # NOTE(tkajinam): Copy socket_* options, according to the logic
             # in redis-py
             for key in kwargs:
@@ -490,17 +525,17 @@ return 1
             for key in ('username', 'password'):
                 if 'sentinel_' + key in kwargs:
                     sentinel_kwargs[key] = kwargs.pop('sentinel_' + key)
-            sentinel_server = sentinel.Sentinel(
+            sentinel_server = sentinel.Sentinel(  # type: ignore[no-untyped-call]
                 sentinel_hosts, sentinel_kwargs=sentinel_kwargs, **kwargs
             )
-            master_client = sentinel_server.master_for(sentinel_name)
+            master_client = sentinel_server.master_for(sentinel_name)  # type: ignore[no-untyped-call]
             # The master_client is a redis.Redis using a
             # Sentinel managed connection pool.
-            return master_client
+            return cast(redis.Redis, master_client)
         return redis.Redis(**kwargs)
 
     @_handle_failures()
-    def _start(self):
+    def _start(self) -> None:
         super()._start()
         try:
             self._client = self._make_client(
@@ -514,7 +549,7 @@ return 1
             # Ensure that the server is alive and not dead, this does not
             # ensure the server will always be alive, but does insure that it
             # at least is alive once...
-            self._server_info = self._client.info()
+            self._server_info = self._client.info()  # type: ignore[assignment]
             # Validate we have a good enough redis version we are connected
             # to so that the basic set of features we support will actually
             # work (instead of blowing up).
@@ -537,37 +572,41 @@ return 1
                 script = script_tpl.substitute(**tpl_params)
                 prepared_scripts[name] = self._client.register_script(script)
             self._scripts = prepared_scripts
+
             self.heartbeat()
             self._started = True
 
-    def _encode_beat_id(self, member_id):
+    def _encode_beat_id(self, member_id: bytes) -> bytes:
         member_id = utils.to_binary(member_id, encoding=self._encoding)
         return self.NAMESPACE_SEP.join([self._beat_prefix, member_id])
 
-    def _encode_member_id(self, member_id):
+    def _encode_member_id(self, member_id: bytes) -> bytes:
         member_id = utils.to_binary(member_id, encoding=self._encoding)
         if member_id == self.GROUP_EXISTS:
             raise ValueError("Not allowed to use private keys as a member id")
         return member_id
 
-    def _decode_member_id(self, member_id):
+    def _decode_member_id(self, member_id: bytes) -> bytes:
         return utils.to_binary(member_id, encoding=self._encoding)
 
-    def _encode_group_leader(self, group_id):
+    def _encode_group_leader(self, group_id: bytes) -> bytes:
         group_id = utils.to_binary(group_id, encoding=self._encoding)
         return b"leader_of_" + group_id
 
-    def _encode_group_id(self, group_id, apply_namespace=True):
+    def _encode_group_id(
+        self, group_id: bytes, apply_namespace: bool = True
+    ) -> bytes:
         group_id = utils.to_binary(group_id, encoding=self._encoding)
         if not apply_namespace:
             return group_id
         return self.NAMESPACE_SEP.join([self._group_prefix, group_id])
 
-    def _decode_group_id(self, group_id):
+    def _decode_group_id(self, group_id: bytes) -> bytes:
         return utils.to_binary(group_id, encoding=self._encoding)
 
     @_handle_failures()
-    def heartbeat(self):
+    def heartbeat(self) -> float:
+        assert self._client is not None
         beat_id = self._encode_beat_id(self._member_id)
         expiry_ms = max(0, int(self.membership_timeout * 1000.0))
         self._client.psetex(beat_id, time_ms=expiry_ms, value=self.STILL_ALIVE)
@@ -582,7 +621,7 @@ return 1
         return min(self.lock_timeout, self.membership_timeout)
 
     @_handle_failures()
-    def _stop(self):
+    def _stop(self) -> None:
         while self._acquired_locks:
             lock = self._acquired_locks.pop()
             try:
@@ -608,21 +647,25 @@ return 1
         self._scripts.clear()
         self._started = False
 
-    def _submit(self, cb, *args, **kwargs):
+    def _submit(
+        self, cb: Callable[P, R], *args: P.args, **kwargs: P.kwargs
+    ) -> futures.Future[R]:
         if not self._started:
             raise tooz.ToozError("Redis driver has not been started")
         return self._executor.submit(cb, *args, **kwargs)
 
-    def _get_script(self, script_key):
+    def _get_script(self, script_key: str) -> RedisScript:
         try:
             return self._scripts[script_key]
         except KeyError:
             raise tooz.ToozError("Redis driver has not been started")
 
-    def create_group(self, group_id):
+    def create_group(
+        self, group_id: bytes
+    ) -> coordination.CoordinatorResult[None]:
         script = self._get_script('create_group')
 
-        def _create_group(script):
+        def _create_group(script: RedisScript) -> None:
             encoded_group = self._encode_group_id(group_id)
             keys = [
                 encoded_group,
@@ -638,10 +681,12 @@ return 1
 
         return RedisFutureResult(self._submit(_create_group, script))
 
-    def update_capabilities(self, group_id, capabilities):
+    def update_capabilities(
+        self, group_id: bytes, capabilities: coordination.Capabilities
+    ) -> coordination.CoordinatorResult[None]:
         script = self._get_script('update_capabilities')
 
-        def _update_capabilities(script):
+        def _update_capabilities(script: RedisScript) -> None:
             keys = [
                 self._encode_group_id(group_id),
             ]
@@ -657,55 +702,62 @@ return 1
 
         return RedisFutureResult(self._submit(_update_capabilities, script))
 
-    def leave_group(self, group_id):
+    def leave_group(
+        self, group_id: bytes
+    ) -> coordination.CoordinatorResult[None]:
         encoded_group = self._encode_group_id(group_id)
         encoded_member_id = self._encode_member_id(self._member_id)
 
-        def _leave_group(p):
+        def _leave_group(p: client.Pipeline) -> None:
             if not p.exists(encoded_group):
                 raise coordination.GroupNotCreated(group_id)
             p.multi()
-            p.hdel(encoded_group, encoded_member_id)
+            p.hdel(encoded_group, encoded_member_id)  # type: ignore[arg-type]
             c = p.execute()[0]
             if c == 0:
                 raise coordination.MemberNotJoined(group_id, self._member_id)
             else:
                 self._joined_groups.discard(group_id)
 
+        assert self._client is not None
         return RedisFutureResult(
             self._submit(
-                self._client.transaction,
+                self._client.transaction,  # type: ignore[arg-type]
                 _leave_group,
                 encoded_group,
                 value_from_callable=True,
             )
         )
 
-    def get_members(self, group_id):
+    def get_members(
+        self, group_id: bytes
+    ) -> coordination.CoordinatorResult[set[bytes]]:
         encoded_group = self._encode_group_id(group_id)
 
-        def _get_members(p):
+        def _get_members(p: client.Pipeline) -> set[bytes]:
             if not p.exists(encoded_group):
                 raise coordination.GroupNotCreated(group_id)
-            potential_members = set()
-            for m in p.hkeys(encoded_group):
+            potential_members: set[bytes] = set()
+            for m in p.hkeys(encoded_group):  # type: ignore[arg-type,union-attr]
                 m = self._decode_member_id(m)
                 if m != self.GROUP_EXISTS:
                     potential_members.add(m)
             if not potential_members:
                 return set()
+
             # Ok now we need to see which members have passed away...
-            gone_members = set()
+            gone_members: set[bytes] = set()
             member_values = p.mget(
                 map(self._encode_beat_id, potential_members)
             )
             for potential_member, value in zip(
-                potential_members, member_values
+                potential_members,
+                member_values,  # type: ignore[arg-type]
             ):
                 # Always preserve self (just incase we haven't heartbeated
                 # while this call/s was being made...), this does *not* prevent
                 # another client from removing this though...
-                if potential_member == self._member_id:
+                if potential_member == self._encode_member_id(self._member_id):
                     continue
                 if not value:
                     gone_members.add(potential_member)
@@ -715,50 +767,61 @@ return 1
                 encoded_gone_members = list(
                     self._encode_member_id(m) for m in gone_members
                 )
-                p.hdel(encoded_group, *encoded_gone_members)
+                p.hdel(encoded_group, *encoded_gone_members)  # type: ignore[arg-type]
                 p.execute()
                 return {m for m in potential_members if m not in gone_members}
             return potential_members
 
+        assert self._client is not None
         return RedisFutureResult(
             self._submit(
-                self._client.transaction,
-                _get_members,
+                self._client.transaction,  # type: ignore[arg-type]
+                _get_members,  # type: ignore[arg-type]
                 encoded_group,
                 value_from_callable=True,
             )
         )
 
-    def get_member_capabilities(self, group_id, member_id):
+    def get_member_capabilities(
+        self, group_id: bytes, member_id: bytes
+    ) -> coordination.CoordinatorResult[coordination.Capabilities | None]:
         encoded_group = self._encode_group_id(group_id)
         encoded_member_id = self._encode_member_id(member_id)
 
-        def _get_member_capabilities(p):
+        def _get_member_capabilities(
+            p: client.Pipeline,
+        ) -> coordination.Capabilities | None:
             if not p.exists(encoded_group):
                 raise coordination.GroupNotCreated(group_id)
-            capabilities = p.hget(encoded_group, encoded_member_id)
+            capabilities = p.hget(encoded_group, encoded_member_id)  # type: ignore[arg-type]
             if capabilities is None:
                 raise coordination.MemberNotJoined(group_id, member_id)
-            return self._loads(capabilities)
+            return self._loads(capabilities)  # type: ignore[arg-type]
 
+        assert self._client is not None
         return RedisFutureResult(
             self._submit(
-                self._client.transaction,
-                _get_member_capabilities,
+                self._client.transaction,  # type: ignore[arg-type]
+                _get_member_capabilities,  # type: ignore[arg-type]
                 encoded_group,
                 value_from_callable=True,
             )
         )
 
-    def join_group(self, group_id, capabilities=None):
+    def join_group(
+        self,
+        group_id: bytes,
+        capabilities: coordination.Capabilities | None = None,
+    ) -> coordination.CoordinatorResult[None]:
         encoded_group = self._encode_group_id(group_id)
         encoded_member_id = self._encode_member_id(self._member_id)
 
-        def _join_group(p):
+        def _join_group(p: client.Pipeline) -> None:
             if not p.exists(encoded_group):
                 raise coordination.GroupNotCreated(group_id)
+
             p.multi()
-            p.hset(encoded_group, encoded_member_id, self._dumps(capabilities))
+            p.hset(encoded_group, encoded_member_id, self._dumps(capabilities))  # type: ignore[arg-type]
             c = p.execute()[0]
             if c == 0:
                 # Field already exists...
@@ -768,19 +831,22 @@ return 1
             else:
                 self._joined_groups.add(group_id)
 
+        assert self._client is not None
         return RedisFutureResult(
             self._submit(
-                self._client.transaction,
+                self._client.transaction,  # type: ignore[arg-type]
                 _join_group,
                 encoded_group,
                 value_from_callable=True,
             )
         )
 
-    def delete_group(self, group_id):
+    def delete_group(
+        self, group_id: bytes
+    ) -> coordination.CoordinatorResult[None]:
         script = self._get_script('delete_group')
 
-        def _delete_group(script):
+        def _delete_group(script: RedisScript) -> None:
             keys = [
                 self._encode_group_id(group_id),
                 self._groups,
@@ -795,35 +861,37 @@ return 1
                 raise coordination.GroupNotEmpty(group_id)
             if result == -4:
                 raise tooz.ToozError(
-                    f"Unable to remove '{args[0]}' key"
-                    f" from set located at '{keys[-1]}'"
+                    f"Unable to remove '{args[0].decode()}' key from set "
+                    f"located at '{keys[-1].decode()}'"
                 )
             if result != 1:
                 raise tooz.ToozError(
-                    "Internal error, unable"
-                    f" to complete group '{group_id}' removal"
+                    f"Internal error, unable to complete group "
+                    f"'{group_id.decode('ascii', errors='replace')}' removal"
                 )
 
         return RedisFutureResult(self._submit(_delete_group, script))
 
-    def _destroy_group(self, group_id):
+    def _destroy_group(self, group_id: bytes) -> None:
         """Should only be used in tests..."""
+        assert self._client is not None
         self._client.delete(self._encode_group_id(group_id))
 
-    def get_groups(self):
-        def _get_groups():
+    def get_groups(self) -> coordination.CoordinatorResult[list[bytes]]:
+        def _get_groups() -> list[bytes]:
+            assert self._client is not None
             results = []
-            for g in self._client.smembers(self._groups):
+            for g in self._client.smembers(self._groups):  # type: ignore[union-attr]
                 results.append(self._decode_group_id(g))
             return results
 
         return RedisFutureResult(self._submit(_get_groups))
 
-    def _get_leader_lock(self, group_id):
+    def _get_leader_lock(self, group_id: bytes) -> RedisLock:
         name = self._encode_group_leader(group_id)
         return self.get_lock(name)
 
-    def run_elect_coordinator(self):
+    def run_elect_coordinator(self) -> None:
         for group_id, hooks in self._hooks_elected_leader.items():
             leader_lock = self._get_leader_lock(group_id)
             if leader_lock.acquire(blocking=False):
@@ -832,7 +900,8 @@ return 1
                     coordination.LeaderElected(group_id, self._member_id)
                 )
 
-    def run_watchers(self, timeout=None):
+    # TODO(stephenfin): What is the type of the return value?
+    def run_watchers(self, timeout: float | None = None) -> list[Any]:
         result = super().run_watchers(timeout=timeout)
         self.run_elect_coordinator()
         return result
