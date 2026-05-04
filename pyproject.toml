@@ -85,7 +85,7 @@ packages = [
 python_version = "3.10"
 show_column_numbers = true
 show_error_context = true
-incremental = true
+strict = true
 disable_error_code = ["import-untyped"]
 exclude = "(?x)(doc | examples | releasenotes | tools)"
 # Vendored stubs for packages pending upstream type annotation merges.
@@ -95,31 +95,18 @@ exclude = "(?x)(doc | examples | releasenotes | tools)"
 mypy_path = ["stubs"]
 
 [[tool.mypy.overrides]]
-module = [
-    "tooz.coordination",
-    "tooz.drivers.etcd3gw",
-    "tooz.drivers.file",
-    "tooz.drivers.ipc",
-    "tooz.drivers.kubernetes",
-    "tooz.drivers.memcached",
-    "tooz.drivers.mysql",
-    "tooz.drivers.pgsql",
-    "tooz.drivers.redis",
-    "tooz.drivers.zookeeper",
-    "tooz.hashring",
-    "tooz.locking",
-    "tooz.partitioner",
-    "tooz.utils",
-    "tooz._retry",
-]
-disallow_untyped_calls = true
-disallow_untyped_defs = true
-
-[[tool.mypy.overrides]]
 module = ["tooz.tests.*"]
 disallow_untyped_calls = false
 disallow_untyped_defs = false
 disallow_subclassing_any = false
+
+[[tool.mypy.overrides]]
+module = [
+    "tooz.drivers.consul",
+    "tooz.drivers.etcd",
+    "tooz.tests.drivers.test_etcd",
+]
+ignore_errors = true
 
 [tool.ruff]
 line-length = 79

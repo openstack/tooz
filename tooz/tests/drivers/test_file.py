@@ -21,6 +21,7 @@ from testtools import testcase
 
 import tooz
 from tooz import coordination
+from tooz.drivers.file import FileDriver
 from tooz import tests
 from tooz import utils
 
@@ -33,6 +34,7 @@ class TestFileDriver(testcase.TestCase):
         url = f'file://{file_path}'
 
         coord = coordination.get_coordinator(url, self._FAKE_MEMBER_ID)
+        assert isinstance(coord, FileDriver)
         self.assertEqual(file_path, coord._dir)
 
     def test_leftover_file(self):
@@ -42,6 +44,7 @@ class TestFileDriver(testcase.TestCase):
         url = f'file://{file_path}'
 
         coord = coordination.get_coordinator(url, self._FAKE_MEMBER_ID)
+        assert isinstance(coord, FileDriver)
         coord.start()
         self.addCleanup(coord.stop)
 
@@ -143,6 +146,7 @@ class TestFileDriver(testcase.TestCase):
         member_id = b"test-member"
 
         coord = coordination.get_coordinator(url, member_id)
+        assert isinstance(coord, FileDriver)
         coord.start()
         self.addCleanup(coord.stop)
 
@@ -177,6 +181,7 @@ class TestFileDriver(testcase.TestCase):
         member_id = "test-member"
 
         coord = coordination.get_coordinator(url, self._FAKE_MEMBER_ID)
+        assert isinstance(coord, FileDriver)
         coord.start()
         self.addCleanup(coord.stop)
 
@@ -211,6 +216,7 @@ class TestFileDriver(testcase.TestCase):
         group_id = b"my_group"
 
         coord = coordination.get_coordinator(url, self._FAKE_MEMBER_ID)
+        assert isinstance(coord, FileDriver)
         coord.start()
         self.addCleanup(coord.stop)
 
@@ -238,6 +244,7 @@ class TestFileDriver(testcase.TestCase):
         group_id = "my_group"
 
         coord = coordination.get_coordinator(url, self._FAKE_MEMBER_ID)
+        assert isinstance(coord, FileDriver)
         coord.start()
         self.addCleanup(coord.stop)
 

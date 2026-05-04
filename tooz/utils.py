@@ -233,8 +233,7 @@ def millis_to_datetime(milliseconds: str | float) -> datetime.datetime:
     return datetime.datetime.fromtimestamp(float(milliseconds) / 1000)
 
 
-# https://review.opendev.org/c/openstack/oslo.utils/+/979690
-def raise_with_cause(  # type: ignore[misc]
+def raise_with_cause(
     exc_cls: type[tooz.ToozError],
     message: str,
     *args: Any,

@@ -796,7 +796,7 @@ return 1
             capabilities = p.hget(encoded_group, encoded_member_id)  # type: ignore[arg-type]
             if capabilities is None:
                 raise coordination.MemberNotJoined(group_id, member_id)
-            return self._loads(capabilities)  # type: ignore[arg-type]
+            return self._loads(capabilities)  # type: ignore[arg-type,no-any-return]
 
         assert self._client is not None
         return RedisFutureResult(

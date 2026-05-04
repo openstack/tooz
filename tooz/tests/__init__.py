@@ -22,9 +22,10 @@ from oslo_utils import uuidutils
 from testtools import testcase
 
 import tooz
+import tooz.coordination
 
 
-def get_random_uuid():
+def get_random_uuid() -> bytes:
     return uuidutils.generate_uuid().encode('ascii')
 
 
@@ -51,25 +52,26 @@ class SkipNotImplementedMeta(type):
 
 
 class TestWithCoordinator(testcase.TestCase, metaclass=SkipNotImplementedMeta):
-    url = os.getenv("TOOZ_TEST_URL")
+    url: str
 
     def setUp(self):
         super().setUp()
-        if self.url is None:
+        url = os.getenv("TOOZ_TEST_URL")
+        if url is None:
             raise RuntimeError("No URL set for this driver")
         if os.getenv("TOOZ_TEST_ETCD3GW"):
             # TODO(jan.gutter): When pifpaf supports etcd 3.4 we should use the
             # defaults
-            self.url = (
-                self.url.replace("etcd://", "etcd3+http://")
-                + "?api_version=v3beta"
+            url = (
+                url.replace("etcd://", "etcd3+http://") + "?api_version=v3beta"
             )
         if os.getenv("TOOZ_TEST_SENTINEL"):
-            redis_port = os.getenv("TOOZ_TEST_REDIS_PORT", 6379)
-            sentinel_port = os.getenv("TOOZ_TEST_REDIS_SENTINEL_PORT", 6380)
-            self.url = self.url.replace(
+            redis_port = os.getenv("TOOZ_TEST_REDIS_PORT", "6379")
+            sentinel_port = os.getenv("TOOZ_TEST_REDIS_SENTINEL_PORT", "6380")
+            url = url.replace(
                 f":{redis_port}", f":{sentinel_port}?sentinel=pifpaf"
             )
+        self.url = url
         self.useFixture(fixtures.NestedTempfile())
         self.group_id = get_random_uuid()
         self.member_id = get_random_uuid()
