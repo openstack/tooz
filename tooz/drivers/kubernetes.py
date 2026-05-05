@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 from typing import Any
+import warnings
 
 from kubernetes.client import exceptions as k8s_exc
 import sherlock
@@ -82,10 +83,6 @@ class KubernetesLock(locking.Lock):
         return self._lock.locked() and self.is_still_owner()
 
 
-# TODO(stephenfin): This sherlock [1] library does not look to be maintained.
-# This driver should probably be deprecated.
-#
-# https://github.com/py-sherlock/sherlock
 class SherlockDriver(coordination.CoordinationDriverCachedRunWatchers):
     """This driver uses the `sherlock`_ client against `kubernetes`_ servers.
 
@@ -122,6 +119,12 @@ class SherlockDriver(coordination.CoordinationDriverCachedRunWatchers):
     def __init__(
         self, member_id: bytes, parsed_url: Any, options: dict[str, Any]
     ) -> None:
+        warnings.warn(
+            'The kubernetes driver is deprecated and will be removed in '
+            'a future release',
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
         super().__init__(member_id, parsed_url, options)
         options = utils.collapse(options)
         self._namespace = options.get('namespace', self.K8S_NAMESPACE)

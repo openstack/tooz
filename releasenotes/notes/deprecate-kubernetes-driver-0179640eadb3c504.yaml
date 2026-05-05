@@ -1,0 +1,6 @@
+---
+deprecations:
+  - |
+    The ``kubernetes`` driver is deprecated for removal, as the underlying
+    library it depends on is no longer maintained. Users are encouraged to
+    migrate to another driver.
