@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import abc
 import collections
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from concurrent import futures
 import contextlib
 import enum
@@ -853,7 +853,7 @@ class CoordinationDriverCachedRunWatchers(CoordinationDriver):
 def get_coordinator(
     backend_url: str,
     member_id: bytes,
-    characteristics: frozenset[Characteristics] = frozenset(),
+    characteristics: Iterable[Characteristics] | None = None,
     **kwargs: Any,
 ) -> CoordinationDriver:
     """Initialize and load the backend.
@@ -887,10 +887,13 @@ def get_coordinator(
     d = m.driver
     assert isinstance(d, CoordinationDriver)  # narrow type
     driver_characteristics = set(getattr(d, 'CHARACTERISTICS', set()))
-    missing_characteristics = set(characteristics) - driver_characteristics
+    characteristics_set: set[Characteristics] = (
+        set(characteristics) if characteristics is not None else set()
+    )
+    missing_characteristics = characteristics_set - driver_characteristics
     if missing_characteristics:
         raise ToozDriverChosenPoorly(
-            f"Desired characteristics {characteristics} is not a strict "
+            f"Desired characteristics {characteristics_set} is not a strict "
             f"subset of driver characteristics {driver_characteristics}, "
             f"{missing_characteristics} characteristics were not found"
         )
