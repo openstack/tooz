@@ -549,7 +549,7 @@ return 1
             # Ensure that the server is alive and not dead, this does not
             # ensure the server will always be alive, but does insure that it
             # at least is alive once...
-            self._server_info = self._client.info()  # type: ignore[assignment]
+            self._server_info = self._client.info()
             # Validate we have a good enough redis version we are connected
             # to so that the basic set of features we support will actually
             # work (instead of blowing up).
@@ -586,7 +586,7 @@ return 1
             raise ValueError("Not allowed to use private keys as a member id")
         return member_id
 
-    def _decode_member_id(self, member_id: bytes) -> bytes:
+    def _decode_member_id(self, member_id: bytes | str) -> bytes:
         return utils.to_binary(member_id, encoding=self._encoding)
 
     def _encode_group_leader(self, group_id: bytes) -> bytes:
@@ -601,7 +601,7 @@ return 1
             return group_id
         return self.NAMESPACE_SEP.join([self._group_prefix, group_id])
 
-    def _decode_group_id(self, group_id: bytes) -> bytes:
+    def _decode_group_id(self, group_id: bytes | str) -> bytes:
         return utils.to_binary(group_id, encoding=self._encoding)
 
     @_handle_failures()
@@ -712,7 +712,7 @@ return 1
             if not p.exists(encoded_group):
                 raise coordination.GroupNotCreated(group_id)
             p.multi()
-            p.hdel(encoded_group, encoded_member_id)  # type: ignore[arg-type]
+            p.hdel(encoded_group, encoded_member_id)
             c = p.execute()[0]
             if c == 0:
                 raise coordination.MemberNotJoined(group_id, self._member_id)
@@ -738,7 +738,7 @@ return 1
             if not p.exists(encoded_group):
                 raise coordination.GroupNotCreated(group_id)
             potential_members: set[bytes] = set()
-            for m in p.hkeys(encoded_group):  # type: ignore[arg-type,union-attr]
+            for m in p.hkeys(encoded_group):
                 m = self._decode_member_id(m)
                 if m != self.GROUP_EXISTS:
                     potential_members.add(m)
@@ -752,7 +752,7 @@ return 1
             )
             for potential_member, value in zip(
                 potential_members,
-                member_values,  # type: ignore[arg-type]
+                member_values,
             ):
                 # Always preserve self (just incase we haven't heartbeated
                 # while this call/s was being made...), this does *not* prevent
@@ -767,7 +767,7 @@ return 1
                 encoded_gone_members = list(
                     self._encode_member_id(m) for m in gone_members
                 )
-                p.hdel(encoded_group, *encoded_gone_members)  # type: ignore[arg-type]
+                p.hdel(encoded_group, *encoded_gone_members)
                 p.execute()
                 return {m for m in potential_members if m not in gone_members}
             return potential_members
@@ -793,7 +793,7 @@ return 1
         ) -> coordination.Capabilities | None:
             if not p.exists(encoded_group):
                 raise coordination.GroupNotCreated(group_id)
-            capabilities = p.hget(encoded_group, encoded_member_id)  # type: ignore[arg-type]
+            capabilities = p.hget(encoded_group, encoded_member_id)
             if capabilities is None:
                 raise coordination.MemberNotJoined(group_id, member_id)
             return self._loads(capabilities)  # type: ignore[arg-type,no-any-return]
@@ -821,7 +821,7 @@ return 1
                 raise coordination.GroupNotCreated(group_id)
 
             p.multi()
-            p.hset(encoded_group, encoded_member_id, self._dumps(capabilities))  # type: ignore[arg-type]
+            p.hset(encoded_group, encoded_member_id, self._dumps(capabilities))
             c = p.execute()[0]
             if c == 0:
                 # Field already exists...
@@ -881,7 +881,7 @@ return 1
         def _get_groups() -> list[bytes]:
             assert self._client is not None
             results = []
-            for g in self._client.smembers(self._groups):  # type: ignore[union-attr]
+            for g in self._client.smembers(self._groups):
                 results.append(self._decode_group_id(g))
             return results
 

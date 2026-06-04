@@ -247,7 +247,7 @@ class MySQLDriver(coordination.CoordinationDriver):
         # https://review.opendev.org/c/openstack/oslo.utils/+/980367
         check_hostname = strutils.bool_from_string(
             check_hostname,
-            default=None,  # type: ignore[arg-type]
+            default=None,
         )
         if check_hostname is not None:
             ssl_args['check_hostname'] = check_hostname
