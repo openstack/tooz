@@ -539,9 +539,7 @@ class CoordinationDriver:
         """Request the creation of a group asynchronously.
 
         :param group_id: the id of the group to create
-        :type group_id: ascii bytes
-        :returns: None
-        :rtype: CoordAsyncResult
+        :returns: A CoordAsyncResult of None.
         """
         raise tooz.NotImplemented("not implemented")
 
@@ -549,7 +547,6 @@ class CoordinationDriver:
         """Return the list composed by all groups ids asynchronously.
 
         :returns: the list of all created group ids
-        :rtype: CoordAsyncResult
         """
         raise tooz.NotImplemented("not implemented")
 
@@ -559,12 +556,9 @@ class CoordinationDriver:
         """Join a group and establish group membership asynchronously.
 
         :param group_id: the id of the group to join
-        :type group_id: ascii bytes
         :param capabilities: the capabilities of the joined member; a
             :class:`dict` mapping string keys to arbitrary values.
-        :type capabilities: dict or None
         :returns: None
-        :rtype: CoordAsyncResult
         """
         raise tooz.NotImplemented("not implemented")
 
@@ -587,6 +581,7 @@ class CoordinationDriver:
         :param group_id: Identifier of the group to join and create
         :param capabilities: the capabilities of the joined member; see
             :meth:`join_group`
+        :returns: None
         """
         req = self.join_group(group_id, capabilities)
         try:
@@ -605,9 +600,7 @@ class CoordinationDriver:
         """Leave a group asynchronously.
 
         :param group_id: the id of the group to leave
-        :type group_id: ascii bytes
         :returns: None
-        :rtype: CoordAsyncResult
         """
         raise tooz.NotImplemented("not implemented")
 
@@ -615,9 +608,7 @@ class CoordinationDriver:
         """Delete a group asynchronously.
 
         :param group_id: the id of the group to leave
-        :type group_id: ascii bytes
-        :returns: Result
-        :rtype: CoordAsyncResult
+        :returns: None
         """
         raise tooz.NotImplemented("not implemented")
 
@@ -625,7 +616,6 @@ class CoordinationDriver:
         """Return the set of all member ids of a group asynchronously.
 
         :returns: set of all member ids in the specified group
-        :rtype: CoordAsyncResult
         """
         raise tooz.NotImplemented("not implemented")
 
@@ -635,11 +625,8 @@ class CoordinationDriver:
         """Return the capabilities of a member asynchronously.
 
         :param group_id: the id of the group of the member
-        :type group_id: ascii bytes
         :param member_id: the id of the member
-        :type member_id: ascii bytes
         :returns: capabilities of a member
-        :rtype: CoordAsyncResult
         """
         raise tooz.NotImplemented("not implemented")
 
@@ -649,11 +636,8 @@ class CoordinationDriver:
         """Return the statistics and capabilities of a member asynchronously.
 
         :param group_id: the id of the group of the member
-        :type group_id: ascii bytes
         :param member_id: the id of the member
-        :type member_id: ascii bytes
         :returns: capabilities and statistics of a member
-        :rtype: CoordAsyncResult
         """
         raise tooz.NotImplemented("not implemented")
 
@@ -663,12 +647,9 @@ class CoordinationDriver:
         """Update member capabilities in the specified group.
 
         :param group_id: the id of the group of the current member
-        :type group_id: ascii bytes
         :param capabilities: the updated capabilities of the member; see
             :meth:`join_group`
-        :type capabilities: dict
         :returns: None
-        :rtype: CoordAsyncResult
         """
         raise tooz.NotImplemented("not implemented")
 
@@ -677,7 +658,6 @@ class CoordinationDriver:
 
         :param group_id: the id of the group:
         :returns: the leader
-        :rtype: CoordAsyncResult
         """
         raise tooz.NotImplemented("not implemented")
 
@@ -716,7 +696,6 @@ class CoordAsyncResult(Generic[T], metaclass=abc.ABCMeta):
         """Retrieve the result of the corresponding asynchronous call.
 
         :param timeout: block until the timeout expire.
-        :type timeout: float
         """
 
     @abc.abstractmethod
@@ -880,14 +859,8 @@ def get_coordinator(
     """Initialize and load the backend.
 
     :param backend_url: the backend URL to use
-    :type backend: str
     :param member_id: the id of the member
-    :type member_id: ascii bytes
     :param characteristics: set
-    :type characteristics: set of :py:class:`.Characteristics` that will
-                           be matched to the requested driver (this **will**
-                           become a **required** parameter in a future tooz
-                           version)
     :param kwargs: additional coordinator options (these take precedence over
                    options of the **same** name found in the ``backend_url``
                    arguments query string)
