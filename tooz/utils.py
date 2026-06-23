@@ -20,7 +20,7 @@ from concurrent import futures
 import datetime
 import operator
 import os
-from typing import TYPE_CHECKING, Any, NoReturn, ParamSpec, TypeVar
+from typing import Any, NoReturn, ParamSpec, Self, TypeVar
 
 import futurist
 import msgpack
@@ -28,10 +28,6 @@ from oslo_serialization import msgpackutils
 from oslo_utils import excutils
 
 import tooz
-
-if TYPE_CHECKING:
-    from typing_extensions import Self
-
 
 P = ParamSpec('P')
 R = TypeVar('R')

@@ -493,9 +493,7 @@ class Etcd3Driver(
 
             self.client.put(
                 prefix_member.decode(),
-                # etcd3gw insists on strings, but msgpack encoded byte strings
-                # are not decodeable
-                utils.dumps(capabilities),  # type: ignore
+                utils.dumps(capabilities),
                 lease=self._membership_lease,
             )
 

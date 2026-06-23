@@ -10,40 +10,40 @@
     check:
       jobs:
         - tooz-tox-examples
-        - tooz-tox-py310-etcd3gw
+        - tooz-tox-py311-etcd3gw
         - tooz-tox-py313-etcd3gw
-        - tooz-tox-py310-zookeeper
+        - tooz-tox-py311-zookeeper
         - tooz-tox-py313-zookeeper
-        - tooz-tox-py310-redis
+        - tooz-tox-py311-redis
         - tooz-tox-py313-redis
-        - tooz-tox-py310-sentinel
+        - tooz-tox-py311-sentinel
         - tooz-tox-py313-sentinel
-        - tooz-tox-py310-memcached
+        - tooz-tox-py311-memcached
         - tooz-tox-py313-memcached
-        - tooz-tox-py310-postgresql
+        - tooz-tox-py311-postgresql
         - tooz-tox-py313-postgresql
-        - tooz-tox-py310-mysql
+        - tooz-tox-py311-mysql
         - tooz-tox-py313-mysql
-        - tooz-tox-py310-consul
+        - tooz-tox-py311-consul
         - tooz-tox-py313-consul
     gate:
       jobs:
         - tooz-tox-examples
-        - tooz-tox-py310-etcd3gw
+        - tooz-tox-py311-etcd3gw
         - tooz-tox-py313-etcd3gw
-        - tooz-tox-py310-zookeeper
+        - tooz-tox-py311-zookeeper
         - tooz-tox-py313-zookeeper
-        - tooz-tox-py310-redis
+        - tooz-tox-py311-redis
         - tooz-tox-py313-redis
-        - tooz-tox-py310-sentinel
+        - tooz-tox-py311-sentinel
         - tooz-tox-py313-sentinel
-        - tooz-tox-py310-memcached
+        - tooz-tox-py311-memcached
         - tooz-tox-py313-memcached
-        - tooz-tox-py310-postgresql
+        - tooz-tox-py311-postgresql
         - tooz-tox-py313-postgresql
-        - tooz-tox-py310-mysql
+        - tooz-tox-py311-mysql
         - tooz-tox-py313-mysql
-        - tooz-tox-py310-consul
+        - tooz-tox-py311-consul
         - tooz-tox-py313-consul
 
 - job:
@@ -55,72 +55,77 @@
       tox_envlist: examples
 
 - job:
-    name: tooz-tox-py310-consul
-    parent: openstack-tox-py310
+    name: tooz-tox-py311-consul
+    parent: openstack-tox-py311
     description: |
-      Run tests using ``py310-consul`` environment.
+      Run tests using ``py311-consul`` environment.
     vars:
-      tox_envlist: py310-consul
+      tox_envlist: py311-consul
 
 - job:
-    name: tooz-tox-py310-etcd3gw
-    parent: openstack-tox-py310
+    name: tooz-tox-py311-etcd3gw
+    parent: openstack-tox-py311
     description: |
-      Run tests using ``py310-etcd3gw`` environment.
+      Run tests using ``py311-etcd3gw`` environment.
     vars:
-      tox_envlist: py310-etcd3gw
+      tox_envlist: py311-etcd3gw
 
 - job:
-    name: tooz-tox-py310-memcached
-    parent: openstack-tox-py310
+    name: tooz-tox-py311-memcached
+    parent: openstack-tox-py311
     description: |
-      Run tests using ``py310-memcached`` environment.
+      Run tests using ``py311-memcached`` environment.
     vars:
-      tox_envlist: py310-memcached
+      tox_envlist: py311-memcached
 
 - job:
-    name: tooz-tox-py310-mysql
-    parent: openstack-tox-py310
+    name: tooz-tox-py311-mysql
+    parent: openstack-tox-py311
+    # NOTE(tkajinam): Debian Bookworm which is used for py311 tests do not
+    # provide mysqld. Because pifpaf does not support mariadb atm we use
+    # Ubuntu Noble which provides mysql.
+    nodeset: ubuntu-noble
     description: |
-      Run tests using ``py310-mysql`` environment.
+      Run tests using ``py311-mysql`` environment.
     vars:
-      tox_envlist: py310-mysql
+      tox_envlist: py311-mysql
+      python_use_pyenv: true
 
 - job:
-    name: tooz-tox-py310-postgresql
-    parent: openstack-tox-py310
+    name: tooz-tox-py311-postgresql
+    parent: openstack-tox-py311
     description: |
-      Run tests using ``py310-postgresql`` environment.
+      Run tests using ``py311-postgresql`` environment.
     vars:
-      tox_envlist: py310-postgresql
+      tox_envlist: py311-postgresql
 
 - job:
-    name: tooz-tox-py310-redis
-    parent: openstack-tox-py310
+    name: tooz-tox-py311-redis
+    parent: openstack-tox-py311
     description: |
-      Run tests using ``py310-redis`` environment.
+      Run tests using ``py311-redis`` environment.
     vars:
-      tox_envlist: py310-redis
+      tox_envlist: py311-redis
     pre-run:
       - playbooks/stop-redis.yaml
 
 - job:
-    name: tooz-tox-py310-sentinel
-    parent: openstack-tox-py310
+    name: tooz-tox-py311-sentinel
+    parent: openstack-tox-py311
     description: |
-      Run tests using ``py310-sentinel`` environment.
+      Run tests using ``py311-sentinel`` environment.
     vars:
-      tox_envlist: py310-sentinel
+      tox_envlist: py311-sentinel
     pre-run:
       - playbooks/stop-redis.yaml
 
 - job:
-    name: tooz-tox-py310-zookeeper
-    parent: openstack-tox-py310
+    name: tooz-tox-py311-zookeeper
+    parent: openstack-tox-py311
     description: |
-      Run tests using ``py310-zookeeper`` environment.
+      Run tests using ``py311-zookeeper`` environment.
     vars:
-      tox_envlist: py310-zookeeper
+      tox_envlist: py311-zookeeper
 
 - job:
     name: tooz-tox-py313-consul

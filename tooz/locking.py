@@ -17,14 +17,10 @@ from __future__ import annotations
 
 import abc
 import types
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import Any, Generic, Self, TypeVar
 
 import tooz
 from tooz import coordination
-
-if TYPE_CHECKING:
-    from typing_extensions import Self
-
 
 LockT = TypeVar('LockT', bound='Lock')
 
