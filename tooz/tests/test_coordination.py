@@ -13,6 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import functools
+import multiprocessing
 import threading
 import time
 import unittest
@@ -937,12 +939,20 @@ class TestAPI(tests.TestWithCoordinator):
 
     def test_get_lock_concurrency_locking_two_lock_process(self):
         self._do_test_get_lock_concurrency_locking_two_lock(
-            futures.ProcessPoolExecutor, False
+            functools.partial(
+                futures.ProcessPoolExecutor,
+                mp_context=multiprocessing.get_context('spawn'),
+            ),
+            False,
         )
 
     def test_get_lock_serial_locking_two_lock_process(self):
         self._do_test_get_lock_serial_locking_two_lock(
-            futures.ProcessPoolExecutor, False
+            functools.partial(
+                futures.ProcessPoolExecutor,
+                mp_context=multiprocessing.get_context('spawn'),
+            ),
+            False,
         )
 
     def test_get_lock_concurrency_locking_two_lock_thread1(self):
