@@ -445,7 +445,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
             _get_member_capabilities,
             timeout_exception=self._timeout_exception,
             group_id=group_id,
-            member_id=self._member_id,
+            member_id=member_id,
         )
 
     def get_member_info(
