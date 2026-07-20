@@ -1,0 +1,27 @@
+- hosts: all
+  roles:
+    - role: bindep
+      bindep_profile: "tests-functional-{{ tooz_backend_daemon }}"
+  tasks:
+    - name: "Prepare backend services for pifpaf"
+      block:
+      - name: Include OS-specific variables
+        include_vars: "{{ item }}"
+        with_first_found:
+          - "{{ ansible_os_family }}-{{ ansible_distribution }}.yaml"
+          - "{{ ansible_os_family }}.yaml"
+      - name: "Stop backend services"
+        service:
+          name: "{{ item }}"
+          state: stopped
+          enabled: no
+        become: yes
+        loop: "{{ backend_services_map[tooz_backend_daemon] }}"
+      - name: Remove ZOO_LOG_DIR
+        lineinfile:
+          path: /etc/zookeeper/conf/environment
+          regexp: '^ZOO_LOG_DIR=.*'
+          state: absent
+        become: yes
+        when: tooz_backend_daemon == 'zookeeper'
+      when: "{{ tooz_use_pifpaf | default(true) }}"

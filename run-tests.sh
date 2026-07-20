@@ -10,9 +10,7 @@ then
     do
         IFS=" "
         TOOZ_TEST_DRIVER=(${TOOZ_TEST_DRIVER})
-        SETUP_ENV_SCRIPT="./setup-${TOOZ_TEST_DRIVER[0]}-env.sh"
-        [ -x  $SETUP_ENV_SCRIPT ] || unset SETUP_ENV_SCRIPT
-        $SETUP_ENV_SCRIPT pifpaf -e TOOZ_TEST run "${TOOZ_TEST_DRIVER[@]}" -- $*
+        pifpaf -e TOOZ_TEST run "${TOOZ_TEST_DRIVER[@]}" -- $*
     done
     unset IFS
 else
