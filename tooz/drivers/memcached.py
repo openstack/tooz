@@ -543,6 +543,24 @@ class MemcachedDriver(
             self._executor.submit(_get_member_capabilities)
         )
 
+    def get_members_with_capabilities(
+        self, group_id: bytes
+    ) -> coordination.CoordAsyncResult[
+        dict[bytes, coordination.Capabilities | None]
+    ]:
+        def _get_members_with_capabilities() -> dict[
+            bytes, coordination.Capabilities | None
+        ]:
+            group_members = self._get_members(group_id)
+            return {
+                member_id: info[b'capabilities']
+                for member_id, info in group_members.items()
+            }
+
+        return MemcachedFutureResult(
+            self._executor.submit(_get_members_with_capabilities)
+        )
+
     def update_capabilities(
         self, group_id: bytes, capabilities: coordination.Capabilities | None
     ) -> coordination.CoordAsyncResult[None]:

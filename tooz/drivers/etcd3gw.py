@@ -481,6 +481,40 @@ class Etcd3Driver(
             self._executor.submit(_get_member_capabilities)
         )
 
+    def get_members_with_capabilities(
+        self, group_id: bytes
+    ) -> coordination.CoordinatorResult[
+        dict[bytes, coordination.Capabilities | None]
+    ]:
+        @_translate_failures
+        def _get_members_with_capabilities() -> dict[
+            bytes, coordination.Capabilities | None
+        ]:
+            prefix_group = self._prefix_group(group_id)
+            result: dict[bytes, coordination.Capabilities | None] = {}
+            group_found = False
+
+            for value, metadata in self.client.get_prefix(
+                prefix_group.decode()
+            ):
+                if metadata['key'] == prefix_group:
+                    group_found = True
+                else:
+                    member_id = metadata['key'][len(prefix_group) :]
+                    caps = utils.loads(value) if value else None
+                    result[member_id] = cast(
+                        coordination.Capabilities | None, caps
+                    )
+
+            if not group_found:
+                raise coordination.GroupNotCreated(group_id)
+
+            return result
+
+        return coordination.CoordinatorResult(
+            self._executor.submit(_get_members_with_capabilities)
+        )
+
     def update_capabilities(
         self, group_id: bytes, capabilities: coordination.Capabilities
     ) -> coordination.CoordinatorResult[None]:
