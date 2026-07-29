@@ -31,7 +31,9 @@ _default_wait = wait.wait_exponential(max=1)
 def retry(
     stop_max_delay: int | float | bool | None = None, **kwargs: Any
 ) -> Callable[[WrappedFn], WrappedFn]:
-    if isinstance(stop_max_delay, (int, float, datetime.timedelta)):
+    if isinstance(
+        stop_max_delay, (int, float, datetime.timedelta)
+    ) and not isinstance(stop_max_delay, bool):
         return tenacity.retry(
             wait=_default_wait,
             retry=tenacity.retry_never,
