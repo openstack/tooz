@@ -14,7 +14,7 @@
 # under the License.
 
 from collections.abc import Callable
-import datetime
+from datetime import timedelta
 from typing import Any, TypeVar
 
 import tenacity
@@ -29,20 +29,18 @@ _default_wait = wait.wait_exponential(max=1)
 
 # TODO(stephenfin): Remove kwargs
 def retry(
-    stop_max_delay: int | float | bool | None = None, **kwargs: Any
+    stop_max_delay: int | float | timedelta | bool | None = None, **kwargs: Any
 ) -> Callable[[WrappedFn], WrappedFn]:
-    if isinstance(
-        stop_max_delay, (int, float, datetime.timedelta)
-    ) and not isinstance(stop_max_delay, bool):
+    if stop_max_delay is None or isinstance(stop_max_delay, bool):
         return tenacity.retry(
             wait=_default_wait,
             retry=tenacity.retry_never,
-            stop=stop.stop_after_delay(stop_max_delay),
         )
 
     return tenacity.retry(
         wait=_default_wait,
         retry=tenacity.retry_never,
+        stop=stop.stop_after_delay(stop_max_delay),
     )
 
 
