@@ -448,6 +448,53 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
             member_id=member_id,
         )
 
+    def get_members_with_capabilities(
+        self, group_id: bytes
+    ) -> ZooAsyncResult[dict[bytes, coordination.Capabilities | None]]:
+        group_path = self._path_group(group_id)
+        async_result = self._coord.get_children_async(group_path)
+
+        def _get_members_with_capabilities(
+            async_result: Any,
+            timeout: float | None,
+            /,
+            timeout_exception: type[Exception],
+            group_id: bytes,
+        ) -> dict[bytes, coordination.Capabilities | None]:
+            try:
+                members_ids = async_result.get(block=True, timeout=timeout)
+            except timeout_exception as e:
+                utils.raise_with_cause(
+                    coordination.OperationTimedOut, str(e), cause=e
+                )
+            except exceptions.NoNodeError:
+                raise coordination.GroupNotCreated(group_id)
+            except exceptions.ZookeeperError as e:
+                utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
+
+            result: dict[bytes, coordination.Capabilities | None] = {}
+            for m in members_ids:
+                member_id = m.encode('ascii')
+                member_path = self._path_member(group_id, member_id)
+                try:
+                    data = self._coord.get(member_path)[0]
+                except exceptions.NoNodeError:
+                    continue
+                except exceptions.ZookeeperError as e:
+                    utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
+                caps = utils.loads(data) if data else None
+                result[member_id] = cast(
+                    coordination.Capabilities | None, caps
+                )
+            return result
+
+        return ZooAsyncResult(
+            async_result,
+            _get_members_with_capabilities,
+            timeout_exception=self._timeout_exception,
+            group_id=group_id,
+        )
+
     def get_member_info(
         self, group_id: bytes, member_id: bytes
     ) -> ZooAsyncResult[dict[str, Any]]:

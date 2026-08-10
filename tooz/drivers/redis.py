@@ -808,6 +808,63 @@ return 1
             )
         )
 
+    def get_members_with_capabilities(
+        self, group_id: bytes
+    ) -> coordination.CoordinatorResult[
+        dict[bytes, coordination.Capabilities | None]
+    ]:
+        encoded_group = self._encode_group_id(group_id)
+
+        def _get_members_with_capabilities(
+            p: client.Pipeline,
+        ) -> dict[bytes, coordination.Capabilities | None]:
+            if not p.exists(encoded_group):
+                raise coordination.GroupNotCreated(group_id)
+            # HGETALL returns {field: value} — all members + capabilities
+            all_data = p.hgetall(encoded_group)
+            potential: dict[bytes, coordination.Capabilities | None] = {}
+            for raw_member_id, raw_caps in all_data.items():
+                member_id = self._decode_member_id(raw_member_id)
+                if member_id == self.GROUP_EXISTS:
+                    continue
+                potential[member_id] = self._loads(raw_caps)  # type: ignore[arg-type]
+
+            if not potential:
+                return {}
+
+            # Liveness check — same pattern as get_members
+            gone_members: set[bytes] = set()
+            member_values = p.mget(map(self._encode_beat_id, potential.keys()))
+            for member_id, value in zip(potential.keys(), member_values):
+                if member_id == self._encode_member_id(self._member_id):
+                    continue
+                if not value:
+                    gone_members.add(member_id)
+
+            if gone_members:
+                p.multi()
+                encoded_gone = list(
+                    self._encode_member_id(m) for m in gone_members
+                )
+                p.hdel(encoded_group, *encoded_gone)
+                p.execute()
+
+            return {
+                m: caps
+                for m, caps in potential.items()
+                if m not in gone_members
+            }
+
+        assert self._client is not None
+        return RedisFutureResult(
+            self._submit(
+                self._client.transaction,  # type: ignore[arg-type]
+                _get_members_with_capabilities,  # type: ignore[arg-type]
+                encoded_group,
+                value_from_callable=True,
+            )
+        )
+
     def join_group(
         self,
         group_id: bytes,

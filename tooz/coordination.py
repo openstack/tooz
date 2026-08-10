@@ -630,6 +630,23 @@ class CoordinationDriver:
         """
         raise tooz.NotImplemented("not implemented")
 
+    def get_members_with_capabilities(
+        self, group_id: bytes
+    ) -> CoordAsyncResult[dict[bytes, Capabilities | None]]:
+        """Return all members and their capabilities in one call.
+
+        This is semantically equivalent to calling :meth:`get_members`
+        followed by :meth:`get_member_capabilities` for each member,
+        but drivers may override this method to fetch both in a single
+        backend round-trip (e.g. a prefix range query in etcd, or a
+        single HGETALL in Redis).
+
+        :param group_id: the id of the group
+        :returns: a mapping of member_id to capabilities (or None)
+        :raises GroupNotCreated: if the group does not exist
+        """
+        raise tooz.NotImplemented("not implemented")
+
     def get_member_info(
         self, group_id: bytes, member_id: bytes
     ) -> CoordAsyncResult[dict[str, Any]]:

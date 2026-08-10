@@ -493,6 +493,57 @@ class FileDriver(
         fut = self._executor.submit(_do_get_member_capabilities)
         return FileFutureResult(fut)
 
+    def get_members_with_capabilities(  # type: ignore[override]
+        self, group_id: bytes
+    ) -> coordination.CoordAsyncResult[
+        dict[bytes | str, coordination.Capabilities | None]
+    ]:
+        safe_group_id = self._make_filesystem_safe(group_id)
+        group_dir = os.path.join(self._group_dir, safe_group_id)
+
+        @_lock_me(self._driver_lock)
+        def _do_get_members_with_capabilities() -> dict[
+            bytes | str, coordination.Capabilities | None
+        ]:
+            if not os.path.isdir(group_dir):
+                raise coordination.GroupNotCreated(group_id)
+            result: dict[bytes | str, coordination.Capabilities | None] = {}
+            try:
+                entries = os.listdir(group_dir)
+            except OSError as e:
+                if e.errno != errno.ENOENT:
+                    raise
+                return result
+            for entry in entries:
+                if not entry.endswith('.raw'):
+                    continue
+                entry_path = os.path.join(group_dir, entry)
+                try:
+                    m_time = datetime.datetime.fromtimestamp(
+                        os.stat(entry_path).st_mtime
+                    )
+                    current_time = datetime.datetime.now()
+                    delta_time = timeutils.delta_seconds(m_time, current_time)
+                    if delta_time < 0 or delta_time > self._timeout:
+                        continue
+                    with open(entry_path, 'rb') as fh:
+                        details = self._load_and_validate(fh.read(), 'member')
+                    # Decode member_id the same way _read_member_id does:
+                    # a str member_id is stored with encoded=True and must
+                    # be read back as str.
+                    member_id: bytes | str = details['member_id']
+                    if details.get("encoded"):
+                        member_id = cast(bytes, member_id).decode("utf-8")
+                    caps = details.get("capabilities")
+                    result[member_id] = caps
+                except OSError as e:
+                    if e.errno != errno.ENOENT:
+                        raise
+            return result
+
+        fut = self._executor.submit(_do_get_members_with_capabilities)
+        return FileFutureResult(fut)
+
     def delete_group(
         self, group_id: bytes
     ) -> coordination.CoordAsyncResult[None]:

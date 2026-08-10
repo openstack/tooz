@@ -291,6 +291,53 @@ class TestAPI(tests.TestWithCoordinator):
         assert isinstance(capa, dict)
         self.assertEqual(capa['type'], caps['type'])
 
+    def test_get_members_with_capabilities(self):
+        self._coord.create_group(self.group_id).get()
+        caps = {"host": "10.0.0.1", "port": 8080}
+        self._coord.join_group(self.group_id, caps).get()
+
+        result = self._coord.get_members_with_capabilities(self.group_id).get()
+        self.assertIn(self.member_id, result)
+        self.assertEqual(result[self.member_id], caps)
+
+    def test_get_members_with_capabilities_multiple(self):
+        group_id = tests.get_random_uuid()
+        member_id2 = tests.get_random_uuid()
+        client2 = tooz.coordination.get_coordinator(self.url, member_id2)
+        client2.start()
+        self.addCleanup(client2.stop)
+
+        self._coord.create_group(group_id).get()
+        self._coord.join_group(group_id, {"role": "primary"}).get()
+        client2.join_group(group_id, {"role": "secondary"}).get()
+
+        result = self._coord.get_members_with_capabilities(group_id).get()
+        self.assertEqual(len(result), 2)
+        self.assertIn(self.member_id, result)
+        self.assertIn(member_id2, result)
+        self.assertEqual(result[self.member_id], {"role": "primary"})
+        self.assertEqual(result[member_id2], {"role": "secondary"})
+
+    def test_get_members_with_capabilities_nonexistent_group(self):
+        result = self._coord.get_members_with_capabilities(self.group_id)
+        self.assertRaises(
+            tooz.coordination.GroupNotCreated,
+            result.get,
+        )
+
+    def test_get_members_with_capabilities_empty_group(self):
+        self._coord.create_group(self.group_id).get()
+        result = self._coord.get_members_with_capabilities(self.group_id).get()
+        self.assertEqual(result, {})
+
+    def test_get_members_with_capabilities_no_caps(self):
+        self._coord.create_group(self.group_id).get()
+        self._coord.join_group(self.group_id).get()  # no capabilities
+        result = self._coord.get_members_with_capabilities(self.group_id).get()
+        self.assertIn(self.member_id, result)
+        # Drivers may return None or {} for absent capabilities
+        self.assertIn(result[self.member_id], (None, {}))
+
     def test_get_member_capabilities_nonexistent_group(self):
         capa = self._coord.get_member_capabilities(
             self.group_id, self.member_id
