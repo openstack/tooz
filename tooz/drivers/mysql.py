@@ -18,6 +18,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from oslo_utils import netutils
 from oslo_utils import strutils
 import pymysql
 
@@ -36,7 +37,10 @@ class MySQLLock(locking.Lock):
     MYSQL_DEFAULT_PORT = 3306
 
     def __init__(
-        self, member_id: bytes, parsed_url: Any, options: dict[str, Any]
+        self,
+        member_id: bytes,
+        parsed_url: netutils.SplitResult,
+        options: dict[str, Any],
     ) -> None:
         super().__init__(member_id)
         self.acquired = False
@@ -160,7 +164,7 @@ class MySQLDriver(coordination.CoordinationDriver):
     """
 
     def __init__(
-        self, member_id: bytes, parsed_url: Any, options: Any
+        self, member_id: bytes, parsed_url: netutils.SplitResult, options: Any
     ) -> None:
         """Initialize the MySQL driver."""
         super().__init__(member_id, parsed_url, options)
@@ -222,7 +226,9 @@ class MySQLDriver(coordination.CoordinationDriver):
 
     @staticmethod
     def get_connection(
-        parsed_url: Any, options: Any, defer_connect: bool = False
+        parsed_url: netutils.SplitResult,
+        options: Any,
+        defer_connect: bool = False,
     ) -> pymysql.Connection:
         host = parsed_url.hostname
         port = parsed_url.port or MySQLLock.MYSQL_DEFAULT_PORT

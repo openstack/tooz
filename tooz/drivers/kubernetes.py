@@ -17,6 +17,7 @@ from typing import Any
 import warnings
 
 from kubernetes.client import exceptions as k8s_exc
+from oslo_utils import netutils
 import sherlock
 
 import tooz
@@ -117,7 +118,10 @@ class SherlockDriver(coordination.CoordinationDriverCachedRunWatchers):
     """
 
     def __init__(
-        self, member_id: bytes, parsed_url: Any, options: dict[str, Any]
+        self,
+        member_id: bytes,
+        parsed_url: netutils.SplitResult,
+        options: dict[str, Any],
     ) -> None:
         warnings.warn(
             'The kubernetes driver is deprecated and will be removed in '

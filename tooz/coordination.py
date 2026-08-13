@@ -287,10 +287,11 @@ class CoordinationDriver:
     enum member(s) that can be used to interogate how this driver works.
     """
 
-    # TODO(stephenfin): Fix type of parsed_url
-    # https://review.opendev.org/c/openstack/oslo.utils/+/980011
     def __init__(
-        self, member_id: bytes, parsed_url: Any, options: dict[str, Any]
+        self,
+        member_id: bytes,
+        parsed_url: netutils.SplitResult,
+        options: dict[str, Any],
     ) -> None:
         super().__init__()
         self._member_id = member_id
@@ -750,10 +751,11 @@ class CoordinatorResult(CoordAsyncResult[T]):
 class CoordinationDriverWithExecutor(CoordinationDriver):
     EXCLUDE_OPTIONS: frozenset[str] | None = None
 
-    # TODO(stephenfin): Fix type of parsed_url
-    # https://review.opendev.org/c/openstack/oslo.utils/+/980011
     def __init__(
-        self, member_id: bytes, parsed_url: Any, options: dict[str, Any]
+        self,
+        member_id: bytes,
+        parsed_url: netutils.SplitResult,
+        options: dict[str, Any],
     ) -> None:
         self._options: dict[str, Any] = utils.collapse(
             options, exclude=self.EXCLUDE_OPTIONS
@@ -781,10 +783,11 @@ class CoordinationDriverCachedRunWatchers(CoordinationDriver):
 
     """
 
-    # TODO(stephenfin): Fix type of parsed_url
-    # https://review.opendev.org/c/openstack/oslo.utils/+/980011
     def __init__(
-        self, member_id: bytes, parsed_url: Any, options: dict[str, Any]
+        self,
+        member_id: bytes,
+        parsed_url: netutils.SplitResult,
+        options: dict[str, Any],
     ) -> None:
         super().__init__(member_id, parsed_url, options)
         # A cache for group members

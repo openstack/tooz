@@ -31,6 +31,7 @@ import weakref
 
 import fasteners
 from oslo_utils import fileutils
+from oslo_utils import netutils
 from oslo_utils import timeutils
 import voluptuous
 
@@ -240,7 +241,10 @@ class FileDriver(
     _joined_groups: set[bytes]
 
     def __init__(
-        self, member_id: bytes, parsed_url: Any, options: dict[str, Any]
+        self,
+        member_id: bytes,
+        parsed_url: netutils.SplitResult,
+        options: dict[str, Any],
     ) -> None:
         """Initialize the file driver."""
         super().__init__(member_id, parsed_url, options)

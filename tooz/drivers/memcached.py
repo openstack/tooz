@@ -24,6 +24,7 @@ import socket
 import ssl
 from typing import Any, ParamSpec, TypeVar, cast
 
+from oslo_utils import netutils
 from oslo_utils import strutils
 from pymemcache import client as pymemcache_client
 
@@ -272,7 +273,10 @@ class MemcachedDriver(
     STILL_ALIVE = b"It's alive!"
 
     def __init__(
-        self, member_id: bytes, parsed_url: Any, options: dict[str, Any]
+        self,
+        member_id: bytes,
+        parsed_url: netutils.SplitResult,
+        options: dict[str, Any],
     ) -> None:
         super().__init__(member_id, parsed_url, options)
         self.host = (

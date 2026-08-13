@@ -31,6 +31,7 @@ from kazoo.handlers import threading as threading_handler
 from kazoo.protocol import paths
 from kazoo.recipe import lock as kazoo_lock
 from oslo_utils import encodeutils
+from oslo_utils import netutils
 from oslo_utils import strutils
 
 import tooz
@@ -159,7 +160,10 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
     """
 
     def __init__(
-        self, member_id: bytes, parsed_url: Any, options: dict[str, Any]
+        self,
+        member_id: bytes,
+        parsed_url: netutils.SplitResult,
+        options: dict[str, Any],
     ) -> None:
         super().__init__(member_id, parsed_url, options)
         options = utils.collapse(options, exclude=frozenset(['hosts']))
@@ -597,7 +601,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         return str(paths.join(*cleaned_args))
 
     def _make_client(
-        self, parsed_url: Any, options: Any
+        self, parsed_url: netutils.SplitResult, options: Any
     ) -> client.KazooClient:
         # Creates a kazoo client,
         # See: https://github.com/python-zk/kazoo/blob/2.2.1/kazoo/client.py

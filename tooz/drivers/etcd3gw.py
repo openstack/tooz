@@ -24,6 +24,7 @@ import uuid
 import etcd3gw
 from etcd3gw import exceptions as etcd3gw_exc
 from etcd3gw import lease as etcd3gw_lease
+from oslo_utils import netutils
 
 import tooz
 from tooz import _retry
@@ -225,7 +226,10 @@ class Etcd3Driver(
     )
 
     def __init__(
-        self, member_id: bytes, parsed_url: Any, options: dict[str, Any]
+        self,
+        member_id: bytes,
+        parsed_url: netutils.SplitResult,
+        options: dict[str, Any],
     ) -> None:
         super().__init__(member_id, parsed_url, options)
         protocol = 'https' if parsed_url.scheme.endswith('https') else 'http'

@@ -405,7 +405,10 @@ return 1
     EXCLUDE_OPTIONS = CLIENT_LIST_ARGS
 
     def __init__(
-        self, member_id: bytes, parsed_url: Any, options: dict[str, Any]
+        self,
+        member_id: bytes,
+        parsed_url: netutils.SplitResult,
+        options: dict[str, Any],
     ) -> None:
         super().__init__(member_id, parsed_url, options)
         self._parsed_url = parsed_url
@@ -467,7 +470,7 @@ return 1
     @classmethod
     def _make_client(
         cls,
-        parsed_url: Any,
+        parsed_url: netutils.SplitResult,
         options: dict[str, Any],
         default_socket_timeout: int,
     ) -> redis.Redis:

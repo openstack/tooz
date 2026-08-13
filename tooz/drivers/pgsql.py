@@ -21,6 +21,7 @@ import hashlib
 import logging
 import warnings
 
+from oslo_utils import netutils
 import psycopg2
 import psycopg2.extensions
 from typing import Any, cast
@@ -98,7 +99,10 @@ class PostgresLock(locking.Lock):
     """A PostgreSQL based lock."""
 
     def __init__(
-        self, member_id: bytes, parsed_url: Any, options: dict[str, Any]
+        self,
+        member_id: bytes,
+        parsed_url: netutils.SplitResult,
+        options: dict[str, Any],
     ) -> None:
         super().__init__(member_id)
         self.acquired = False
@@ -207,7 +211,7 @@ class PostgresDriver(coordination.CoordinationDriver):
     """
 
     def __init__(
-        self, member_id: bytes, parsed_url: Any, options: Any
+        self, member_id: bytes, parsed_url: netutils.SplitResult, options: Any
     ) -> None:
         """Initialize the PostgreSQL driver."""
         warnings.warn(
@@ -274,7 +278,7 @@ class PostgresDriver(coordination.CoordinationDriver):
     # the connection object returned by psycopg2 is not part of the public API
     @staticmethod
     def get_connection(
-        parsed_url: Any, options: Any
+        parsed_url: netutils.SplitResult, options: Any
     ) -> psycopg2.extensions.connection:
         host = options.get("host") or parsed_url.hostname
         port = options.get("port") or parsed_url.port
@@ -288,7 +292,9 @@ class PostgresDriver(coordination.CoordinationDriver):
         try:
             return cast(
                 psycopg2.extensions.connection,
-                psycopg2.connect(
+                # psycopg2 uses a kwargs pattern, so we can't unconditionally
+                # pass user and password
+                psycopg2.connect(  # type: ignore[call-overload]
                     host=host, port=port, database=dbname, **kwargs
                 ),
             )
