@@ -1,22 +1,3 @@
 sphinx>=2.0.0 # BSD
 openstackdocstheme>=2.2.1 # Apache-2.0
 reno>=3.1.0 # Apache-2.0
-
-# Install dependencies for tooz so that autodoc works.
-## etcd3gw
-etcd3gw>=0.1.0 # Apache-2.0
-## redis
-redis>=3.1.0 # MIT
-## postgresql
-psycopg2>=2.5 # LGPL/ZPL
-## mysql
-PyMySQL>=0.6.2 # MIT License
-## zookeeper
-kazoo>=2.2 # Apache-2.0
-## memcached
-pymemcache>=1.2.9 # Apache 2.0 License
-## ipc
-sysv-ipc>=0.6.8 # BSD License
-## kubernetes
-sherlock>=0.4.1 # MIT License
-kubernetes>=2.8.1 # Apache-2.0
