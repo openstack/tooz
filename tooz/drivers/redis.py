@@ -279,6 +279,7 @@ class RedisDriver(
         [
             'db',
             'encoding',
+            # TODO(tkajinam): retry_on_timeout was deprecated in redis-py 6.0.0
             'retry_on_timeout',
             'socket_keepalive',
             'socket_timeout',
