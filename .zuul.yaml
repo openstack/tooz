@@ -52,26 +52,46 @@
       Run tests using ``examples`` environment.
     vars:
       tox_envlist: examples
+      tooz_backend_daemon: redis
+      tooz_use_pifpaf: false
+    pre-run:
+      - playbooks/pre.yaml
+
+- job:
+    name: tooz-tox-py311
+    parent: openstack-tox-py311
+    abstract: true
+    pre-run:
+      - playbooks/pre.yaml
+
+- job:
+    name: tooz-tox-py314
+    parent: openstack-tox-py314
+    abstract: true
+    pre-run:
+      - playbooks/pre.yaml
 
 - job:
     name: tooz-tox-py311-etcd3gw
-    parent: openstack-tox-py311
+    parent: tooz-tox-py311
     description: |
       Run tests using ``py311-etcd3gw`` environment.
     vars:
       tox_envlist: py311-etcd3gw
+      tooz_backend_daemon: etcd
 
 - job:
     name: tooz-tox-py311-memcached
-    parent: openstack-tox-py311
+    parent: tooz-tox-py311
     description: |
       Run tests using ``py311-memcached`` environment.
     vars:
       tox_envlist: py311-memcached
+      tooz_backend_daemon: memcached
 
 - job:
     name: tooz-tox-py311-mysql
-    parent: openstack-tox-py311
+    parent: tooz-tox-py311
     # NOTE(tkajinam): Debian Bookworm which is used for py311 tests do not
     # provide mysqld. Because pifpaf does not support mariadb atm we use
     # Ubuntu Noble which provides mysql.
@@ -81,62 +101,65 @@
     vars:
       tox_envlist: py311-mysql
       python_use_pyenv: True
+      tooz_backend_daemon: mysql
 
 - job:
     name: tooz-tox-py311-postgresql
-    parent: openstack-tox-py311
+    parent: tooz-tox-py311
     description: |
       Run tests using ``py311-postgresql`` environment.
     vars:
       tox_envlist: py311-postgresql
+      tooz_backend_daemon: postgresql
 
 - job:
     name: tooz-tox-py311-redis
-    parent: openstack-tox-py311
+    parent: tooz-tox-py311
     description: |
       Run tests using ``py311-redis`` environment.
     vars:
       tox_envlist: py311-redis
-    pre-run:
-      - playbooks/stop-redis.yaml
+      tooz_backend_daemon: redis
 
 - job:
     name: tooz-tox-py311-sentinel
-    parent: openstack-tox-py311
+    parent: tooz-tox-py311
     description: |
       Run tests using ``py311-sentinel`` environment.
     vars:
       tox_envlist: py311-sentinel
-    pre-run:
-      - playbooks/stop-redis.yaml
+      tooz_backend_daemon: redis
 
 - job:
     name: tooz-tox-py311-zookeeper
-    parent: openstack-tox-py311
+    parent: tooz-tox-py311
     description: |
       Run tests using ``py311-zookeeper`` environment.
     vars:
       tox_envlist: py311-zookeeper
+      tooz_backend_daemon: zookeeper
 
 - job:
     name: tooz-tox-py314-etcd3gw
-    parent: openstack-tox-py314
+    parent: tooz-tox-py314
     description: |
       Run tests using ``py314-etcd3gw`` environment.
     vars:
       tox_envlist: py314-etcd3gw
+      tooz_backend_daemon: etcd
 
 - job:
     name: tooz-tox-py314-memcached
-    parent: openstack-tox-py314
+    parent: tooz-tox-py314
     description: |
       Run tests using ``py314-memcached`` environment.
     vars:
       tox_envlist: py314-memcached
+      tooz_backend_daemon: memcached
 
 - job:
     name: tooz-tox-py314-mysql
-    parent: openstack-tox-py314
+    parent: tooz-tox-py314
     # NOTE(tkajinam): Debian Trixie which is used for py314 tests do not
     # provide mysqld. Because pifpaf does not support mariadb atm we use
     # Ubuntu Noble which provides mysql.
@@ -146,39 +169,40 @@
     vars:
       python_use_pyenv: True
       tox_envlist: py314-mysql
+      tooz_backend_daemon: mysql
 
 - job:
     name: tooz-tox-py314-postgresql
-    parent: openstack-tox-py314
+    parent: tooz-tox-py314
     description: |
       Run tests using ``py314-postgresql`` environment.
     vars:
       tox_envlist: py314-postgresql
+      tooz_backend_daemon: postgresql
 
 - job:
     name: tooz-tox-py314-redis
-    parent: openstack-tox-py314
+    parent: tooz-tox-py314
     description: |
       Run tests using ``py314-redis`` environment.
     vars:
       tox_envlist: py314-redis
-    pre-run:
-      - playbooks/stop-redis.yaml
+      tooz_backend_daemon: redis
 
 - job:
     name: tooz-tox-py314-sentinel
-    parent: openstack-tox-py314
+    parent: tooz-tox-py314
     description: |
       Run tests using ``py314-sentinel`` environment.
     vars:
       tox_envlist: py314-sentinel
-    pre-run:
-      - playbooks/stop-redis.yaml
+      tooz_backend_daemon: redis
 
 - job:
     name: tooz-tox-py314-zookeeper
-    parent: openstack-tox-py314
+    parent: tooz-tox-py314
     description: |
       Run tests using ``py314-zookeeper`` environment.
     vars:
       tox_envlist: py314-zookeeper
+      tooz_backend_daemon: zookeeper
