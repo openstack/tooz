@@ -206,3 +206,10 @@
     vars:
       tox_envlist: py314-zookeeper
       tooz_backend_daemon: zookeeper
+
+# NOTE(tkajinam): This is currently used in etcd3gw
+- job:
+    name: tooz-tox-py3-etcd3gw
+    parent: tooz-tox-py314-etcd3gw
+    description: |
+      Run tests using ``py314-etcd3gw`` environment.
