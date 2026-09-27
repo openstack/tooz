@@ -14,8 +14,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from concurrent import futures
+import contextlib
 import functools
 import logging
 import string
@@ -85,6 +86,19 @@ def _handle_failures(
         return wrapper
 
     return inner
+
+
+@contextlib.contextmanager
+def _translate_failures() -> Iterator[None]:
+    """Translates redis exceptions raised by asynchronous operations."""
+    try:
+        yield
+    except (exceptions.ConnectionError, exceptions.TimeoutError) as e:
+        utils.raise_with_cause(
+            coordination.ToozConnectionError, str(e), cause=e
+        )
+    except exceptions.RedisError as e:
+        utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
 
 
 class RedisLock(locking.Lock):
@@ -427,6 +441,7 @@ return 1
         self._beat_prefix = self._namespace + b"_beats"
         self._groups = self._namespace + b"_groups"
         self._client: redis.Redis | None = None
+        self._sentinel: sentinel.Sentinel | None = None
         self._acquired_locks: set[RedisLock] = set()
         self._started = False
         self._server_info: dict[str, Any] = {}
@@ -474,7 +489,7 @@ return 1
         parsed_url: netutils.SplitResult,
         options: dict[str, Any],
         default_socket_timeout: int,
-    ) -> redis.Redis:
+    ) -> tuple[redis.Redis, sentinel.Sentinel | None]:
         kwargs: dict[str, Any] = {}
         if parsed_url.hostname:
             kwargs['host'] = parsed_url.hostname
@@ -535,24 +550,18 @@ return 1
             master_client = sentinel_server.master_for(sentinel_name)  # type: ignore[no-untyped-call]
             # The master_client is a redis.Redis using a
             # Sentinel managed connection pool.
-            return cast(redis.Redis, master_client)
-        return redis.Redis(**kwargs)
+            return cast(redis.Redis, master_client), sentinel_server
+        return redis.Redis(**kwargs), None
 
     @_handle_failures()
     def _start(self) -> None:
         super()._start()
         try:
-            self._client = self._make_client(
+            self._client, self._sentinel = self._make_client(
                 self._parsed_url, self._options, self.timeout
             )
-        except exceptions.RedisError as e:
-            utils.raise_with_cause(
-                coordination.ToozConnectionError, str(e), cause=e
-            )
-        else:
-            # Ensure that the server is alive and not dead, this does not
-            # ensure the server will always be alive, but does insure that it
-            # at least is alive once...
+            # Check connectivity and the server version before publishing
+            # this generation of clients.
             self._server_info = self._client.info()
             # Validate we have a good enough redis version we are connected
             # to so that the basic set of features we support will actually
@@ -562,9 +571,8 @@ return 1
             )
             if not new_enough:
                 raise tooz.NotImplemented(
-                    f"Redis version greater than or equal to "
-                    f"'{self.MIN_VERSION}' is required to use this driver; "
-                    f"'{redis_version}' is being used which is not new enough"
+                    f"Redis version >= '{self.MIN_VERSION}' is required; "
+                    f"server version is '{redis_version}'"
                 )
             tpl_params = {
                 'group_existence_value': self.GROUP_EXISTS_VALUE.decode(),
@@ -578,7 +586,26 @@ return 1
             self._scripts = prepared_scripts
 
             self.heartbeat()
-            self._started = True
+        except BaseException:
+            self._close_clients()
+            self._server_info = {}
+            self._scripts.clear()
+            raise
+        self._started = True
+
+    def _close_clients(self) -> None:
+        # Close the data client and each Sentinel client, even if closing
+        # one fails. Sentinel.close() does the latter only since redis-py
+        # 8.1.0.
+        clients = [self._client] if self._client else []
+        if self._sentinel:
+            clients.extend(self._sentinel.sentinels)
+        self._client = self._sentinel = None
+        for redis_client in clients:
+            try:
+                redis_client.close()
+            except exceptions.RedisError:
+                LOG.warning("Unable to close a Redis client", exc_info=True)
 
     def _encode_beat_id(self, member_id: bytes) -> bytes:
         member_id = utils.to_binary(member_id, encoding=self._encoding)
@@ -624,7 +651,6 @@ return 1
                 )
         return min(self.lock_timeout, self.membership_timeout)
 
-    @_handle_failures()
     def _stop(self) -> None:
         while self._acquired_locks:
             lock = self._acquired_locks.pop()
@@ -640,13 +666,16 @@ return 1
                 # NOTE(harlowja): this will delete nothing if the key doesn't
                 # exist in the first place, which is fine/expected/desired...
                 self._client.delete(beat_id)
-            except tooz.ToozError:
+            except exceptions.RedisError:
+                # The key expires by itself.
                 LOG.warning(
                     "Unable to delete heartbeat key '%s'",
                     beat_id,
                     exc_info=True,
                 )
-            self._client = None
+            # Close both the data and Sentinel clients: cached lock scripts
+            # can keep the first client and its Sentinel manager alive.
+            self._close_clients()
         self._server_info = {}
         self._scripts.clear()
         self._started = False
@@ -968,4 +997,6 @@ return 1
         return result
 
 
-RedisFutureResult = functools.partial(coordination.CoordinatorResult)
+RedisFutureResult = functools.partial(
+    coordination.CoordinatorResult, failure_translator=_translate_failures
+)
