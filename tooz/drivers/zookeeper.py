@@ -618,7 +618,7 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
             default_acl = None
             auth_data = None
 
-        maybe_hosts = [parsed_url.netloc] + list(options.get('hosts', []))
+        maybe_hosts = [parsed_url.netloc, *list(options.get('hosts', []))]
         hosts = list(filter(None, maybe_hosts))
         if not hosts:
             hosts = ['localhost:2181']

@@ -110,9 +110,9 @@ quote-style = "preserve"
 docstring-code-format = true
 
 [tool.ruff.lint]
-select = ["E4", "E5", "E7", "E9", "F", "G", "LOG", "S", "UP"]
+select = ["E", "F", "G", "LOG", "RUF", "S", "UP", "W"]
 external = ["H"]
 ignore = [
-    # asserts are only used for type narrowing
-    "S101",
+    "S101",   # asserts are only used for type narrowing
+    "RUF012", # low value
 ]
