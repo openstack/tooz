@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import ddt
 from testtools import testcase
 from unittest import mock
 
@@ -22,61 +21,39 @@ import tooz.drivers.etcd3gw as etcd3gw_driver
 import tooz.tests
 
 
-@ddt.ddt
 class TestEtcd3Gw(testcase.TestCase):
-    FAKE_MEMBER_ID = tooz.tests.get_random_uuid()
-
-    @ddt.data(
-        {
-            'coord_url': 'etcd3+http://',
-            'protocol': 'http',
-            'host': etcd3gw_driver.Etcd3Driver.DEFAULT_HOST,
-            'port': etcd3gw_driver.Etcd3Driver.DEFAULT_PORT,
-            'ca_cert': None,
-            'cert_key': None,
-            'cert_cert': None,
-            'api_path': None,
-            'timeout': etcd3gw_driver.Etcd3Driver.DEFAULT_TIMEOUT,
-        },
-        {
-            'coord_url': (
-                'etcd3+https://my_host:666?ca_cert=/my/ca_cert&'
-                'cert_key=/my/cert_key&cert_cert=/my/cert_cert&'
-                'timeout=42&api_version=v3alpha'
-            ),
-            'protocol': 'https',
-            'host': 'my_host',
-            'port': 666,
-            'ca_cert': '/my/ca_cert',
-            'cert_key': '/my/cert_key',
-            'cert_cert': '/my/cert_cert',
-            'api_path': '/v3alpha/',
-            'timeout': 42,
-        },
-    )
-    @ddt.unpack
     @mock.patch('etcd3gw.client')
-    def test_etcd3gw_client_init(
-        self,
-        mock_etcd3gw_client,
-        coord_url,
-        protocol,
-        host,
-        port,
-        ca_cert,
-        cert_key,
-        cert_cert,
-        api_path,
-        timeout,
-    ):
-        tooz.coordination.get_coordinator(coord_url, self.FAKE_MEMBER_ID)
+    def test_etcd3gw_client_init(self, mock_etcd3gw_client):
+        tooz.coordination.get_coordinator(
+            'etcd3+http://',
+            tooz.tests.get_random_uuid(),
+        )
         mock_etcd3gw_client.assert_called_with(
-            host=host,
-            port=port,
-            protocol=protocol,
-            ca_cert=ca_cert,
-            cert_key=cert_key,
-            cert_cert=cert_cert,
-            api_path=api_path,
-            timeout=timeout,
+            host=etcd3gw_driver.Etcd3Driver.DEFAULT_HOST,
+            port=etcd3gw_driver.Etcd3Driver.DEFAULT_PORT,
+            protocol='http',
+            ca_cert=None,
+            cert_key=None,
+            cert_cert=None,
+            api_path=None,
+            timeout=etcd3gw_driver.Etcd3Driver.DEFAULT_TIMEOUT,
+        )
+
+    @mock.patch('etcd3gw.client')
+    def test_etcd3gw_client_init_with_params(self, mock_etcd3gw_client):
+        tooz.coordination.get_coordinator(
+            'etcd3+https://my_host:666?ca_cert=/my/ca_cert&'
+            'cert_key=/my/cert_key&cert_cert=/my/cert_cert&'
+            'timeout=42&api_version=v3alpha',
+            tooz.tests.get_random_uuid(),
+        )
+        mock_etcd3gw_client.assert_called_with(
+            host='my_host',
+            port=666,
+            protocol='https',
+            ca_cert='/my/ca_cert',
+            cert_key='/my/cert_key',
+            cert_cert='/my/cert_cert',
+            api_path='/v3alpha/',
+            timeout=42,
         )
