@@ -80,6 +80,7 @@ source = [
     "tooz"
 ]
 branch = true
+parallel = true
 omit = [
     "tooz/tests/*"
 ]
