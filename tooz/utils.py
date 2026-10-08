@@ -61,7 +61,7 @@ class Base64LockEncoder:
 
 class ProxyExecutor:
     KIND_TO_FACTORY = {
-        'threaded': (lambda: futurist.ThreadPoolExecutor(max_workers=1)),
+        'threaded': lambda: futurist.ThreadPoolExecutor(max_workers=1),
         'synchronous': lambda: futurist.SynchronousExecutor(),
     }
 

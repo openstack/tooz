@@ -46,7 +46,7 @@ class KubernetesLock(locking.Lock):
         except k8s_exc.ApiException as e:
             if "Reason: Not Found" not in str(e):
                 utils.raise_with_cause(
-                    tooz.ToozError, f"operation error: {str(e)}", cause=e
+                    tooz.ToozError, f"operation error: {e!s}", cause=e
                 )
         return False
 

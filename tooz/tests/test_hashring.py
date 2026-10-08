@@ -196,11 +196,11 @@ class HashRingTestCase(testcase.TestCase):
     def _compare_rings(nodes, conductors, ring, new_conductors, new_ring):
         delta = {}
         mapping = {
-            'node': list(ring.get_nodes(node.encode('ascii')))[0]
+            'node': next(iter(ring.get_nodes(node.encode('ascii'))))
             for node in nodes
         }
         new_mapping = {
-            'node': list(new_ring.get_nodes(node.encode('ascii')))[0]
+            'node': next(iter(new_ring.get_nodes(node.encode('ascii'))))
             for node in nodes
         }
 
@@ -220,7 +220,7 @@ class HashRingTestCase(testcase.TestCase):
 
         nodes = [str(x) for x in range(num_nodes)]
         services = [str(x) for x in range(num_services)]
-        new_services = services + ['new']
+        new_services = [*services, 'new']
         delta = self._compare_rings(
             nodes,
             services,
