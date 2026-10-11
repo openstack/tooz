@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    Stopping a coordinator now interrupts the heartbeat retry delay and
+    prevents further heartbeat attempts, even while its backend remains
+    unavailable. An in-progress backend call must still return before
+    shutdown can complete; configure backend connection and socket
+    timeouts as appropriate.
