@@ -36,11 +36,14 @@ from tooz import tests
 
 
 def try_to_lock_job(name, coord, url, member_id):
-    if not coord:
-        coord = tooz.coordination.get_coordinator(url, member_id)
-        coord.start()
-    lock2 = coord.get_lock(name)
-    return lock2.acquire(blocking=False)
+    if coord:
+        return coord.get_lock(name).acquire(blocking=False)
+    coord = tooz.coordination.get_coordinator(url, member_id)
+    coord.start()
+    try:
+        return coord.get_lock(name).acquire(blocking=False)
+    finally:
+        coord.stop()
 
 
 class TestAPI(tests.TestWithCoordinator):
@@ -76,8 +79,7 @@ class TestAPI(tests.TestWithCoordinator):
     def test_get_lock_release_broken(self):
         name = tests.get_random_uuid()
         memberid2 = tests.get_random_uuid()
-        coord2 = tooz.coordination.get_coordinator(self.url, memberid2)
-        coord2.start()
+        coord2 = self._start_coordinator(memberid2)
         lock1 = self._coord.get_lock(name)
         lock2 = coord2.get_lock(name)
         self.assertTrue(lock1.acquire(blocking=False))
@@ -87,8 +89,7 @@ class TestAPI(tests.TestWithCoordinator):
         self.assertFalse(lock1.release())
         # Assert lock is not accidentally broken now
         memberid3 = tests.get_random_uuid()
-        coord3 = tooz.coordination.get_coordinator(self.url, memberid3)
-        coord3.start()
+        coord3 = self._start_coordinator(memberid3)
         lock3 = coord3.get_lock(name)
         self.assertFalse(lock3.acquire(blocking=False))
 
@@ -173,8 +174,7 @@ class TestAPI(tests.TestWithCoordinator):
     def test_join_group_with_member_id_already_exists(self):
         self._coord.create_group(self.group_id).get()
         self._coord.join_group(self.group_id).get()
-        client = tooz.coordination.get_coordinator(self.url, self.member_id)
-        client.start()
+        client = self._start_coordinator(self.member_id)
         join_group = client.join_group(self.group_id)
         self.assertRaises(tooz.coordination.MemberAlreadyExist, join_group.get)
 
@@ -222,8 +222,7 @@ class TestAPI(tests.TestWithCoordinator):
     def test_get_members(self):
         group_id_test2 = tests.get_random_uuid()
         member_id_test2 = tests.get_random_uuid()
-        client2 = tooz.coordination.get_coordinator(self.url, member_id_test2)
-        client2.start()
+        client2 = self._start_coordinator(member_id_test2)
 
         self._coord.create_group(group_id_test2).get()
         self._coord.join_group(group_id_test2).get()
@@ -240,9 +239,7 @@ class TestAPI(tests.TestWithCoordinator):
         """
         str_member_id = "str-" + self.member_id.decode('ascii')
         group_id = tests.get_random_uuid()
-        coord2 = tooz.coordination.get_coordinator(self.url, str_member_id)  # type: ignore[arg-type]
-        coord2.start()
-        self.addCleanup(coord2.stop)
+        coord2 = self._start_coordinator(str_member_id)  # type: ignore[arg-type]
         self._coord.create_group(group_id).get()
         try:
             coord2.join_group(group_id).get()
@@ -303,9 +300,7 @@ class TestAPI(tests.TestWithCoordinator):
     def test_get_members_with_capabilities_multiple(self):
         group_id = tests.get_random_uuid()
         member_id2 = tests.get_random_uuid()
-        client2 = tooz.coordination.get_coordinator(self.url, member_id2)
-        client2.start()
-        self.addCleanup(client2.stop)
+        client2 = self._start_coordinator(member_id2)
 
         self._coord.create_group(group_id).get()
         self._coord.join_group(group_id, {"role": "primary"}).get()
@@ -461,8 +456,7 @@ class TestAPI(tests.TestWithCoordinator):
 
     def test_disconnect_leave_group(self):
         member_id_test2 = tests.get_random_uuid()
-        client2 = tooz.coordination.get_coordinator(self.url, member_id_test2)
-        client2.start()
+        client2 = self._start_coordinator(member_id_test2)
         self._coord.create_group(self.group_id).get()
         self._coord.join_group(self.group_id).get()
         client2.join_group(self.group_id).get()
@@ -490,8 +484,7 @@ class TestAPI(tests.TestWithCoordinator):
         self._coord.start()
 
         member_id_test2 = tests.get_random_uuid()
-        client2 = tooz.coordination.get_coordinator(url, member_id_test2)
-        client2.start()
+        client2 = self._start_coordinator(member_id_test2, url)
         self._coord.create_group(self.group_id).get()
         self._coord.join_group(self.group_id).get()
         client2.join_group(self.group_id).get()
@@ -535,8 +528,7 @@ class TestAPI(tests.TestWithCoordinator):
 
     def test_watch_group_join(self):
         member_id_test2 = tests.get_random_uuid()
-        client2 = tooz.coordination.get_coordinator(self.url, member_id_test2)
-        client2.start()
+        client2 = self._start_coordinator(member_id_test2)
         self._coord.create_group(self.group_id).get()
 
         # Watch the group
@@ -567,8 +559,7 @@ class TestAPI(tests.TestWithCoordinator):
 
     def test_watch_leave_group(self):
         member_id_test2 = tests.get_random_uuid()
-        client2 = tooz.coordination.get_coordinator(self.url, member_id_test2)
-        client2.start()
+        client2 = self._start_coordinator(member_id_test2)
         self._coord.create_group(self.group_id).get()
 
         # Watch the group: this can leads to race conditions in certain
@@ -627,8 +618,7 @@ class TestAPI(tests.TestWithCoordinator):
         self._coord.watch_leave_group(self.group_id, self._set_event)
 
         member_id_test2 = tests.get_random_uuid()
-        client2 = tooz.coordination.get_coordinator(self.url, member_id_test2)
-        client2.start()
+        client2 = self._start_coordinator(member_id_test2)
         client2.join_group(self.group_id).get()
 
         while True:
@@ -666,16 +656,14 @@ class TestAPI(tests.TestWithCoordinator):
         self._coord.watch_leave_group(self.group_id, self._set_event)
 
         member_id_test2 = tests.get_random_uuid()
-        client2 = tooz.coordination.get_coordinator(self.url, member_id_test2)
-        client2.start()
+        client2 = self._start_coordinator(member_id_test2)
         client2.join_group(self.group_id).get()
 
         while True:
             if self._coord.run_watchers():
                 break
 
-        client3 = tooz.coordination.get_coordinator(self.url, self.member_id)
-        client3.start()
+        client3 = self._start_coordinator(self.member_id)
         client3.leave_group(self.group_id).get()
 
         # Only works for clients that have access to the groups they are part
@@ -715,8 +703,7 @@ class TestAPI(tests.TestWithCoordinator):
         self._coord.run_watchers()
 
         member_id_test2 = tests.get_random_uuid()
-        client2 = tooz.coordination.get_coordinator(self.url, member_id_test2)
-        client2.start()
+        client2 = self._start_coordinator(member_id_test2)
         client2.watch_elected_as_leader(self.group_id, self._set_event)
         client2.run_watchers()
 
@@ -771,8 +758,7 @@ class TestAPI(tests.TestWithCoordinator):
         self._coord.run_watchers()
 
         member_id_test2 = tests.get_random_uuid()
-        client2 = tooz.coordination.get_coordinator(self.url, member_id_test2)
-        client2.start()
+        client2 = self._start_coordinator(member_id_test2)
         client2.watch_elected_as_leader(self.group_id, self._set_event)
         client2.run_watchers()
 
@@ -894,10 +880,7 @@ class TestAPI(tests.TestWithCoordinator):
     def test_get_shared_lock_locking_two_lock(self):
         name = tests.get_random_uuid()
         lock1 = self._coord.get_lock(name)
-        coord = tooz.coordination.get_coordinator(
-            self.url, tests.get_random_uuid()
-        )
-        coord.start()
+        coord = self._start_coordinator(tests.get_random_uuid())
         lock2 = coord.get_lock(name)
 
         self.assertTrue(lock1.acquire(shared=True))
@@ -908,10 +891,7 @@ class TestAPI(tests.TestWithCoordinator):
     def test_get_lock_locking_shared_and_exclusive(self):
         name = tests.get_random_uuid()
         lock1 = self._coord.get_lock(name)
-        coord = tooz.coordination.get_coordinator(
-            self.url, tests.get_random_uuid()
-        )
-        coord.start()
+        coord = self._start_coordinator(tests.get_random_uuid())
         lock2 = coord.get_lock(name)
 
         self.assertTrue(lock1.acquire(shared=True))
@@ -922,10 +902,7 @@ class TestAPI(tests.TestWithCoordinator):
     def test_get_lock_locking_exclusive_and_shared(self):
         name = tests.get_random_uuid()
         lock1 = self._coord.get_lock(name)
-        coord = tooz.coordination.get_coordinator(
-            self.url, tests.get_random_uuid()
-        )
-        coord.start()
+        coord = self._start_coordinator(tests.get_random_uuid())
         lock2 = coord.get_lock(name)
 
         self.assertTrue(lock1.acquire())
@@ -1133,8 +1110,7 @@ class TestAPI(tests.TestWithCoordinator):
 
     def test_get_lock_multiple_coords(self):
         member_id2 = tests.get_random_uuid()
-        client2 = tooz.coordination.get_coordinator(self.url, member_id2)
-        client2.start()
+        client2 = self._start_coordinator(member_id2)
 
         lock_name = tests.get_random_uuid()
         lock = self._coord.get_lock(lock_name)

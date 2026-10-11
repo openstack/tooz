@@ -74,8 +74,34 @@ class TestWithCoordinator(testcase.TestCase, metaclass=SkipNotImplementedMeta):
         self._coord = tooz.coordination.get_coordinator(
             self.url, self.member_id
         )
+        if url.startswith("ipc:"):
+            # Each test owns a registry; its coordinators still share it.
+            for name, value in (
+                ("_GROUP_LIST_KEY", self.group_id.decode("ascii")),
+                ("_INTERNAL_LOCK_NAME", self.group_id),
+            ):
+                self.useFixture(
+                    fixtures.MonkeyPatch(
+                        "tooz.drivers.ipc.IPCDriver." + name, value
+                    )
+                )
         self._coord.start()
 
     def tearDown(self):
         self._coord.stop()
         super().tearDown()
+
+    def _start_coordinator(
+        self, member_id: bytes, url: str | None = None
+    ) -> tooz.coordination.CoordinationDriver:
+        """Start another coordinator, which stops when the test ends."""
+        coord = tooz.coordination.get_coordinator(url or self.url, member_id)
+        coord.start()
+        self.addCleanup(self._stop_coordinator, coord)
+        return coord
+
+    @staticmethod
+    def _stop_coordinator(coord: tooz.coordination.CoordinationDriver) -> None:
+        # Some tests stop the coordinator themselves.
+        if coord.is_started:
+            coord.stop()
