@@ -15,14 +15,15 @@
 
 from collections.abc import Callable
 from datetime import timedelta
-from typing import Any, TypeVar
+from typing import Any, ParamSpec, TypeVar
 
 import tenacity
 from tenacity import stop
 from tenacity import wait
 
 
-WrappedFn = TypeVar('WrappedFn', bound=Callable[..., Any])
+P = ParamSpec('P')
+R = TypeVar('R')
 
 _default_wait = wait.wait_exponential(max=1)
 
@@ -30,7 +31,7 @@ _default_wait = wait.wait_exponential(max=1)
 # TODO(stephenfin): Remove kwargs
 def retry(
     stop_max_delay: int | float | timedelta | bool | None = None, **kwargs: Any
-) -> Callable[[WrappedFn], WrappedFn]:
+) -> Callable[[Callable[P, R]], Callable[P, R]]:
     if stop_max_delay is None or isinstance(stop_max_delay, bool):
         return tenacity.retry(
             wait=_default_wait,
