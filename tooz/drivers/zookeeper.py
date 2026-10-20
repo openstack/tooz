@@ -476,12 +476,18 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
             except exceptions.ZookeeperError as e:
                 utils.raise_with_cause(tooz.ToozError, str(e), cause=e)
 
-            result: dict[bytes, coordination.Capabilities | None] = {}
+            # Queue every member's read before waiting for the first: kazoo's
+            # connection thread sends them back to back, instead of one round
+            # trip per member.
+            reads = []
             for m in members_ids:
                 member_id = m.encode('ascii')
                 member_path = self._path_member(group_id, member_id)
+                reads.append((member_id, self._coord.get_async(member_path)))
+            result: dict[bytes, coordination.Capabilities | None] = {}
+            for member_id, read in reads:
                 try:
-                    data = self._coord.get(member_path)[0]
+                    data = read.get()[0]
                 except exceptions.NoNodeError:
                     continue
                 except exceptions.ZookeeperError as e:

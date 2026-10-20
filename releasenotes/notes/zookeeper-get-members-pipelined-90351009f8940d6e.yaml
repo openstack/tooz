@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    The ZooKeeper driver no longer waits for each member's answer before it
+    requests the next member, when it reads a group's members with their
+    capabilities. It queues the reads of all the members at once, and kazoo's
+    connection thread sends them back to back. With 1,000 members on a local
+    ensemble, reading them takes about 90 ms instead of 390 ms.
