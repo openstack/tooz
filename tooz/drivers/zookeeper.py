@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import json
 from typing import Any, Concatenate, ParamSpec, TypeVar, cast
 import warnings
 
@@ -30,6 +31,7 @@ except ImportError:
 from kazoo.handlers import threading as threading_handler
 from kazoo.protocol import paths
 from kazoo.recipe import lock as kazoo_lock
+from kazoo import retry as kazoo_retry
 from oslo_utils import encodeutils
 from oslo_utils import netutils
 from oslo_utils import strutils
@@ -631,12 +633,21 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
         randomize_hosts = options.get('randomize_hosts', True)
         use_ssl = options.get('use_ssl', False)
         verify_certs = options.get('verify_certs', True)
+
+        connection_retry = options.get('connection_retry', None)
+        if connection_retry:
+            connection_retry = self._validate_retry_param(connection_retry)
+
+        command_retry = options.get('command_retry', None)
+        if command_retry:
+            command_retry = self._validate_retry_param(command_retry)
+
         client_kwargs = {
             'auth_data': auth_data,
             'ca': options.get('ca', None),
             'certfile': options.get('certfile', None),
-            'connection_retry': options.get('connection_retry'),
-            'command_retry': options.get('command_retry'),
+            'connection_retry': connection_retry,
+            'command_retry': command_retry,
             'default_acl': default_acl,
             'hosts': ",".join(hosts),
             'keyfile': options.get('keyfile', None),
@@ -663,6 +674,26 @@ class KazooDriver(coordination.CoordinationDriverCachedRunWatchers):
                 )
             client_kwargs['handler'] = handler_cls()
         return client.KazooClient(**client_kwargs)
+
+    def _validate_retry_param(self, retry: Any) -> kazoo_retry.KazooRetry:
+        if isinstance(retry, kazoo_retry.KazooRetry):
+            return retry
+
+        if isinstance(retry, dict):
+            return kazoo_retry.KazooRetry(**retry)
+
+        if isinstance(retry, str):
+            try:
+                parsed = json.loads(retry)
+                if not isinstance(parsed, dict):
+                    raise ValueError(
+                        "Retry parameter is JSON but not a dictionary."
+                    )
+                return kazoo_retry.KazooRetry(**parsed)
+            except json.JSONDecodeError:
+                raise ValueError("Retry parameter is not a valid JSON string")
+
+        raise TypeError(f"Unsupported retry parameter type: {type(retry)}")
 
     def stand_down_group_leader(self, group_id: bytes) -> bool:
         if group_id in self._leader_locks:
