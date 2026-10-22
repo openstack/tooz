@@ -18,6 +18,7 @@ from unittest import mock
 from testtools import testcase
 
 from tooz import coordination
+from tooz.drivers import memcached
 from tooz import tests
 
 
@@ -78,3 +79,37 @@ class TestMemcacheDriverFailures(testcase.TestCase):
         coord.start()
         coord.run_watchers()
         self.assertTrue(mock_run_watchers.called)
+
+
+class TestMemcacheDriver(testcase.TestCase):
+    FAKE_URL = "memcached://mocked-not-really-localhost"
+
+    @mock.patch('pymemcache.client.PooledClient')
+    def test_get_members_reads_member_keys_at_once(self, mock_client_cls):
+        mock_client = mock.MagicMock()
+        mock_client_cls.return_value = mock_client
+        member_id = tests.get_random_uuid()
+        coord = coordination.get_coordinator(self.FAKE_URL, member_id)
+        assert isinstance(coord, memcached.MemcachedDriver)
+        coord.start()
+        alive = tests.get_random_uuid()
+        dead = tests.get_random_uuid()
+        mock_client.gets.return_value = (
+            {member_id: {}, alive: {}, dead: {}},
+            b'cas-token',
+        )
+        mock_client.get_many.return_value = {
+            coord._encode_member_id(alive): coord.STILL_ALIVE,
+        }
+        members = coord.get_members(b'group').get()
+        self.assertEqual({member_id, alive}, members)
+        mock_client.get_many.assert_called_once_with(
+            [coord._encode_member_id(alive), coord._encode_member_id(dead)]
+        )
+        mock_client.get.assert_not_called()
+        # The dead member leaves the group.
+        mock_client.cas.assert_called_once_with(
+            coord._encode_group_id(b'group'),
+            {member_id: {}, alive: {}},
+            b'cas-token',
+        )
