@@ -60,11 +60,7 @@ class TestWithCoordinator(testcase.TestCase, metaclass=SkipNotImplementedMeta):
         if url is None:
             raise RuntimeError("No URL set for this driver")
         if os.getenv("TOOZ_TEST_ETCD3GW"):
-            # TODO(jan.gutter): When pifpaf supports etcd 3.4 we should use the
-            # defaults
-            url = (
-                url.replace("etcd://", "etcd3+http://") + "?api_version=v3beta"
-            )
+            url = url.replace("etcd://", "etcd3+http://")
         if os.getenv("TOOZ_TEST_SENTINEL"):
             redis_port = os.getenv("TOOZ_TEST_REDIS_PORT", "6379")
             sentinel_port = os.getenv("TOOZ_TEST_REDIS_SENTINEL_PORT", "6380")
