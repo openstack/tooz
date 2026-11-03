@@ -195,7 +195,7 @@ def collapse(
 
 def to_binary(text: str | bytes, encoding: str = 'ascii') -> bytes:
     """Return the binary representation of string (if not already binary)."""
-    if not isinstance(text, bytes):
+    if isinstance(text, str):
         text = text.encode(encoding)
     return text
 
