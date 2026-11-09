@@ -1,0 +1,8 @@
+---
+fixes:
+  - |
+    The results of the Redis driver's group operations raise
+    ``ToozConnectionError`` or ``ToozError`` again, instead of the Redis
+    client's own exceptions. Failures leaving groups or deleting the
+    heartbeat key no longer abort shutdown cleanup. The driver closes its
+    data and Sentinel clients, including after a failed start.
