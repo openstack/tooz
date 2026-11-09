@@ -80,11 +80,8 @@ class TestRedis(testcase.TestCase):
                 coordinator.delete_group(group),
             ):
                 error = self.assertRaises(expected, result.get)
+                self.assertIs(expected, type(error))
                 self.assertIs(failure, error.__cause__)
-                if expected is tooz.ToozError:
-                    self.assertNotIsInstance(
-                        error, coordination.ToozConnectionError
-                    )
 
     @mock.patch("tooz.drivers.redis.redis.Redis")
     def test_stop_closes_the_client(self, mock_client_cls):
@@ -96,7 +93,13 @@ class TestRedis(testcase.TestCase):
         client.delete.assert_called_once()
         client.close.assert_called_once_with()
 
-    def _assert_stop_releases_resources(self, client, coordinator, failure):
+    @mock.patch("tooz.drivers.redis.redis.Redis")
+    def _test_stop_releases_resources_on_failure(
+        self,
+        failure,
+        mock_client_cls,
+    ):
+        coordinator, client = self._start_coordinator(mock_client_cls)
         coordinator._joined_groups.add(b'group')
         self._fail_everything(client, failure)
         client.delete.side_effect = failure
@@ -111,20 +114,14 @@ class TestRedis(testcase.TestCase):
         client.delete.assert_called_once()
         client.close.assert_called_once_with()
 
-    @mock.patch("tooz.drivers.redis.redis.Redis")
-    def test_stop_releases_resources_when_redis_refuses(self, mock_client_cls):
-        coordinator, client = self._start_coordinator(mock_client_cls)
-        self._assert_stop_releases_resources(
-            client, coordinator, exceptions.ConnectionError('refused')
+    def test_stop_releases_resources_when_redis_refuses(self):
+        self._test_stop_releases_resources_on_failure(
+            exceptions.ConnectionError('refused')
         )
 
-    @mock.patch("tooz.drivers.redis.redis.Redis")
-    def test_stop_releases_resources_when_redis_times_out(
-        self, mock_client_cls
-    ):
-        coordinator, client = self._start_coordinator(mock_client_cls)
-        self._assert_stop_releases_resources(
-            client, coordinator, exceptions.TimeoutError('timed out')
+    def test_stop_releases_resources_when_redis_times_out(self):
+        self._test_stop_releases_resources_on_failure(
+            exceptions.TimeoutError('timed out')
         )
 
     def _sentinel_driver(self, manager):
