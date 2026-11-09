@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    The IPC driver now serializes shared memory attachment and removal,
+    preventing startup failures when another coordinator stops at the
+    same time. Stopping a coordinator also preserves the shared group
+    list while other local coordinators are still attached.
