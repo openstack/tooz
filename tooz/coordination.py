@@ -22,6 +22,7 @@ from collections.abc import Callable, Iterable
 from concurrent import futures
 import contextlib
 import enum
+import functools
 import logging
 import threading
 from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar
@@ -201,13 +202,29 @@ class Heart:
 
     def _beat_forever_until_stopped(self) -> None:
         """Inner beating loop."""
+
+        @functools.wraps(self._driver.heartbeat)
+        def heartbeat() -> float | None:
+            if self._dead.is_set():
+                return None
+            return self._driver.heartbeat()
+
+        log_retry = tenacity.before_sleep_log(LOG, logging.WARNING)
+
+        def before_sleep(retry_state: tenacity.RetryCallState) -> None:
+            if not self._dead.is_set():
+                log_retry(retry_state)
+
         retry = tenacity.Retrying(
             wait=tenacity.wait_fixed(1),
-            before_sleep=tenacity.before_sleep_log(LOG, logging.WARNING),
+            sleep=tenacity.sleep_using_event(self._dead),
+            before_sleep=before_sleep,
         )
         while not self._dead.is_set():
             with timeutils.StopWatch() as w:
-                wait_until_next_beat = retry(self._driver.heartbeat)
+                wait_until_next_beat = retry(heartbeat)
+            if self._dead.is_set():
+                return
             assert wait_until_next_beat is not None  # narrow type
             ran_for = w.elapsed()
             has_to_sleep_for = wait_until_next_beat - ran_for
