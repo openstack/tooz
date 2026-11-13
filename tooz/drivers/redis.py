@@ -229,7 +229,8 @@ class RedisDriver(
     Currently the number of attempts that are tried is infinite (this might
     be addressed in https://github.com/andymccurdy/redis-py/issues/566 when
     that gets worked on). See http://redis.io/topics/transactions for more
-    information on this topic.
+    information on this topic. Group reads do not use such transactions, so
+    concurrent joins and leaves do not restart them.
 
     General recommendations/usage considerations:
 
@@ -359,6 +360,10 @@ class RedisDriver(
     #: String used to keep a key/member alive (until it next expires).
     STILL_ALIVE = b"Not dead!"
 
+    #: Most expired members removed by one script call. This bounds how long
+    #: one call blocks the server after a mass expiry.
+    PRUNE_BATCH_SIZE = 1000
+
     SCRIPTS = {
         'create_group': """
 -- Extract *all* the variables (so we can easily know what they are)...
@@ -408,6 +413,20 @@ if redis.call("hexists", group_key, member_id) == 0 then
 end
 redis.call("hset", group_key, member_id, caps)
 return 1
+""",
+        'prune_members': """
+-- Extract *all* the variables (so we can easily know what they are)...
+local group_key = KEYS[1]
+local removed = 0
+-- KEYS[i + 1] is the liveness key of member ARGV[i]. Remove a member only
+-- if that key is still missing: the member may have heartbeated, and
+-- rejoined, since the caller read the group.
+for i, member_id in ipairs(ARGV) do
+    if redis.call("exists", KEYS[i + 1]) == 0 then
+        removed = removed + redis.call("hdel", group_key, member_id)
+    end
+end
+return removed
 """,
     }
     """`Lua`_ **template** scripts that will be used by various methods (they
@@ -762,58 +781,74 @@ return 1
             )
         )
 
+    def _prune_members(
+        self, encoded_group: bytes, member_ids: list[bytes]
+    ) -> None:
+        """Remove members whose liveness key is still missing.
+
+        The script checks each liveness key again, so a member that
+        heartbeated after the caller's read is kept. Failures propagate
+        to the caller through the group operation's result.
+        """
+        script = self._get_script('prune_members')
+        for start in range(0, len(member_ids), self.PRUNE_BATCH_SIZE):
+            batch = member_ids[start : start + self.PRUNE_BATCH_SIZE]
+            keys = [encoded_group]
+            keys.extend(self._encode_beat_id(m) for m in batch)
+            script(keys=keys, args=batch)
+
+    def _get_live_members(
+        self, group_id: bytes, with_capabilities: bool
+    ) -> dict[bytes, bytes | None]:
+        """Read a group's live members without a transaction.
+
+        Watching the group would restart the whole read whenever any member
+        joins or leaves, without bound. A plain read can include a member
+        that leaves during the read; a caller cannot tell that apart from a
+        member that leaves just after the read.
+
+        :returns: live member IDs mapped to their encoded capabilities, or to
+            None when ``with_capabilities`` is false
+        """
+        assert self._client is not None
+        encoded_group = self._encode_group_id(group_id)
+        members: dict[bytes, bytes | None]
+        if with_capabilities:
+            members = self._client.hgetall(encoded_group)  # type: ignore[assignment]
+        else:
+            members = dict.fromkeys(self._client.hkeys(encoded_group))  # type: ignore[arg-type]
+        # A hash exists only while it has fields, and a created group always
+        # has the group existence field.
+        if not members:
+            raise coordination.GroupNotCreated(group_id)
+        members.pop(self.GROUP_EXISTS, None)
+        if not members:
+            return {}
+        member_ids = list(members)
+        beats = self._client.mget(map(self._encode_beat_id, member_ids))
+        # Always preserve self (just incase we haven't heartbeated while this
+        # call/s was being made...), this does *not* prevent another client
+        # from removing this though...
+        self_id = self._encode_member_id(self._member_id)
+        gone = [
+            member_id
+            for member_id, beat in zip(member_ids, beats)
+            if not beat and member_id != self_id
+        ]
+        if gone:
+            self._prune_members(encoded_group, gone)
+            for member_id in gone:
+                del members[member_id]
+        return members
+
     def get_members(
         self, group_id: bytes
     ) -> coordination.CoordinatorResult[set[bytes]]:
-        encoded_group = self._encode_group_id(group_id)
+        def _get_members() -> set[bytes]:
+            members = self._get_live_members(group_id, False)
+            return {self._decode_member_id(m) for m in members}
 
-        def _get_members(p: client.Pipeline) -> set[bytes]:
-            if not p.exists(encoded_group):
-                raise coordination.GroupNotCreated(group_id)
-            potential_members: set[bytes] = set()
-            for m in p.hkeys(encoded_group):
-                m = self._decode_member_id(m)
-                if m != self.GROUP_EXISTS:
-                    potential_members.add(m)
-            if not potential_members:
-                return set()
-
-            # Ok now we need to see which members have passed away...
-            gone_members: set[bytes] = set()
-            member_values = p.mget(
-                map(self._encode_beat_id, potential_members)
-            )
-            for potential_member, value in zip(
-                potential_members,
-                member_values,
-            ):
-                # Always preserve self (just incase we haven't heartbeated
-                # while this call/s was being made...), this does *not* prevent
-                # another client from removing this though...
-                if potential_member == self._encode_member_id(self._member_id):
-                    continue
-                if not value:
-                    gone_members.add(potential_member)
-            # Trash all the members that no longer are with us... RIP...
-            if gone_members:
-                p.multi()
-                encoded_gone_members = list(
-                    self._encode_member_id(m) for m in gone_members
-                )
-                p.hdel(encoded_group, *encoded_gone_members)
-                p.execute()
-                return {m for m in potential_members if m not in gone_members}
-            return potential_members
-
-        assert self._client is not None
-        return RedisFutureResult(
-            self._submit(
-                self._client.transaction,  # type: ignore[arg-type]
-                _get_members,  # type: ignore[arg-type]
-                encoded_group,
-                value_from_callable=True,
-            )
-        )
+        return RedisFutureResult(self._submit(_get_members))
 
     def get_member_capabilities(
         self, group_id: bytes, member_id: bytes
@@ -821,82 +856,33 @@ return 1
         encoded_group = self._encode_group_id(group_id)
         encoded_member_id = self._encode_member_id(member_id)
 
-        def _get_member_capabilities(
-            p: client.Pipeline,
-        ) -> coordination.Capabilities | None:
-            if not p.exists(encoded_group):
-                raise coordination.GroupNotCreated(group_id)
-            capabilities = p.hget(encoded_group, encoded_member_id)
+        def _get_member_capabilities() -> coordination.Capabilities | None:
+            assert self._client is not None
+            capabilities = self._client.hget(encoded_group, encoded_member_id)
             if capabilities is None:
+                if not self._client.exists(encoded_group):
+                    raise coordination.GroupNotCreated(group_id)
                 raise coordination.MemberNotJoined(group_id, member_id)
             return self._loads(capabilities)  # type: ignore[arg-type,no-any-return]
 
-        assert self._client is not None
-        return RedisFutureResult(
-            self._submit(
-                self._client.transaction,  # type: ignore[arg-type]
-                _get_member_capabilities,  # type: ignore[arg-type]
-                encoded_group,
-                value_from_callable=True,
-            )
-        )
+        return RedisFutureResult(self._submit(_get_member_capabilities))
 
     def get_members_with_capabilities(
         self, group_id: bytes
     ) -> coordination.CoordinatorResult[
         dict[bytes, coordination.Capabilities | None]
     ]:
-        encoded_group = self._encode_group_id(group_id)
-
-        def _get_members_with_capabilities(
-            p: client.Pipeline,
-        ) -> dict[bytes, coordination.Capabilities | None]:
-            if not p.exists(encoded_group):
-                raise coordination.GroupNotCreated(group_id)
-            # HGETALL returns {field: value} — all members + capabilities
-            all_data = p.hgetall(encoded_group)
-            potential: dict[bytes, coordination.Capabilities | None] = {}
-            for raw_member_id, raw_caps in all_data.items():
-                member_id = self._decode_member_id(raw_member_id)
-                if member_id == self.GROUP_EXISTS:
-                    continue
-                potential[member_id] = self._loads(raw_caps)  # type: ignore[arg-type]
-
-            if not potential:
-                return {}
-
-            # Liveness check — same pattern as get_members
-            gone_members: set[bytes] = set()
-            member_values = p.mget(map(self._encode_beat_id, potential.keys()))
-            for member_id, value in zip(potential.keys(), member_values):
-                if member_id == self._encode_member_id(self._member_id):
-                    continue
-                if not value:
-                    gone_members.add(member_id)
-
-            if gone_members:
-                p.multi()
-                encoded_gone = list(
-                    self._encode_member_id(m) for m in gone_members
-                )
-                p.hdel(encoded_group, *encoded_gone)
-                p.execute()
-
+        def _get_members_with_capabilities() -> dict[
+            bytes, coordination.Capabilities | None
+        ]:
+            members = self._get_live_members(group_id, True)
+            # Decode after the reads, so decoding never delays them.
             return {
-                m: caps
-                for m, caps in potential.items()
-                if m not in gone_members
+                self._decode_member_id(m): self._loads(caps)  # type: ignore[arg-type]
+                for m, caps in members.items()
             }
 
-        assert self._client is not None
-        return RedisFutureResult(
-            self._submit(
-                self._client.transaction,  # type: ignore[arg-type]
-                _get_members_with_capabilities,  # type: ignore[arg-type]
-                encoded_group,
-                value_from_callable=True,
-            )
-        )
+        return RedisFutureResult(self._submit(_get_members_with_capabilities))
 
     def join_group(
         self,
