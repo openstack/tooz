@@ -2,11 +2,12 @@
 fixes:
   - |
     The Redis driver no longer reads groups inside a ``WATCH`` transaction.
-    Before, any join, leave or removal of an expired member restarted a
-    concurrent ``get_members()`` or ``get_members_with_capabilities()`` call
-    from the beginning, without limit, so reads of large groups could stall
-    while many members rejoined, for example after a failover. Expired members
-    are now removed by a script that checks each member's liveness key again,
-    so a member that heartbeats after the read is no longer removed.
-    ``get_member_capabilities()`` now sends one command when the member
-    exists, instead of five.
+    Previously, whenever a member joined or left a group, or an expired
+    member was removed from it, an in-progress ``get_members()`` or
+    ``get_members_with_capabilities()`` call for that group could restart
+    from the beginning, without a retry limit. As a result, reads of large
+    groups could stall if many members were rejoining, e.g. after a failover.
+    Expired members are now removed by a script that rechecks each member's
+    liveness key before removal, preserving members that have heartbeated
+    since the initial liveness check. ``get_member_capabilities()`` now sends
+    one command when the member exists, instead of five.

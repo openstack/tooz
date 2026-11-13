@@ -812,11 +812,18 @@ return removed
         """
         assert self._client is not None
         encoded_group = self._encode_group_id(group_id)
+        # redis-py annotates replies as bytes or str. They are bytes here:
+        # the client never sets decode_responses, which CLIENT_ARGS leaves
+        # out.
         members: dict[bytes, bytes | None]
         if with_capabilities:
-            members = self._client.hgetall(encoded_group)  # type: ignore[assignment]
+            members = cast(
+                dict[bytes, bytes | None], self._client.hgetall(encoded_group)
+            )
         else:
-            members = dict.fromkeys(self._client.hkeys(encoded_group))  # type: ignore[arg-type]
+            members = dict.fromkeys(
+                cast(list[bytes], self._client.hkeys(encoded_group))
+            )
         # A hash exists only while it has fields, and a created group always
         # has the group existence field.
         if not members:
@@ -858,12 +865,22 @@ return removed
 
         def _get_member_capabilities() -> coordination.Capabilities | None:
             assert self._client is not None
-            capabilities = self._client.hget(encoded_group, encoded_member_id)
+            # Bytes, as in _get_live_members(), or None if the member is not
+            # in the group.
+            capabilities = cast(
+                bytes | None,
+                self._client.hget(encoded_group, encoded_member_id),
+            )
             if capabilities is None:
                 if not self._client.exists(encoded_group):
                     raise coordination.GroupNotCreated(group_id)
                 raise coordination.MemberNotJoined(group_id, member_id)
-            return self._loads(capabilities)  # type: ignore[arg-type,no-any-return]
+            # What the member joined or updated with. The API declares a dict
+            # or None, but a member that joined with bytes, as with tooz's
+            # old default of b'', gets those bytes back.
+            return cast(
+                coordination.Capabilities | None, self._loads(capabilities)
+            )
 
         return RedisFutureResult(self._submit(_get_member_capabilities))
 
@@ -876,9 +893,11 @@ return removed
             bytes, coordination.Capabilities | None
         ]:
             members = self._get_live_members(group_id, True)
-            # Decode after the reads, so decoding never delays them.
+            # Decode after the reads, so decoding never delays them. Each
+            # value read is bytes: encoded capabilities, which can decode to
+            # None.
             return {
-                self._decode_member_id(m): self._loads(caps)  # type: ignore[arg-type]
+                self._decode_member_id(m): self._loads(cast(bytes, caps))
                 for m, caps in members.items()
             }
 
